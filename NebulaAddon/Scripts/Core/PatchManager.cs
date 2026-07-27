@@ -4409,126 +4409,145 @@ public class PatchManager
     static AudioSource? MusicSource;
     static bool selectSpawnEnd;
     static Dictionary<string, AudioClip> audioclips = new Dictionary<string, AudioClip>();
-    public static void PlayerUpdate(GamePlayer __instance)
+    public static void PlayerUpdate(GamePlayer __instance, float deltaTime)
     {
-        if (!IntroShowImpostor)
+        try
         {
-            return;
-        }
-        if (isfinal && __instance.AmOwner && __instance.IsImpostor)
-        {
-            __instance.GainSpeedAttribute(1f + FinalImpostorSpeedUpOption, 1f, false, 0, "impostor::speedup");
-        }
-        /*if (HasHNSMusic && __instance.AmOwner && __instance.IsImpostor)
-        {
-            if (__instance.IsImpostor)
+            if (!IntroShowImpostor)
             {
-                var hidenseekManager = GameManagerCreator.Instance.HideAndSeekManagerPrefab;
-                var collection = hidenseekManager.MusicCollection;
-                if (MusicSource == null)
-                {
-                    MusicSource = AmongUsLLImpl.SoundManagerInstance.PlaySound(collection.ImpostorShortMusic, true);
-                    MusicSource.name = "ImpostorMusic";
-                }
-            }
-            if (__instance.IsImpostor)
                 return;
-        }*/
-        if (CrewmateHasEchoSkill && __instance.AmOwner && !__instance.IsImpostor)
-        {
-            LastUseSkill += Time.deltaTime;
-            if (LastUseSkill >= EchoSkillUseTime)
+            }
+            if (__instance == null)
             {
-                LastUseSkill = 0f;
-                NebulaManager.Instance.StartCoroutine(CoEcho(__instance.Position.ToUnityVector()).WrapToIl2Cpp());
-                System.Collections.IEnumerator CoEcho(UnityEngine.Vector2 position)
+                return;
+            }
+            if (isfinal && __instance.AmOwner && __instance.IsImpostor)
+            {
+                __instance.GainSpeedAttribute(1f + FinalImpostorSpeedUpOption, 1f, false, 0, "impostor::speedup");
+            }
+            /*if (HasHNSMusic && __instance.AmOwner && __instance.IsImpostor)
+            {
+                if (__instance.IsImpostor)
                 {
-                    EditableBitMask<GamePlayer> pMask = BitMasks.AsPlayer();
-                    float radious = 0f;
-                    var circle = EffectCircle.SpawnEffectCircle(null, __instance.Position.ToUnityVector(), NebulaTeams.ImpostorTeam.Color, 0f, null, true);
-                    circle.OuterRadius = () => radious;
-                    NebulaTeams.ImpostorTeam.Color.ToHSV(out var hue, out _, out _);
-                    bool isFirst = true;
-                    while (radious < NebulaAPI.Configurations.Configuration("options.role.echo.echoRange", new ValueTuple<float, float, float>(2.5f, 60f, 2.5f), 10f, FloatConfigurationDecorator.Ratio, null, null))
+                    var hidenseekManager = GameManagerCreator.Instance.HideAndSeekManagerPrefab;
+                    var collection = hidenseekManager.MusicCollection;
+                    if (MusicSource == null)
                     {
-                        if (MeetingHud.Instance.AsBoolFast()) break;
-
-                        radious += Time.deltaTime * 5f;
-                        foreach (var p in NebulaGameManager.Instance?.AllPlayerInfo ?? [])
-                        {
-                            if (!p.AmOwner && !p.IsDead && !pMask.Test(p) && p.Position.Distance(position) < radious && p.IsImpostor)
-                            {
-                                pMask.Add(p);
-                                AmongUsUtil.Ping([p.Position], false, isFirst, postProcess: ping => ping.gameObject.SetHue(360 - hue));
-                                isFirst = false;
-                            }
-                        }
-                        yield return null;
+                        MusicSource = AmongUsLLImpl.SoundManagerInstance.PlaySound(collection.ImpostorShortMusic, true);
+                        MusicSource.name = "ImpostorMusic";
                     }
-                    circle.Disappear();
                 }
-            }
-            /*if (nomusictime < ImpostorCannotMoveTime)
-            {
-                nomusictime += Time.deltaTime;
-                return;
+                if (__instance.IsImpostor)
+                    return;
             }*/
-            var color = redFullS!.color;
-            List<float> alphas = new List<float>();
-            //List<float> distances = new List<float>();
-            var impostors = PlayerControl.AllPlayerControls.GetFastEnumerator().Where(p => p.ToNebulaPlayer().IsImpostor).ToArray();
-            foreach (var player in impostors)
+            if (CrewmateHasEchoSkill && __instance.AmOwner && !__instance.IsImpostor)
             {
-                alphas.Add((-0.1f * (player.GetTruePosition() - __instance.VanillaPlayer.GetTruePosition()).magnitude) + 0.8f);
-                //distances.Add((player.GetTruePosition() - __instance.ToAUPlayer().GetTruePosition()).magnitude);
+                LastUseSkill += deltaTime;
+                if (LastUseSkill >= EchoSkillUseTime)
+                {
+                    LastUseSkill = 0f;
+                    NebulaManager.Instance.StartCoroutine(CoEcho(__instance.Position.ToUnityVector()).WrapToIl2Cpp());
+                    System.Collections.IEnumerator CoEcho(UnityEngine.Vector2 position)
+                    {
+                        EditableBitMask<GamePlayer> pMask = BitMasks.AsPlayer();
+                        float radious = 0f;
+                        var circle = EffectCircle.SpawnEffectCircle(null, __instance.Position.ToUnityVector(), NebulaTeams.ImpostorTeam.Color, 0f, null, true);
+                        circle.OuterRadius = () => radious;
+                        NebulaTeams.ImpostorTeam.Color.ToHSV(out var hue, out _, out _);
+                        bool isFirst = true;
+                        while (radious < NebulaAPI.Configurations.Configuration("options.role.echo.echoRange", new ValueTuple<float, float, float>(2.5f, 60f, 2.5f), 10f, FloatConfigurationDecorator.Ratio, null, null))
+                        {
+                            if (MeetingHud.Instance.AsBoolFast()) break;
+
+                            radious += Time.deltaTime * 5f;
+                            foreach (var p in NebulaGameManager.Instance?.AllPlayerInfo ?? [])
+                            {
+                                if (!p.AmOwner && !p.IsDead && !pMask.Test(p) && p.Position.Distance(position) < radious && p.IsImpostor)
+                                {
+                                    pMask.Add(p);
+                                    AmongUsUtil.Ping([p.Position], false, isFirst, postProcess: ping => ping.gameObject.SetHue(360 - hue));
+                                    isFirst = false;
+                                }
+                            }
+                            yield return null;
+                        }
+                        circle.Disappear();
+                    }
+                }
+                /*if (nomusictime < ImpostorCannotMoveTime)
+                {
+                    nomusictime += Time.deltaTime;
+                    return;
+                }*/
+                if (redFullS == null)
+                {
+                    redFullS = AmongUsUtil.GenerateFullscreen(NebulaTeams.ImpostorTeam.Color);
+                    var c = redFullS.color;
+                    c.a = 0f;
+                    redFullS.color = c;
+                    return;
+                }
+                var color = redFullS!.color;
+                List<float> alphas = new List<float>();
+                //List<float> distances = new List<float>();
+                var impostors = PlayerControl.AllPlayerControls.GetFastEnumerator().Where(p => p.ToNebulaPlayer().IsImpostor).ToArray();
+                foreach (var player in impostors)
+                {
+                    alphas.Add((-0.1f * (player.GetTruePosition() - __instance.VanillaPlayer.GetTruePosition()).magnitude) + 0.8f);
+                    //distances.Add((player.GetTruePosition() - __instance.ToAUPlayer().GetTruePosition()).magnitude);
+                }
+                color.a = Mathn.Clamp(Mathf.Max(new Il2CppStructArray<float>(alphas.ToArray())), isfinal ? 0.1f : 0f, 0.4f);
+                redFullS.color = color;
+                color = redFullS.color;
+                /*if (HasHNSMusic)
+                {
+                    var hidenseekManager = GameManagerCreator.Instance.HideAndSeekManagerPrefab;
+                    var collection = hidenseekManager.MusicCollection;
+                    float distance;
+                    if (distances.Count <= 0)
+                    {
+                        distance = 1000f;
+                    }
+                    else
+                    {
+                        distance = Mathn.Min(new Il2CppStructArray<float>(distances.ToArray()));
+                    }
+                    if (MusicSource == null)
+                    {
+                        var audio = collection.NormalMusic;
+                        MusicSource = AmongUsLLImpl.SoundManagerInstance.PlaySound(audio, true);
+                        MusicSource.name = "Normal";
+                    }
+                    if (distance > 8f && MusicSource.name != "Normal")
+                    {
+                        var audio = collection.NormalMusic;
+                        MusicSource.Stop();
+                        MusicSource.clip = audio;
+                        MusicSource.Play();
+                        MusicSource.name = "Normal";
+                    }
+                    else if (distance > 2.5f && distance <= 8f && MusicSource.name != "Danger1")
+                    {
+                        var audio = collection.DangerLevel1Music;
+                        MusicSource.Stop();
+                        MusicSource.clip = audio;
+                        MusicSource.Play();
+                        MusicSource.name = "Danger1";
+                    }
+                    else if (distance <= 2.5f && MusicSource.name != "Danger2")
+                    {
+                        var audio = collection.DangerLevel2Music;
+                        MusicSource.Stop();
+                        MusicSource.clip = audio;
+                        MusicSource.Play();
+                        MusicSource.name = "Danger2";
+                    }
+                }*/
             }
-            color.a = Mathn.Clamp(Mathf.Max(new Il2CppStructArray<float>(alphas.ToArray())), isfinal ? 0.1f : 0f, 0.4f);
-            redFullS.color = color;
-            color = redFullS.color;
-            /*if (HasHNSMusic)
-            {
-                var hidenseekManager = GameManagerCreator.Instance.HideAndSeekManagerPrefab;
-                var collection = hidenseekManager.MusicCollection;
-                float distance;
-                if (distances.Count <= 0)
-                {
-                    distance = 1000f;
-                }
-                else
-                {
-                    distance = Mathn.Min(new Il2CppStructArray<float>(distances.ToArray()));
-                }
-                if (MusicSource == null)
-                {
-                    var audio = collection.NormalMusic;
-                    MusicSource = AmongUsLLImpl.SoundManagerInstance.PlaySound(audio, true);
-                    MusicSource.name = "Normal";
-                }
-                if (distance > 8f && MusicSource.name != "Normal")
-                {
-                    var audio = collection.NormalMusic;
-                    MusicSource.Stop();
-                    MusicSource.clip = audio;
-                    MusicSource.Play();
-                    MusicSource.name = "Normal";
-                }
-                else if (distance > 2.5f && distance <= 8f && MusicSource.name != "Danger1")
-                {
-                    var audio = collection.DangerLevel1Music;
-                    MusicSource.Stop();
-                    MusicSource.clip = audio;
-                    MusicSource.Play();
-                    MusicSource.name = "Danger1";
-                }
-                else if (distance <= 2.5f && MusicSource.name != "Danger2")
-                {
-                    var audio = collection.DangerLevel2Music;
-                    MusicSource.Stop();
-                    MusicSource.clip = audio;
-                    MusicSource.Play();
-                    MusicSource.name = "Danger2";
-                }
-            }*/
+        }
+        catch (Exception e)
+        {
+            PDebug.Log(e);
         }
     }
 
