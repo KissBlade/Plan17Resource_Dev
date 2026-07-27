@@ -17,6 +17,7 @@ using Nebula.Map;
 using Nebula.Modules;
 using Nebula.Modules.Cosmetics;
 using Nebula.Modules.GUIWidget;
+using Nebula.Modules.Online;
 using Nebula.Patches;
 using Nebula.Roles.Assignment;
 using Nebula.Roles.Complex;
@@ -264,7 +265,6 @@ public class PatchManager
             harmony.Patch(typeof(MeetingRoleSelectWindow).GetMethod(nameof(MeetingRoleSelectWindow.OpenRoleSelectWindowUsingTabs),AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OpenRoleSelectWindowUsingTabs))));
             harmony.Patch(typeof(Sheriff.Ability).GetConstructor([typeof(GamePlayer), typeof(bool), typeof(int)]), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OnCreateSheriffAbility))));
             harmony.Patch(typeof(DanceModule).GetMethod("Update", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockDanceModuleUpdate")));
-
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
             harmony.PatchAll(typeof(IntroPatchs));
@@ -331,6 +331,8 @@ public class PatchManager
             GeneralConfigurations.MapOptions.AppendConfigurations([PolusHasOxygenSabotage,PolusOxygenSabotageTime,CommSabCamouflagerEffectActive,
                 CommSabRandomCosmic,TimeLimit,TimeLimitMin]);
             Navvy.MyRole.ConfigurationHolder!.AppendConfiguration(NavvyCanUseCamera);
+            Psychic.MyRole.ConfigurationHolder!.AppendConfiguration(PsychicSendMessageMode);
+            Collator.MyRole.ConfigurationHolder!.AppendConfiguration(collatorSendMessageMode);
             Sidekick.MyRole.ConfigurationHolder.AppendConfigurations([SidekickPromoteToJackalNoJackalizedRole, SidekickPromoteToJackalRandomJackalizedRole]);
             Jackal.MyRole.ConfigurationHolder!.AppendConfigurations([JackalCanInvokeSabotage, NoAliveImpostorSabotageJackalWin, JackalUseOldPromoteSidekick]);
             IEnumerable<IConfiguration> options = [AccelTrapCost, AccelTrapOnlyCrewmate, DecelTrapCost, DecelTrapOnlyImpostor, PlaceTrapNoMeetingStart];
@@ -858,7 +860,9 @@ public class PatchManager
     }
     public static bool BetterFillServer(ServerDropdown __instance)
     {
-        IEnumerable<IRegionInfo> enumerable = DestroyableSingleton<ServerManager>.Instance.AvailableRegions.Where((IRegionInfo r) => r.TranslateName == StringNames.NoTranslation).ToArray<IRegionInfo>();
+        IEnumerable<IRegionInfo> enumerable = DestroyableSingleton<ServerManager>.Instance.AvailableRegions
+            .Where((IRegionInfo r) => r.TranslateName == StringNames.NoTranslation)
+            .Concat(CustomServerLoader.CurrentAvailableRegions()).DistinctBy(r=>r.Name).ToArray<IRegionInfo>();
         IRegionInfo[] defaultRegions = ServerManager.DefaultRegions.ToArray<IRegionInfo>();
         IRegionInfo[] array = enumerable.OrderBy((IRegionInfo r) => defaultRegions.FindIndex((IRegionInfo d) => d.Name == r.Name)).ToArray<IRegionInfo>();
         int num = 0;
@@ -868,7 +872,7 @@ public class PatchManager
             if (DestroyableSingleton<ServerManager>.Instance.CurrentRegion.Name == regionInfo.Name)
             {
                 __instance.defaultButtonSelected = __instance.firstOption;
-                __instance.firstOption.ChangeButtonText(ServerDropdownPatch.TranslateText(regionInfo.Name));
+                __instance.firstOption.ChangeButtonText(regionInfo.ModTranslatedName());
             }
             else
             {

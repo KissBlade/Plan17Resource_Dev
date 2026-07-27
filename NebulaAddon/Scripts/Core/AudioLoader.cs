@@ -15,7 +15,7 @@ public static class AudioLoader
         }
 
         var ext = Path.GetExtension(filePath).ToLowerInvariant();
-        switch (ext)
+        /*switch (ext)
         {
             case ".wav":
             case ".mp3":
@@ -32,8 +32,8 @@ public static class AudioLoader
             default:
                 PDebug.Log($"[AudioLoader] Unsupported extension: {ext}");
                 return null;
-        }
-        /*switch (ext)
+        }*/
+        switch (ext)
         {
             case ".wav":
                 try
@@ -61,7 +61,7 @@ public static class AudioLoader
             default:
                 PDebug.Log($"[AudioLoader] Unsupported extension: {ext}");
                 return null;
-        }*/
+        }
     }
 
     #region IO Helper
