@@ -48,6 +48,8 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
         internal static Virial.Media.Image MeetingSkill = NebulaAPI.AddonAsset.GetResource("CrawlerMeetingSkill.png")!.AsImage(100f)!;
         internal static Virial.Media.Image skillImage = NebulaAPI.AddonAsset.GetResource("CrawlerUsePadSkill.png")!.AsImage(100f)!;
         public static Dictionary<GamePlayer,RoleTeam>? RunTeamInstances = new Dictionary<GamePlayer,RoleTeam>();
+
+        AchievementToken<int>? acTokenChallenge2 = null;
         void IGameOperator.OnReleased()
         {
             if (RunTeamInstances.ContainsKey(MyPlayer))
@@ -66,6 +68,19 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             if (!CrawlerNoCamouflager) return;
             if (ev.Outfit.Tag.Contains("camo", StringComparison.CurrentCultureIgnoreCase) || ev.Outfit.Tag.Contains("commscfeffect", StringComparison.CurrentCultureIgnoreCase))
                 ev.Player.RemoveOutfitByTag(ev.Outfit.Tag);
+        }
+
+        [Local]
+        void OnGuessPlayer(PlayerMurderedEvent ev)
+        {
+            if (ev.Murderer.IsSameSideOf(MyPlayer) && ev.Dead.PlayerState == PlayerStates.Guessed)
+            {
+                if (MarkedPlayer.TryGetValue(ev.Dead.PlayerId, out _))
+                    new StaticAchievementToken("crawlerengineer.common2");
+
+                if (acTokenChallenge2 != null)
+                    acTokenChallenge2.Value++;
+            }
         }
 
         void UpdateNameText(PlayerDecorateNameEvent ev)
@@ -265,6 +280,8 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
         {
             if (AmOwner)
             {
+                acTokenChallenge2 = new("crawlerengineer.challenge2", 0, (val, _) => val >= 10);
+
                 useMap = false;
                 kill = false;
 
@@ -522,9 +539,9 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             {
                 return;
             }
-            //z: -10¤¯¤é¤¤¤Î¤È¤³¤í¤Ëé]¤¸¤ë¥Ü¥¿¥ó¤¬¤¢¤ë¤Î¤Ç¡¢±³¾°¤Î¥¯¥ê¥Ã¥¯¥¬©`¥É¤Ï-5¤¯¤é¤¤¤ËÖÃ¤±¤Ð¤è¤¤
-            // ±³¾°¥¯¥ê¥Ã¥¯¥¬©`¥É :-5, ¾€¼°¤Óµã¤Î¥¯¥ê¥Ã¥¯: -10
-            // EdgeCollider2D.EdgeRadious¤¬Ê¹¤¨¤½¤¦
+            //z: -10ãã‚‰ã„ã®ã¨ã“ã‚ã«é–‰ã˜ã‚‹ãƒœã‚¿ãƒ³ãŒã‚ã‚‹ã®ã§ã€èƒŒæ™¯ã®ã‚¯ãƒªãƒƒã‚¯ã‚¬ãƒ¼ãƒ‰ã¯-5ãã‚‰ã„ã«ç½®ã‘ã°ã‚ˆã„
+            // èƒŒæ™¯ã‚¯ãƒªãƒƒã‚¯ã‚¬ãƒ¼ãƒ‰ :-5, ç·šåŠã³ç‚¹ã®ã‚¯ãƒªãƒƒã‚¯: -10
+            // EdgeCollider2D.EdgeRadiousãŒä½¿ãˆãã†
             var screenPosAsWorld = UnityHelper.ScreenToWorldPoint(Input.mousePosition, LayerExpansion.GetUILayer());
             var worldPosOnMinimap = transform.InverseTransformPoint(screenPosAsWorld);
             var worldPos = VanillaAsset.ConvertFromMinimapPosToWorld(worldPosOnMinimap, AmongUsLLImpl.Instance.MapId);
