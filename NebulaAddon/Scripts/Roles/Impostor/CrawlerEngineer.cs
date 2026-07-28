@@ -76,7 +76,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                     new StaticAchievementToken("crawlerengineer.common2");
                 var allguessed = GamePlayer.AllPlayers.Where(p => p.PlayerState == PlayerStates.Guessed);
                 var totalKiller = allguessed.Select(p => p.MyKiller).Distinct().Where(p => p.IsSameSideOf(MyPlayer));
-                if (totalKiller<=1)
+                if (totalKiller.Count()<=1)
                 {
                     return;
                 }
