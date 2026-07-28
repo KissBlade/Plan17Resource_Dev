@@ -75,6 +75,11 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                 if (MarkedPlayer.TryGetValue(ev.Dead.PlayerId, out _)&&MyPlayer.AmOwner)
                     new StaticAchievementToken("crawlerengineer.common2");
                 var allguessed = GamePlayer.AllPlayers.Where(p => p.PlayerState == PlayerStates.Guessed);
+                var totalKiller = allguessed.Select(p => p.MyKiller).Distinct().Where(p => p.IsSameSideOf(MyPlayer));
+                if (totalKiller<=1)
+                {
+                    return;
+                }
                 if (allguessed.Count()>=6&&(MyPlayer.AmOwner||(GamePlayer.LocalPlayer.IsSameSideOf(MyPlayer)&&allguessed.Any(p=>p.MyKiller!=null&&p.MyKiller==GamePlayer.LocalPlayer))))
                 {
                     new StaticAchievementToken("crawlerengineer.challenge2");
