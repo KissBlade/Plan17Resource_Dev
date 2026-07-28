@@ -1,6 +1,3 @@
-﻿using Nebula.Patches;
-using Nebula.Roles.Scripts;
-using Plana.Core;
 using Plana.Roles.Modifier;
 using Virial.Helpers;
 
@@ -9,12 +6,14 @@ namespace Plana.Roles.Crewmate;
 public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, HasCitation, DefinedRole, DefinedSingleAssignable, DefinedCategorizedAssignable, DefinedAssignable, IRoleID, ISpawnable, RuntimeAssignableGenerator<RuntimeRole>, IGuessed, AssignableFilterHolder, IAssignableDocument
 {
 
-    private Sommelier() : base("sommelier", new(194,60,60), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [MarkCoolDownOption,MarkDurationOption,UseSkillNum]) { }
+    private Sommelier() : base("sommelier", new(194,60,60), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [MarkCoolDownOption,MarkDurationOption,UseSkillNum,NeedMarkPlayerOption,RolesRelustOf]) { }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
     public override Ability CreateAbility(GamePlayer player, int[] arguments) => new Ability(player, arguments.GetAsBool(0),arguments.Get(1,0));
     private static FloatConfiguration MarkCoolDownOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.markedCooldown", new ValueTuple<float, float, float>(0f, 30f, 2.5f), 7.5f, FloatConfigurationDecorator.Second, null, null);
     private static FloatConfiguration MarkDurationOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.markedDuration", new ValueTuple<float, float, float>(1f, 10f, 0.5f), 2f, FloatConfigurationDecorator.Second, null, null);
+    private static IntegerConfiguration NeedMarkPlayerOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.needMarkedPlayer", (3, 10, 1), 5, null, null);
+    static private readonly ValueConfiguration<int> RolesRelustOf = NebulaAPI.Configurations.Configuration("options.role.sommelier.resultOf", ["options.role.sommelier.resultOf.in", "options.role.sommelier.resultOf.out", "options.role.sommelier.resultOf.both"], 0);
     static IntegerConfiguration UseSkillNum = NebulaAPI.Configurations.Configuration("options.role.sommelier.useskillnum", (0, 30), 2);
 
     static public Sommelier MyRole = new Sommelier();
@@ -22,6 +21,9 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
     [NebulaRPCHolder]
     public class Ability : AbstractPlayerUsurpableAbility, IPlayerAbility
     {
+        static Image meetingButton = NebulaAPI.AddonAsset.GetResource("SommelierMeetingSkill.png")!.AsImage(115f);
+        static Image markButton = NebulaAPI.AddonAsset.GetResource("SommelierMark.png")!.AsImage(115f);
+        static Image? MeetingResultIcon = NebulaAPI.AddonAsset.GetResource("SommelierGetRole.png")?.AsImage(135f);
         static readonly RemoteProcess<ValueTuple<GamePlayer, GamePlayer>> RpcUpdateStatus = new RemoteProcess<ValueTuple<GamePlayer, GamePlayer>>("UpdateSommelier", (m, _) =>
         {
             if (m.Item1.TryGetAbility<Sommelier.Ability>(out var ability))
@@ -199,8 +201,6 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
                 markedPlayers.Add(p);
             });
         }
-        Virial.Media.Image? meetingButton = NebulaAPI.AddonAsset.GetResource("SommelierMeetingSkill.png")!.AsImage(115f);
-        Virial.Media.Image? markButton = NebulaAPI.AddonAsset.GetResource("SommelierMark.png")!.AsImage(115f);
         int leftuse;
         bool useafterskill;
         int meetingnum;
@@ -220,6 +220,45 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
                 new StaticAchievementToken("sommelier.challenge1");
             }
         }
+        private void RegisterResult()
+        {
+            if (IsUsurped) return;
+
+            var markedIds = playerIcons.Where(CheckMarked).Select(p => p.Item1);
+            var inRoles = GamePlayer.AllPlayers.Where(p => markedIds.Contains(p.PlayerId)).Select(p => p?.Role?.Role).NotNull().ToArray();
+            var outRoles = GamePlayer.AllPlayers.Where(p => !markedIds.Contains(p.PlayerId)).Select(p => p?.Role?.Role).NotNull().ToArray();
+            var rnd = System.Random.Shared;
+
+            string inText = Language.Translate("role.sommelier.ui.roleInResult");
+            string outText = Language.Translate("role.sommelier.ui.roleOutResult");
+            string randIn = inRoles.Length > 0 ? inRoles[rnd.Next(inRoles.Length)]?.DisplayColoredName ?? "" : "";
+            string randOut = outRoles.Length > 0 ? outRoles[rnd.Next(outRoles.Length)]?.DisplayColoredName ?? "" : "";
+
+            string fillIn = string.IsNullOrEmpty(randIn) ? "" : inText.Replace("%INROLE%", randIn);
+            string fillOut = string.IsNullOrEmpty(randOut) ? "" : outText.Replace("%OUTROLE%", randOut);
+
+            StringBuilder sb = new();
+            int mode = RolesRelustOf.GetValue();
+            if (mode == 0)
+                sb.Append(fillIn);
+            else if (mode == 1)
+                sb.Append(fillOut);
+            else
+            {
+                sb.Append(fillIn);
+                if (fillIn.Length > 0 && fillOut.Length > 0) sb.Append("<br>");
+                sb.Append(fillOut);
+            }
+            string result = sb.ToString();
+
+            if (string.IsNullOrEmpty(result)) return;
+
+            NebulaAPI.CurrentGame?.GetModule<MeetingOverlayHolder>()?.RegisterOverlay(NebulaAPI.GUI.VerticalHolder(GUIAlignment.Left, [
+                NebulaAPI.GUI.LocalizedText(GUIAlignment.Left, Virial.Text.AttributeAsset.OverlayTitle, "role.sommelier.message.header"),
+                NebulaAPI.GUI.RawText(GUIAlignment.Center, Virial.Text.AttributeAsset.OverlayContent, result)
+                ]), MeetingResultIcon ?? FlowerBurial.Ability.MeetingInfoIcon, MyRole.Color, false);
+        }
+
         [Local]
         void OnMeetingStart(MeetingStartEvent ev)
         {
@@ -227,17 +266,15 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
             {
                 meetingnum++;
             }
+
+            if (playerIcons.Count(CheckMarked) >= NeedMarkPlayerOption) RegisterResult();
             if (CheckUseSkill())
             {
                 GameObject binder = UnityHelper.CreateObject("SommelierSkill", MeetingHud.Instance.SkipVoteButton.transform.parent, MeetingHud.Instance.SkipVoteButton.transform.localPosition, null);
-                GameOperatorManager instance = GameOperatorManager.Instance;
-                if (instance != null)
-                {
-                    instance.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
+                GameOperatorManager.Instance?.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
                     {
                         binder.gameObject.SetActive(!this.MyPlayer.IsDead && MeetingHud.Instance.CurrentState == MeetingHud.VoteStates.NotVoted);
                     }, new GameObjectLifespan(binder), 100);
-                }
                 TextMeshPro countText = UnityEngine.Object.Instantiate<TextMeshPro>(MeetingHud.Instance.TitleText, binder.transform);
                 countText.gameObject.SetActive(useafterskill);
                 if (useafterskill)
@@ -256,7 +293,7 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
                 {
                     SpriteRenderer leftRenderer = UnityHelper.CreateObject<SpriteRenderer>("SommelierActivateSkill", binder.transform, new UnityEngine.Vector3(2.1f, 0.15f), null);
                     leftRenderer.sprite = meetingButton!.GetSprite();
-                    PassiveButton passiveButton = leftRenderer.gameObject.SetUpButton(true, new SpriteRenderer[0], null, null);
+                    PassiveButton passiveButton = leftRenderer.gameObject.SetUpButton(true, [], null, null);
                     passiveButton.OnMouseOver.AddListener(delegate
                     {
                         leftRenderer.color = UnityEngine.Color.green;

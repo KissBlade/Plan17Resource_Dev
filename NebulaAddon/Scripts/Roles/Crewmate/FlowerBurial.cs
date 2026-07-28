@@ -23,7 +23,7 @@ public class FlowerBurial : DefinedSingleAbilityRoleTemplate<FlowerBurial.Abilit
     {
         static Image PlaceIcon = NebulaAPI.AddonAsset.GetResource("flowerBurialPlaceFlower.png")!.AsImage(115f)!;
         static Image CheckIcon = NebulaAPI.AddonAsset.GetResource("flowerBurialCheckFlowers.png")!.AsImage(115f)!;
-        static Image MeetingInfoIcon = NebulaAPI.AddonAsset.GetResource("flowerBurialMeetingInfo.png")!.AsImage(135f)!;
+        public static Image MeetingInfoIcon = NebulaAPI.AddonAsset.GetResource("flowerBurialMeetingInfo.png")!.AsImage(135f)!;
         Dictionary<DeadBody,string> CheckedDeadbodies = new();
         List<Flower> flowers = new();
         int[] IPlayerAbility.AbilityArguments => [IsUsurped.AsInt()];
