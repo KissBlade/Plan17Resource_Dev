@@ -41,7 +41,7 @@ public class Insomniacs : DefinedRoleTemplate, HasCitation, DefinedRole, Defined
         {
         }
         ModAbilityButton? skillButton;
-        Virial.Media.Image skillImage = NebulaAPI.AddonAsset.GetResource("trytosleep.png")!.AsImage(115f)!;
+        static Virial.Media.Image skillImage = NebulaAPI.AddonAsset.GetResource("trytosleep.png")!.AsImage(115f)!;
         bool sleep;
         [OnlyMyPlayer]
         private void BlockWins(PlayerBlockWinEvent ev)

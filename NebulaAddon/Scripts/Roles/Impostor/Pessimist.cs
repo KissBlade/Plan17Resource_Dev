@@ -41,8 +41,8 @@ public class Pessimist : DefinedRoleTemplate, DefinedRole, HasCitation, IAssigna
         public Instance(GamePlayer player) : base(player)
         {
         }
-        Virial.Media.Image? GuessIcon = NebulaAPI.AddonAsset.GetResource("pessimistGuess.png")!.AsImage(115f);
-        Virial.Media.Image? ReplaceIcon = NebulaAPI.AddonAsset.GetResource("pessimistReplace.png")!.AsImage(115f);
+        static Virial.Media.Image? GuessIcon = NebulaAPI.AddonAsset.GetResource("pessimistGuess.png")!.AsImage(115f);
+        static Virial.Media.Image? ReplaceIcon = NebulaAPI.AddonAsset.GetResource("pessimistReplace.png")!.AsImage(115f);
         IEnumerable<DefinedAssignable> RuntimeAssignable.AssignableOnHelp => MyExtendedRole == null ? [MyRole] : [MyRole, MyExtendedRole];
         IEnumerable<IPlayerAbility> RuntimeAssignable.MyAbilities => ExtendedRoleInstance == null ? Array.Empty<IPlayerAbility>() : ExtendedRoleInstance.MyAbilities!;
         DefinedRole RuntimeRole.Role => MyRole;

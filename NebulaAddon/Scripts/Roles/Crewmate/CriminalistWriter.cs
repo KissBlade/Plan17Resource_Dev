@@ -68,8 +68,8 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
     }
     public class Ability : AbstractPlayerUsurpableAbility, IPlayerAbility
     {
-        Virial.Media.Image? UnSkillButton = NebulaAPI.AddonAsset.GetResource("CWriterUnSkill.png")!.AsImage(115f)!;
-        Virial.Media.Image? InSkillButton = NebulaAPI.AddonAsset.GetResource("CWriterInSkill.png")!.AsImage(115f)!;
+        static Virial.Media.Image? UnSkillButton = NebulaAPI.AddonAsset.GetResource("CWriterUnSkill.png")!.AsImage(115f)!;
+        static Virial.Media.Image? InSkillButton = NebulaAPI.AddonAsset.GetResource("CWriterInSkill.png")!.AsImage(115f)!;
         int[] IPlayerAbility.AbilityArguments => [IsUsurped.AsInt(),initialSkillCount];
         public Ability(GamePlayer player, bool isUsurped, int initialskillCount) : base(player,isUsurped)
         {

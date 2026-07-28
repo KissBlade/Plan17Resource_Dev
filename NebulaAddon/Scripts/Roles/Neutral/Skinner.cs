@@ -314,7 +314,7 @@ public class Skinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
             alwaysArrow = null;
             select = null;
         }
-        Virial.Media.Image markImage = NebulaAPI.AddonAsset.GetResource("markbutton.png")!.AsImage(115f)!,showmarkImage=NebulaAPI.AddonAsset.GetResource("ShowMarkbutton.png")!.AsImage(115f)!;
+        static Virial.Media.Image markImage = NebulaAPI.AddonAsset.GetResource("markbutton.png")!.AsImage(115f)!,showmarkImage=NebulaAPI.AddonAsset.GetResource("ShowMarkbutton.png")!.AsImage(115f)!;
         GamePlayer select;
         static TrackingArrowAbility arrow, alwaysArrow;
         static RemoteProcess<(GamePlayer,GamePlayer)> ShowMarkArrow = new("SkinnerShowMarkArrow", (p, _) =>

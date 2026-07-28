@@ -296,7 +296,7 @@ public class Pursuer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
         {
             blankPlayer.Add(GamePlayer.GetPlayer(p)!);
         });
-        Virial.Media.Image blankimage = NebulaAPI.AddonAsset.GetResource("PursuerButton.png")!.AsImage()!;
+        static Virial.Media.Image blankimage = NebulaAPI.AddonAsset.GetResource("PursuerButton.png")!.AsImage()!;
         [OnlyMyPlayer]
         void OnDead(PlayerDieOrDisconnectEvent ev)
         {

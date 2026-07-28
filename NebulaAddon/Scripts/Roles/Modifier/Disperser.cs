@@ -90,7 +90,7 @@ public class Disperser : DefinedAllocatableModifierTemplate, DefinedAllocatableM
     public class Instance : RuntimeAssignableTemplate, RuntimeModifier
     {
         DefinedModifier RuntimeModifier.Modifier => MyRole;
-        Virial.Media.Image disperse = NebulaAPI.AddonAsset.GetResource("disperse.png")!.AsImage(115f)!;
+        static Virial.Media.Image disperse = NebulaAPI.AddonAsset.GetResource("disperse.png")!.AsImage(115f)!;
         public Instance(GamePlayer player) : base(player)
         {
         }

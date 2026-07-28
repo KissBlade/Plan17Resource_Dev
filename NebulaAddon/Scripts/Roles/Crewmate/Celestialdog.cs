@@ -28,9 +28,9 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
         DefinedRole RuntimeRole.Role => MyRole;
         int[]? RuntimeAssignable.RoleArguments => [leftKill, addedKill.AsInt()];
         bool addedKill = addedkill;
-        Virial.Media.Image skillImage = NebulaAPI.AddonAsset.GetResource("DogSkill.png")!.AsImage(115f)!;
-        Virial.Media.Image KillImage = NebulaAPI.AddonAsset.GetResource("DogKill.png")!.AsImage(100f)!;
-        Virial.Media.Image TeleportImage = NebulaAPI.AddonAsset.GetResource("DogTeleport.png")!.AsImage(115f)!;
+        static Virial.Media.Image skillImage = NebulaAPI.AddonAsset.GetResource("DogSkill.png")!.AsImage(115f)!;
+        static Virial.Media.Image KillImage = NebulaAPI.AddonAsset.GetResource("DogKill.png")!.AsImage(100f)!;
+        static Virial.Media.Image TeleportImage = NebulaAPI.AddonAsset.GetResource("DogTeleport.png")!.AsImage(115f)!;
         public ModAbilityButton? skillButton, killButton, teleportButton;
         RoleTaskType RuntimeRole.TaskType
         {

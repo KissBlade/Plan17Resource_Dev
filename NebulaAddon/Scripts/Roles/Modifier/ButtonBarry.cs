@@ -18,7 +18,7 @@ public class ButtonBarry : DefinedAllocatableModifierTemplate, HasCitation, Defi
     public class Instance : RuntimeAssignableTemplate, RuntimeModifier
     {
         DefinedModifier RuntimeModifier.Modifier => MyRole;
-        Virial.Media.Image? CallMeetingImage = NebulaAPI.AddonAsset.GetResource("buttonbarrySkill.png")!.AsImage(115f);
+        static Virial.Media.Image? CallMeetingImage = NebulaAPI.AddonAsset.GetResource("buttonbarrySkill.png")!.AsImage(115f);
         public Instance(GamePlayer player) : base(player)
         {
         }

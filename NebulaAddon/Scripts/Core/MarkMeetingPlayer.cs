@@ -49,7 +49,7 @@ public class InMeetingMarkPlayerSystemRegister
     }
     public class InMeetingMarkPlayerSystem : AbstractModule<Game>, IGameOperator
     {
-        Image[] AllMarkIcons = new Image[9]
+        static Image[] AllMarkIcons = new Image[9]
         {
             NebulaAPI.AddonAsset.GetResource("MarkSystem/0star.png")!.AsImage(100)!,
             NebulaAPI.AddonAsset.GetResource("MarkSystem/1none.png")!.AsImage(100)!,

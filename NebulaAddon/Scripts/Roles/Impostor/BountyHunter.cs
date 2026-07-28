@@ -42,7 +42,7 @@ public class BountyHunter : DefinedSingleAbilityRoleTemplate<BountyHunter.Abilit
     {
         private ModAbilityButtonImpl? killButton = null,skillButton;
         bool IPlayerAbility.HideKillButton => true;
-        Image changeBountyImage = NebulaResourceTextureLoader.FromResource("Nebula.Resources.Buttons.SpectatorExitButton.png", 115f);
+        static Image changeBountyImage = NebulaResourceTextureLoader.FromResource("Nebula.Resources.Buttons.SpectatorExitButton.png", 115f);
         private AchievementToken<bool>? acTokenKillBounty;
         private AchievementToken<bool>? acTokenKillNonBounty;
         private AchievementToken<(bool cleared,Queue<float> history)>? acTokenChallenge;

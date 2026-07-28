@@ -25,7 +25,7 @@ public class Engineer : DefinedRoleTemplate, DefinedRole, HasCitation, IAssignab
             }
         }
         int[] RuntimeAssignable.RoleArguments => [RepairNum];
-        Virial.Media.Image? repairIcon = NebulaAPI.AddonAsset.GetResource("engineerRepair.png")!.AsImage(115f);
+        static Virial.Media.Image? repairIcon = NebulaAPI.AddonAsset.GetResource("engineerRepair.png")!.AsImage(115f);
         public Instance(GamePlayer player,int leftrepair) : base(player,CooldownOption)
         {
             leftRepair = leftrepair;
