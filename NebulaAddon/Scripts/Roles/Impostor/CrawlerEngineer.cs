@@ -539,9 +539,9 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             {
                 return;
             }
-            //z: -10仁日中及午仇欠卞寯元月示正件互丐月及匹﹜掖劓及弁伉永弁布奈玉反-5仁日中卞离仃壬方中
-            // 掖劓弁伉永弁布奈玉 :-5, �摯太萸及弁伉永弁: -10
-            // EdgeCollider2D.EdgeRadious互妏尹公丹
+            //z: -10くらいのところに閉じるボタンがあるので、背景のクリックガードは-5くらいに置けばよい
+            // 背景クリックガード :-5, 線及び点のクリック: -10
+            // EdgeCollider2D.EdgeRadiousが使えそう
             var screenPosAsWorld = UnityHelper.ScreenToWorldPoint(Input.mousePosition, LayerExpansion.GetUILayer());
             var worldPosOnMinimap = transform.InverseTransformPoint(screenPosAsWorld);
             var worldPos = VanillaAsset.ConvertFromMinimapPosToWorld(worldPosOnMinimap, AmongUsLLImpl.Instance.MapId);
