@@ -48,8 +48,6 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
         internal static Virial.Media.Image MeetingSkill = NebulaAPI.AddonAsset.GetResource("CrawlerMeetingSkill.png")!.AsImage(100f)!;
         internal static Virial.Media.Image skillImage = NebulaAPI.AddonAsset.GetResource("CrawlerUsePadSkill.png")!.AsImage(100f)!;
         public static Dictionary<GamePlayer,RoleTeam>? RunTeamInstances = new Dictionary<GamePlayer,RoleTeam>();
-
-        AchievementToken<int>? acTokenChallenge2 = null;
         void IGameOperator.OnReleased()
         {
             if (RunTeamInstances.ContainsKey(MyPlayer))
@@ -70,16 +68,17 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                 ev.Player.RemoveOutfitByTag(ev.Outfit.Tag);
         }
 
-        [Local]
         void OnGuessPlayer(PlayerMurderedEvent ev)
         {
             if (ev.Murderer.IsSameSideOf(MyPlayer) && ev.Dead.PlayerState == PlayerStates.Guessed)
             {
-                if (MarkedPlayer.TryGetValue(ev.Dead.PlayerId, out _))
+                if (MarkedPlayer.TryGetValue(ev.Dead.PlayerId, out _)&&MyPlayer.AmOwner)
                     new StaticAchievementToken("crawlerengineer.common2");
-
-                if (acTokenChallenge2 != null)
-                    acTokenChallenge2.Value++;
+                var allguessed = GamePlayer.AllPlayers.Where(p => p.PlayerState == PlayerStates.Guessed);
+                if (allguessed.Count()>=6&&(MyPlayer.AmOwner||(GamePlayer.LocalPlayer.IsSameSideOf(MyPlayer)&&allguessed.Any(p=>p.MyKiller!=null&&p.MyKiller==GamePlayer.LocalPlayer))))
+                {
+                    new StaticAchievementToken("crawlerengineer.challenge2");
+                }
             }
         }
 
@@ -280,8 +279,6 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
         {
             if (AmOwner)
             {
-                acTokenChallenge2 = new("crawlerengineer.challenge2", 0, (val, _) => val >= 10);
-
                 useMap = false;
                 kill = false;
 
