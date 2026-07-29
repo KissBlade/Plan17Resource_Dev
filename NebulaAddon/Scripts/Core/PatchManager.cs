@@ -273,6 +273,7 @@ public class PatchManager
             harmony.PatchAll(typeof(BetterStandardRoleAllocator));
             harmony.PatchAll(typeof(CannotSeeOtherPatch));
             harmony.PatchAll(typeof(BlockStampsPatch));
+            harmony.PatchAll(typeof(LoggerPatchs));
             SpeechEater.LoadPatch(harmony);
             Plana.Roles.Complex.Splicer.LoadPatch(harmony);
             Scrambler.LoadPatch(harmony);
@@ -3491,6 +3492,27 @@ public class PatchManager
         }
     }
     [HarmonyPatch]
+    public class LoggerPatchs
+    {
+        [HarmonyPatch(typeof(DebugTools), "get_AllowVanillaLog"), HarmonyPrefix]
+        public static bool AllowVanillaLogPrefix(ref bool __result)
+        {
+            __result = true;
+            return false;
+        }
+        [HarmonyPatch(typeof(MemoryLogger), "AppendLog"),HarmonyPrefix]
+        private static bool MemoryLoggerAppendLogPrefix()
+        {
+            return false;
+        }
+        [HarmonyPatch(typeof(MemoryLogger), "ToByteArray"), HarmonyPrefix]
+        private static bool MemoryLoggerToByteArrayPrefix(ref byte[] __result)
+        {
+            __result = Array.Empty<byte>();
+            return false;
+        }
+    }
+    [HarmonyPatch]
     public class DarkThemePatchs
     {
         [HarmonyPatch(typeof(ChatController), "Update"), HarmonyPostfix]
@@ -4390,13 +4412,6 @@ public class PatchManager
             {
                 return;
             }
-            if (CrewmateHasEchoSkill && __instance.AmOwner)
-            {
-                redFullS = AmongUsUtil.GenerateFullscreen(NebulaTeams.ImpostorTeam.Color);
-                var color = redFullS.color;
-                color.a = 0f;
-                redFullS.color = color;
-            }
             nomusictime = 0f;
         }
         catch (Exception e)
@@ -4425,21 +4440,6 @@ public class PatchManager
             {
                 __instance.GainSpeedAttribute(1f + FinalImpostorSpeedUpOption, 1f, false, 0, "impostor::speedup");
             }
-            /*if (HasHNSMusic && __instance.AmOwner && __instance.IsImpostor)
-            {
-                if (__instance.IsImpostor)
-                {
-                    var hidenseekManager = GameManagerCreator.Instance.HideAndSeekManagerPrefab;
-                    var collection = hidenseekManager.MusicCollection;
-                    if (MusicSource == null)
-                    {
-                        MusicSource = AmongUsLLImpl.SoundManagerInstance.PlaySound(collection.ImpostorShortMusic, true);
-                        MusicSource.name = "ImpostorMusic";
-                    }
-                }
-                if (__instance.IsImpostor)
-                    return;
-            }*/
             if (CrewmateHasEchoSkill && __instance.AmOwner && !__instance.IsImpostor)
             {
                 LastUseSkill += deltaTime;
@@ -4479,7 +4479,7 @@ public class PatchManager
                     nomusictime += Time.deltaTime;
                     return;
                 }*/
-                if (redFullS == null)
+                if (!redFullS.AsBoolFast())
                 {
                     redFullS = AmongUsUtil.GenerateFullscreen(NebulaTeams.ImpostorTeam.Color);
                     var c = redFullS.color;
@@ -4489,7 +4489,6 @@ public class PatchManager
                 }
                 var color = redFullS!.color;
                 List<float> alphas = new List<float>();
-                //List<float> distances = new List<float>();
                 var impostors = PlayerControl.AllPlayerControls.GetFastEnumerator().Where(p => p.ToNebulaPlayer().IsImpostor).ToArray();
                 foreach (var player in impostors)
                 {
@@ -4499,50 +4498,6 @@ public class PatchManager
                 color.a = Mathn.Clamp(Mathf.Max(new Il2CppStructArray<float>(alphas.ToArray())), isfinal ? 0.1f : 0f, 0.4f);
                 redFullS.color = color;
                 color = redFullS.color;
-                /*if (HasHNSMusic)
-                {
-                    var hidenseekManager = GameManagerCreator.Instance.HideAndSeekManagerPrefab;
-                    var collection = hidenseekManager.MusicCollection;
-                    float distance;
-                    if (distances.Count <= 0)
-                    {
-                        distance = 1000f;
-                    }
-                    else
-                    {
-                        distance = Mathn.Min(new Il2CppStructArray<float>(distances.ToArray()));
-                    }
-                    if (MusicSource == null)
-                    {
-                        var audio = collection.NormalMusic;
-                        MusicSource = AmongUsLLImpl.SoundManagerInstance.PlaySound(audio, true);
-                        MusicSource.name = "Normal";
-                    }
-                    if (distance > 8f && MusicSource.name != "Normal")
-                    {
-                        var audio = collection.NormalMusic;
-                        MusicSource.Stop();
-                        MusicSource.clip = audio;
-                        MusicSource.Play();
-                        MusicSource.name = "Normal";
-                    }
-                    else if (distance > 2.5f && distance <= 8f && MusicSource.name != "Danger1")
-                    {
-                        var audio = collection.DangerLevel1Music;
-                        MusicSource.Stop();
-                        MusicSource.clip = audio;
-                        MusicSource.Play();
-                        MusicSource.name = "Danger1";
-                    }
-                    else if (distance <= 2.5f && MusicSource.name != "Danger2")
-                    {
-                        var audio = collection.DangerLevel2Music;
-                        MusicSource.Stop();
-                        MusicSource.clip = audio;
-                        MusicSource.Play();
-                        MusicSource.name = "Danger2";
-                    }
-                }*/
             }
         }
         catch (Exception e)
@@ -7955,54 +7910,61 @@ public class PatchManager
 
             void Update(GameUpdateEvent ev)
             {
-                PlayerControl localPlayer = AmongUsLLImpl.LocalPlayer;
-                if (impostors == null || localPlayer == null)
+                try
                 {
-                    return;
-                }
-                if (impostors.Count <= 0)
-                {
-                    return;
-                }
-                float num = float.MaxValue;
-                foreach (PlayerControl playerControl in impostors)
-                {
-                    if (!(playerControl == null))
+                    PlayerControl localPlayer = AmongUsLLImpl.LocalPlayer;
+                    if (impostors == null || localPlayer == null)
                     {
-                        float sqrMagnitude = (playerControl.transform.position - localPlayer.transform.position).sqrMagnitude;
-                        if (sqrMagnitude < scaryMusicDistance && num > sqrMagnitude)
+                        return;
+                    }
+                    if (impostors.Count <= 0)
+                    {
+                        return;
+                    }
+                    float num = float.MaxValue;
+                    foreach (PlayerControl playerControl in impostors)
+                    {
+                        if (!(playerControl == null))
                         {
-                            num = sqrMagnitude;
+                            float sqrMagnitude = (playerControl.transform.position - localPlayer.transform.position).sqrMagnitude;
+                            if (sqrMagnitude < scaryMusicDistance && num > sqrMagnitude)
+                            {
+                                num = sqrMagnitude;
+                            }
                         }
                     }
-                }
-                if (nomusictime < ImpostorCannotMoveTime)
-                {
-                    nomusictime += Time.deltaTime;
-                    dangerLevel1 = 0f;
-                    dangerLevel2 = 0f;
-                }
-                else
-                {
-                    if (firstMusicActivation)
+                    if (nomusictime < ImpostorCannotMoveTime)
                     {
-                        firstMusicActivation = false;
-                        firstCrossfadeCountdown = 3f;
-                        LogicMusic!.SetMusicCrossfadeSpeed(0.6f);
+                        nomusictime += Time.deltaTime;
+                        dangerLevel1 = 0f;
+                        dangerLevel2 = 0f;
                     }
-                    if (firstCrossfadeCountdown > 0f)
+                    else
                     {
-                        firstCrossfadeCountdown -= Time.deltaTime;
-                        if (firstCrossfadeCountdown <= 0f)
+                        if (firstMusicActivation)
                         {
-                            LogicMusic!.SetMusicCrossfadeSpeed(5f);
+                            firstMusicActivation = false;
+                            firstCrossfadeCountdown = 3f;
+                            LogicMusic!.SetMusicCrossfadeSpeed(0.6f);
                         }
+                        if (firstCrossfadeCountdown > 0f)
+                        {
+                            firstCrossfadeCountdown -= Time.deltaTime;
+                            if (firstCrossfadeCountdown <= 0f)
+                            {
+                                LogicMusic!.SetMusicCrossfadeSpeed(5f);
+                            }
+                        }
+                        dangerLevel1 = Mathn.Clamp01((scaryMusicDistance - num) / (scaryMusicDistance - veryScaryMusicDistance));
+                        dangerLevel2 = Mathn.Clamp01((veryScaryMusicDistance - num) / veryScaryMusicDistance);
                     }
-                    dangerLevel1 = Mathn.Clamp01((scaryMusicDistance - num) / (scaryMusicDistance - veryScaryMusicDistance));
-                    dangerLevel2 = Mathn.Clamp01((veryScaryMusicDistance - num) / veryScaryMusicDistance);
+                    UpdateDangerMeter();
+                    UpdateDangerMusic();
                 }
-                UpdateDangerMeter();
-                UpdateDangerMusic();
+                catch (Exception e)
+                {
+                    PDebug.Log(e);
+                }
             }
 
             private void UpdateDangerMusic()
@@ -8101,36 +8063,43 @@ public class PatchManager
 
             public void StartMusicWithIntro()
             {
-                if (!HasHNSMusic)
-                {
-                    return;
-                }
-                if (!GamePlayer.LocalPlayer.IsImpostor)
-                {
-                    return;
-                }
-                AudioClip audioClip = musicCollection!.ImpostorShortMusic;
                 try
                 {
-                    var totalTask = 0;
-                    foreach (var p in NebulaGameManager.Instance?.AllPlayerInfo ?? [])
+                    if (!HasHNSMusic)
                     {
-                        if (!p.IsDisconnected && p.Tasks.IsCrewmateTask)
+                        return;
+                    }
+                    if (!GamePlayer.LocalPlayer.IsImpostor)
+                    {
+                        return;
+                    }
+                    AudioClip audioClip = musicCollection!.ImpostorShortMusic;
+                    try
+                    {
+                        var totalTask = 0;
+                        foreach (var p in NebulaGameManager.Instance?.AllPlayerInfo ?? [])
                         {
-                            totalTask += p.Tasks.Quota;
+                            if (!p.IsDisconnected && p.Tasks.IsCrewmateTask)
+                            {
+                                totalTask += p.Tasks.Quota;
+                            }
+                        }
+                        audioClip = totalTask < 45 ? musicCollection.ImpostorShortMusic : musicCollection.ImpostorLongMusic;
+                        if (AprilFoolsMode.ShouldHorseAround())
+                        {
+                            audioClip = musicCollection.ImpostorRanchMusic;
                         }
                     }
-                    audioClip = totalTask < 45 ? musicCollection.ImpostorShortMusic : musicCollection.ImpostorLongMusic;
-                    if (AprilFoolsMode.ShouldHorseAround())
+                    catch (Exception e)
                     {
-                        audioClip = musicCollection.ImpostorRanchMusic;
+                        PDebug.Log(e);
                     }
+                    ImpostorMusic = AmongUsLLImpl.SoundManagerInstance.PlaySound(audioClip, true, 1f, AmongUsLLImpl.SoundManagerInstance.MusicChannel);
                 }
                 catch (Exception e)
                 {
                     PDebug.Log(e);
                 }
-                ImpostorMusic = AmongUsLLImpl.SoundManagerInstance.PlaySound(audioClip, true, 1f, AmongUsLLImpl.SoundManagerInstance.MusicChannel);
             }
 
             public void SetTaskState(bool isDoingTask)
@@ -8140,22 +8109,29 @@ public class PatchManager
             AudioSource? ImpostorMusic;
             void Update(GameUpdateEvent ev)
             {
-                if (started&&ImpostorMusic == null && GamePlayer.LocalPlayer!.IsImpostor)
+                try
                 {
-                    ImpostorMusic = AmongUsLLImpl.SoundManagerInstance.PlaySound(musicCollection!.ImpostorShortMusic, true, 1f, AmongUsLLImpl.SoundManagerInstance.MusicChannel);
+                    if (started && ImpostorMusic == null && GamePlayer.LocalPlayer!.IsImpostor)
+                    {
+                        ImpostorMusic = AmongUsLLImpl.SoundManagerInstance.PlaySound(musicCollection!.ImpostorShortMusic, true, 1f, AmongUsLLImpl.SoundManagerInstance.MusicChannel);
+                    }
+                    if (normalSource == null || taskSource == null || dangerLevel1Source == null || dangerLevel2Source == null)
+                    {
+                        return;
+                    }
+                    if (Time.unscaledTime > lastMusicSyncTime + 1f)
+                    {
+                        SyncMusic();
+                    }
+                    normalSource.volume = Mathn.Lerp(normalSource.volume, normalVolume, Time.fixedDeltaTime * musicLerpSpeed);
+                    taskSource.volume = Mathn.Lerp(taskSource.volume, taskVolume, Time.fixedDeltaTime * musicLerpSpeed);
+                    dangerLevel1Source.volume = Mathn.Lerp(dangerLevel1Source.volume, dangerLevel1Volume, Time.fixedDeltaTime * musicLerpSpeed);
+                    dangerLevel2Source.volume = Mathn.Lerp(dangerLevel2Source.volume, dangerLevel2Volume, Time.fixedDeltaTime * musicLerpSpeed);
                 }
-                if (normalSource == null || taskSource == null || dangerLevel1Source == null || dangerLevel2Source == null)
+                catch (Exception e)
                 {
-                    return;
+                    PDebug.Log(e);
                 }
-                if (Time.unscaledTime > lastMusicSyncTime + 1f)
-                {
-                    SyncMusic();
-                }
-                normalSource.volume = Mathn.Lerp(normalSource.volume, normalVolume, Time.fixedDeltaTime * musicLerpSpeed);
-                taskSource.volume = Mathn.Lerp(taskSource.volume, taskVolume, Time.fixedDeltaTime * musicLerpSpeed);
-                dangerLevel1Source.volume = Mathn.Lerp(dangerLevel1Source.volume, dangerLevel1Volume, Time.fixedDeltaTime * musicLerpSpeed);
-                dangerLevel2Source.volume = Mathn.Lerp(dangerLevel2Source.volume, dangerLevel2Volume, Time.fixedDeltaTime * musicLerpSpeed);
             }
 
             private void SyncMusic()
