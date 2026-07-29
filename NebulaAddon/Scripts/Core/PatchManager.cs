@@ -8318,6 +8318,7 @@ public class PatchManager
             }
         }, true);
     }
+    static string LobbyMusicPath => PathHelpers.GameRootPath + Path.DirectorySeparatorChar + "Cache" + Path.DirectorySeparatorChar + "Music";
     public static string OpenSelectMusicWindow()
     {
         try
@@ -8753,7 +8754,8 @@ public class PatchManager
             yield break;
         }
         PDebug.Log($"Download Data Size: {audioData.Length} bytes");
-        var path = Application.persistentDataPath + "/"+ fileName;
+        if (!Directory.Exists(LobbyMusicPath)) Directory.CreateDirectory(LobbyMusicPath);
+        var path = LobbyMusicPath + Path.DirectorySeparatorChar + fileName;
         File.WriteAllBytes(path, audioData);
         var task = AudioLoader.LoadAudioClipAsync(path);
         while (!task.IsCompleted)
