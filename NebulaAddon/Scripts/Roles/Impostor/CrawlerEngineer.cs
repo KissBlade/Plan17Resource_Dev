@@ -438,7 +438,9 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
 
         System.Collections.IEnumerator CoAppear()
         {
-            if (base.Owner.AmOwner)
+            var visibleTime = CrawlerEngineer.PadVisibleTime;
+
+            if (base.Owner.AmOwner || visibleTime <= 0f)
             {
                 animing = true;
                 for (int i = 0; i <= 1; i++)
@@ -454,7 +456,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                 var tmp = Renderer.color;
                 tmp.a = 0;
                 Renderer.color = tmp;
-                yield return ManagedEffects.Wait(CrawlerEngineer.PadVisibleTime);
+                yield return ManagedEffects.Wait(visibleTime);
 
                 while (Renderer.color.a < 1)
                 {
