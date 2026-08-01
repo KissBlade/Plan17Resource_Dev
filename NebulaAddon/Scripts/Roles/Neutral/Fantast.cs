@@ -148,6 +148,13 @@ public class Fantast : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
     });
     public class Instance : RuntimeAssignableTemplate, RuntimeRole
     {
+        void OnCheckTeamSide(PlayerIsSameSideCallback ev)
+        {
+            if (IsSameTeam(ev.Player1,true) && IsSameTeam(ev.Player2,true))
+            {
+                ev.MarkAsSameSide();
+            }
+        }
         DefinedRole RuntimeRole.Role => MyRole;
 
         public int FantastTeamId;
@@ -519,6 +526,13 @@ public class Fancy : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignableD
                 return;
             }
             GuesserSystem.OnGameEnd(MyPlayer);
+        }
+        void OnCheckTeamSide(PlayerIsSameSideCallback ev)
+        {
+            if (Fantast.IsFantastTeam(ev.Player1, FantastTeamId,true) && Fantast.IsFantastTeam(ev.Player2,FantastTeamId, true))
+            {
+                ev.MarkAsSameSide();
+            }
         }
         void RuntimeAssignable.OnActivated()
         {

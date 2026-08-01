@@ -94,6 +94,13 @@ public class MoriartyEndCriteria
                 }
             }
         }
+        void OnCheckTeamSide(PlayerIsSameSideCallback ev)
+        {
+            if (Moriarty.Instance.IsSameTeam(ev.Player1) && Moriarty.Instance.IsSameTeam(ev.Player2))
+            {
+                ev.MarkAsSameSide();
+            }
+        }
     }
 }
 [NebulaRPCHolder]
@@ -385,8 +392,6 @@ public class Moran : DefinedSingleAbilityRoleTemplate<Moran.Ability>, HasCitatio
     [NebulaRPCHolder]
     public class Ability : AbstractPlayerAbility, IPlayerAbility
     {
-
-
         static private Image buttonSprite = NebulaResourceTextureLoader.FromResource("Nebula.Resources.Buttons.SnipeButton.png", 115f);
         static private Image aimAssistSprite = NebulaResourceTextureLoader.FromResource("Nebula.Resources.SniperGuide.png", 100f);
 

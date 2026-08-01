@@ -269,7 +269,6 @@ internal class Assistant : DefinedRoleTemplate, DefinedRole, IAssignableDocument
     {
         DefinedRole RuntimeRole.Role => MyRole;
         RoleTaskType RuntimeRole.TaskType => RoleTaskType.NoTask;
-        bool RuntimeRole.CanInvokeSabotage => true;
         bool RuntimeRole.CanMoveInVent => true;
         bool RuntimeRole.CanUseVent => true;
         bool RuntimeRole.HasImpostorVision => true;
@@ -283,8 +282,9 @@ internal class Assistant : DefinedRoleTemplate, DefinedRole, IAssignableDocument
 
         bool RuntimeRole.HasVanillaKillButton => CanKill;
         int[] RuntimeAssignable.RoleArguments => [CanKill.AsInt(), LeaderId];
-
+        IEnumerable<IPlayerAbility?> RuntimeAssignable.MyAbilities => [sabotageAbility];
         ModAbilityButton? ShapeshiftButton;
+        CanSabotageAbility sabotageAbility;
         public void RevertPlayerToNormal(bool shouldAnimate = true)
         {
             if (MyPlayer.VanillaPlayer.CurrentOutfitType == PlayerOutfitType.Shapeshifted || MeetingHud.Instance.AsBoolFast())
@@ -354,6 +354,7 @@ internal class Assistant : DefinedRoleTemplate, DefinedRole, IAssignableDocument
                     ShapeshiftButton?.InterruptEffect();
                 }
             }, this);
+            sabotageAbility = new CanSabotageAbility(MyPlayer).Register(this);
         }
 
         void RuntimeAssignable.OnInactivated()
@@ -468,12 +469,12 @@ internal class Dunner : DefinedRoleTemplate, DefinedRole, IAssignableDocument, H
     {
         DefinedRole RuntimeRole.Role => MyRole;
         RoleTaskType RuntimeRole.TaskType => RoleTaskType.NoTask;
-        bool RuntimeRole.CanInvokeSabotage => true;
         bool RuntimeRole.CanMoveInVent => true;
         bool RuntimeRole.CanUseVent => true;
         bool RuntimeRole.HasImpostorVision => true;
         bool RuntimeRole.IgnoreBlackout => true;
-
+        IEnumerable<IPlayerAbility?> RuntimeAssignable.MyAbilities => [sabotageAbility];
+        CanSabotageAbility sabotageAbility;
         public int LeaderId { get; private set; } = leaderId;
         private GamePlayer? myLeaderCache = null;
         public OutlawLeader.Instance? MyLeader => (this as IOutlawTeam).GetMyLeader(ref myLeaderCache);
@@ -533,6 +534,7 @@ internal class Dunner : DefinedRoleTemplate, DefinedRole, IAssignableDocument, H
                     }
                 }, this, 100);
             }
+            sabotageAbility = new CanSabotageAbility(MyPlayer).Register(this);
         }
 
         [Local]

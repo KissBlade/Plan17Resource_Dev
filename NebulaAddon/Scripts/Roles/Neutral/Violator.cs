@@ -36,14 +36,13 @@ public class Violator : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSi
                 return Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.NeutralRole && r.IsSpawnable && !(r is GameMaster) && !(r is Violator) && !(r is Spectre) && !(r is SpectreFollower) && !(r is SpectreImmoralist)).ToList().Random(); ;
             }
         }
-        bool RuntimeRole.CanInvokeSabotage => true;
         bool RuntimeRole.CanUseVent => true;
         bool RuntimeRole.CanMoveInVent => true;
         bool RuntimeRole.HasImpostorVision => true;
         bool RuntimeRole.IgnoreBlackout => true;
         bool RuntimeRole.CanSeeOthersFakeSabotage => true;
         IEnumerable<DefinedAssignable> RuntimeAssignable.AssignableOnHelp => MyExRole != null ? [MyRole, MyExRole] : [MyRole];
-        IEnumerable<IPlayerAbility?> RuntimeAssignable.MyAbilities => MyExAbility != null ? [MyExAbility, .. MyExAbility.SubAbilities] : [];
+        IEnumerable<IPlayerAbility?> RuntimeAssignable.MyAbilities => MyExAbility != null ? [MyExAbility,sabotageAbility, .. MyExAbility.SubAbilities] : [sabotageAbility];
         public Instance(GamePlayer player) : base(player)
         {
         }
@@ -288,6 +287,7 @@ public class Violator : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSi
                 PDebug.Log(e);
             }
         }
+        CanSabotageAbility sabotageAbility;
         void RuntimeAssignable.OnActivated()
         {
             if (AmOwner)
@@ -308,6 +308,7 @@ public class Violator : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSi
                 killButton.SetLabelType(ModAbilityButton.LabelType.Impostor);
                 NebulaAPI.CurrentGame?.KillButtonLikeHandler.Register(killButton.GetKillButtonLike());
             }
+            sabotageAbility = new CanSabotageAbility(MyPlayer).Register(this);
         }
     }
 }

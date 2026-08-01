@@ -252,6 +252,13 @@ public class HasLove : DefinedModifierTemplate, DefinedModifier, DefinedAssignab
                 AmongUsUtil.PlayCustomFlash(MyRole.RoleColor, 0f, 0.25f, 0.4f, 0f);
             }
         }
+        void CheckSameSide(PlayerIsSameSideCallback ev)
+        {
+            if ((ev.Player1.Role.Role.Team==NebulaTeams.CrewmateTeam&&ev.Player2.PlayerId==MyPlayer.PlayerId)|| (ev.Player2.Role.Role.Team == NebulaTeams.CrewmateTeam && ev.Player1.PlayerId == MyPlayer.PlayerId))
+            {
+                ev.MarkAsSameSide();
+            }
+        }
         [Local]
         private void DecorateHasLoveColor(PlayerDecorateNameEvent ev)
         {
