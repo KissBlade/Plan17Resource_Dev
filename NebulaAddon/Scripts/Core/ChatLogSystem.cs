@@ -64,7 +64,7 @@ public static class ChatLogSystem
         currentRound = 0;
         gameActive = true;
         gameStartTime = System.DateTime.Now;
-        FileName = $"Plan17_GameChatLog_{DateTime.Now:yyyy/MM/dd HH_mm}.txt";
+        FileName = $"Plan17_GameChatLog_{DateTime.Now:yyyy_MM_dd HH_mm}.txt";
         FullFileName = $"Plan17_GameChatLog_{DateTime.Now:yyyy_MM_dd HH_mm}_Full.txt";
     }
 
