@@ -525,10 +525,14 @@ public class PatchManager
     public static GameObject EnterCodeSelectServer;
     public static void FixModTrackerDistance(ref float? distance)
     {
-        if (!distance.HasValue)
+        var local=GamePlayer.LocalPlayer;
+        if (local.Role is Arsonist.Instance || local.TryGetAbility<Oracle.Ability>(out var a) || local.TryGetAbility<Sommelier.Ability>(out var ab))
         {
-            var array = AmongUsLLImpl.CurrentGameOptionsInstance.GetFloatArray(FloatArrayOptionNames.KillDistances);
-            distance = array[Math.Clamp(ModTrackerDistance.GetValue(), 0, array.Length - 1)];
+            if (!distance.HasValue)
+            {
+                var array = AmongUsLLImpl.CurrentGameOptionsInstance.GetFloatArray(FloatArrayOptionNames.KillDistances);
+                distance = array[Math.Clamp(ModTrackerDistance.GetValue(), 0, array.Length - 1)];
+            }
         }
     }
     public static void FixKeepAsLongAsPossible(object __instance)
