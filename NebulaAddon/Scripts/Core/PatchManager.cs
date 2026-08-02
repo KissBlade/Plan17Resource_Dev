@@ -304,6 +304,7 @@ public class PatchManager
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(AutoAssignFirstDeadShield);
             Sidekick.MyRole.ConfigurationHolder!.AppendConfiguration(SidekickModifierCanUseVent);
             ExOptions.AppendConfiguration(ModTrackerDistance);
+            ExOptions.AppendConfiguration(HideLevelOption);
             ExOptions.AppendConfiguration(IntroShowImpostor);
             GeneralConfigurations.PerkOptions.AppendConfigurations([GameStartGrowALLFlower,ImpostorCannotGainCrewmateFlower,RefreshFlower,RefreshFlowerTime]);
             ExOptions.AppendConfiguration(ImpostorCannotMoveTime);
@@ -503,6 +504,7 @@ public class PatchManager
     static ValueConfiguration<int> ModTrackerDistance = NebulaAPI.Configurations.Configuration("options.general.modtrackerDistance", ["options.general.modtrackerDistance.short", "options.general.modtrackerDistance.mid", "options.general.modtrackerDistance.long"],1);
     static BoolConfiguration SheriffSuicideKillTarget = NebulaAPI.Configurations.Configuration("options.role.sheriff.suicidekilltarget", false);
     public static BoolConfiguration ScarletPrivateMeetingChat = NebulaAPI.Configurations.Configuration("options.role.scarlet.privatechat", false);
+    static BoolConfiguration HideLevelOption = NebulaAPI.Configurations.Configuration("options.general.hidelevel", false);
     static Virial.Media.Image doctorshieldimage = NebulaAPI.AddonAsset.GetResource("DoctorShield.png")!.AsImage(115f)!;
     static Virial.Media.Image globalscanimage = NebulaAPI.AddonAsset.GetResource("GlobalScan.png")!.AsImage(115f)!;
     static ModAbilityButton? scanbutton;
@@ -5094,7 +5096,7 @@ public class PatchManager
     }
     public static void SetLevel(PlayerVoteArea __instance, NetworkedPlayerInfo playerInfo)
     {
-        if (Pollyanna.MyRole.IsSpawnableInSomeForm())
+        if (HideLevelOption||Pollyanna.MyRole.IsSpawnableInSomeForm())
         {
             __instance.LevelNumberText.text = "???";
         }
