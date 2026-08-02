@@ -329,7 +329,7 @@ public class PrivateChatPatchs
     public static void ChatUpdate(ChatController __instance)
     {
         var srmt = __instance.sendRateMessageText;
-        if (AmongUsLLImpl.LobbyInstance || (AmongUsLLImpl.LocalPlayer?.Data.IsDead ?? true))
+        if (AmongUsLLImpl.LobbyInstance || (AmongUsLLImpl.LocalPlayer?.Data?.IsDead ?? true))
         {
             chatTeamText?.gameObject.SetActive(false);
             if (srmt != null)
@@ -381,7 +381,7 @@ public class PrivateChatPatchs
             //PDebug.Log(e.ToString());
         }
     }
-    [HarmonyPatch(typeof(ChatController), "SendChat"), HarmonyPrefix]
+    [HarmonyPatch(typeof(ChatController), "SendChat"), HarmonyPrefix,HarmonyPriority(100)]
     public static bool BlockSendChat(ChatController __instance)
     {
         string text = __instance.freeChatField.textArea.text;

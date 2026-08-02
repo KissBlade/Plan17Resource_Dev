@@ -1,6 +1,7 @@
 
 using System.IO;
 using System.Text;
+using Virial.Helpers;
 //本代码来源于凌寒冰歌。
 
 namespace Plana.Core;
@@ -13,16 +14,6 @@ public static class ChatLogSystemPatch
     {
         if (!__runOriginal) return;
         ChatLogSystem.RecordFull(sourcePlayer, chatText);
-    }
-    [HarmonyPatch(typeof(NebulaGameManager), nameof(NebulaGameManager.OnMeetingStart)), HarmonyPostfix]
-    public static void OnMeetingStart()
-    {
-        ChatLogSystem.OnMeetingStarted();
-    }
-    [HarmonyPatch(typeof(NebulaGameManager), nameof(NebulaGameManager.OnGameEnd)), HarmonyPostfix]
-    public static void OnGameEnd()
-    {
-        ChatLogSystem.ExportNow();
     }
 }
 
@@ -51,7 +42,6 @@ public static class ChatLogSystem
     private static readonly List<FullEntry> fullLog = new();
 
     private static int currentRound = 0;
-    private static bool gameActive = false;
     private static System.DateTime gameStartTime;
 
     private const string LogTag = "Plan17.ChatLog";
@@ -62,7 +52,6 @@ public static class ChatLogSystem
         log.Clear();
         fullLog.Clear();
         currentRound = 0;
-        gameActive = true;
         gameStartTime = System.DateTime.Now;
         FileName = $"Plan17_GameChatLog_{DateTime.Now:yyyy_MM_dd HH_mm}.txt";
         FullFileName = $"Plan17_GameChatLog_{DateTime.Now:yyyy_MM_dd HH_mm}_Full.txt";
@@ -70,11 +59,11 @@ public static class ChatLogSystem
 
     public static void OnMeetingStarted()
     {
-        if (gameActive) currentRound++;
+        currentRound++;
     }
     public static void Record(byte senderId, int channelTag, string text)
     {
-        if (!gameActive) return;
+        if (LobbyBehaviour.Instance.AsBoolFast()) return;
         if (string.IsNullOrWhiteSpace(text)) return;
         log.Add(new Entry
         {
@@ -90,10 +79,9 @@ public static class ChatLogSystem
     [NebulaRPC]
     public static void RpcLogChat(byte senderId, int channelTag, string text)
         => Record(senderId, channelTag, text);
-
     public static void RecordFull(PlayerControl sourcePlayer, string chatText)
     {
-        if (!gameActive) return;
+        if (LobbyBehaviour.Instance.AsBoolFast()) return;
         if (string.IsNullOrWhiteSpace(chatText)) return;
         string name = "系统";
         try
@@ -134,18 +122,16 @@ public static class ChatLogSystem
 
     private static string ChannelLabel(int tag)
     {
-        return tag==100?"灵魂":"公共";
+        return tag==100?"灵魂":"";
     }
     public static void ExportNow()
     {
-        if (!gameActive) return;
-        gameActive = false;
-        try { WriteReport(FileName, BuildReport(), "干净版", log.Count); }
-        catch (System.Exception e)
-        { try { NebulaAPI.Logging.NebulaLogger(LogTag).Warning("导出干净版失败: " + e.Message); } catch { } }
         try { WriteReport(FullFileName, BuildFullReport(), "完整版", fullLog.Count); }
         catch (System.Exception e)
-        { try { NebulaAPI.Logging.NebulaLogger(LogTag).Warning("导出完整版失败: " + e.Message); } catch { } }
+        { PDebug.Log("导出完整版失败: " + e.ToString()); }
+        try { WriteReport(FileName, BuildReport(), "干净版", log.Count); }
+        catch (System.Exception e)
+        {  PDebug.Log("导出干净版失败: " + e.ToString()); }
     }
     private static void WriteReport(string fileName, string content, string label, int count)
     {
@@ -158,11 +144,11 @@ public static class ChatLogSystem
             File.WriteAllText(p, content, encoding);
             written = p;
         }
-        catch
+        catch (Exception e)
         {
-            string p = Path.Combine(UnityEngine.Application.persistentDataPath, fileName);
-            File.WriteAllText(p, content, encoding);
-            written = p;
+            PDebug.Log("导出失败");
+            PDebug.Log(e);
+            return;
         }
         try { NebulaAPI.Logging.NebulaLogger(LogTag).Message("本局聊天记录(" + label + ")已导出: " + written + "（共 " + count + " 条）"); } catch { }
     }
@@ -308,7 +294,11 @@ public static class ChatLogSystem
                 sb.AppendLine(e.Round == 0 ? "【开局 / 首次会议前】" : ("【第 " + e.Round + " 次会议】"));
             }
             sb.Append("  ").Append(e.Time.ToString("HH:mm:ss"));
-            sb.Append("  [").Append(ChannelLabel(e.ChannelTag)).Append("]  ");
+            var label = ChannelLabel(e.ChannelTag);
+            if (!string.IsNullOrEmpty(label))
+            {
+                sb.Append("  [").Append(label).Append("]  ");
+            }
             sb.Append(e.SenderName).Append(": ").Append(e.Text);
             sb.AppendLine();
         }

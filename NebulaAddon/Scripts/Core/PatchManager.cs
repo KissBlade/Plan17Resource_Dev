@@ -2191,15 +2191,7 @@ public class PatchManager
             }, __instance, 101);
             GameOperatorManager.Instance.Subscribe<MeetingPreStartEvent>(ev =>
             {
-                /*if (chatTeamText != null)
-                {
-                    chatTeamText!.text = Language.Translate("chat.current").Replace("%CHAT%", Language.Translate("chat.public").Color("green"));
-                }
-                var color = UnityEngine.Color.white;
-                AmongUsLLImpl.HudManagerBridge.Chat.freeChatField.background.color = color;
-                AmongUsLLImpl.HudManagerBridge.Chat.freeChatField.background.color = color;
-                AmongUsLLImpl.HudManagerBridge.Chat.freeChatField.textArea.outputText.color = UnityEngine.Color.black;
-                CheckCanUseChat();*/
+                ChatLogSystem.OnMeetingStarted();
             }, __instance);
             /*GameOperatorManager.Instance.Subscribe<PlayerRoleSetEvent>(ev =>
             {
@@ -2217,7 +2209,8 @@ public class PatchManager
             {
                 //CurrentChatId = 0;
                 //currentIndex = 0;
-                firstDeadName = NebulaGameManager.Instance?.AllPlayerInfo.MinBy(p => p.DeathTime)?.PlayerName ?? "";
+                firstDeadName = NebulaGameManager.Instance?.AllPlayerInfo.Where(p=>p.IsDead).MinBy(p => p.DeathTime)?.PlayerName ?? "";
+                ChatLogSystem.ExportNow();
             }, __instance);
             VitalsMinigame OpenSpecialVitalsMinigame()
             {
