@@ -254,7 +254,7 @@ public class HasLove : DefinedModifierTemplate, DefinedModifier, DefinedAssignab
         }
         void CheckSameSide(PlayerIsSameSideCallback ev)
         {
-            if ((ev.Player1.Role.Role.Team==NebulaTeams.CrewmateTeam&&ev.Player2.PlayerId==MyPlayer.PlayerId)|| (ev.Player2.Role.Role.Team == NebulaTeams.CrewmateTeam && ev.Player1.PlayerId == MyPlayer.PlayerId))
+            if ((ev.Player1.IsTrueCrewmate&&ev.Player2.PlayerId==MyPlayer.PlayerId)|| (ev.Player2.IsTrueCrewmate&& ev.Player1.PlayerId == MyPlayer.PlayerId))
             {
                 ev.MarkAsSameSide();
             }

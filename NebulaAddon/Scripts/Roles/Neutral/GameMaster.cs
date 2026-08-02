@@ -1,4 +1,5 @@
-﻿using Nebula.Roles.MapLayer;
+﻿using Il2CppSystem.Linq.Expressions.Interpreter;
+using Nebula.Roles.MapLayer;
 using Nebula.Roles.Neutral;
 using Plana.Core;
 using Plana.Roles.Impostor;
@@ -28,6 +29,17 @@ public class GameMaster : DefinedRoleTemplate, DefinedRole, HasCitation ,IAssign
         if (message.Item2.AmOwner)
         {
             ModSingleton<ItemSupplierManager>.Instance?.SetPerk(Nebula.Roles.Roles.AllPerks.FirstOrDefault(p => p.Id == message.Item1));
+        }
+    });
+    public static RemoteProcess<string> SendMessageToGM= new RemoteProcess<string>("SendMessageToGM", (message, _) =>
+    {
+        if (GamePlayer.LocalPlayer.Role is GameMaster.Instance)
+        {
+            var local = AmongUsLLImpl.LocalPlayer;
+            var name = local.name;
+            local.SetName("System".Color(Palette.CrewmateBlue));
+            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(local,message);
+            local.SetName(name);
         }
     });
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
@@ -109,6 +121,32 @@ public class GameMaster : DefinedRoleTemplate, DefinedRole, HasCitation ,IAssign
         void ShowMyNameColor(PlayerDecorateNameEvent ev)
         {
             ev.Color = MyRole.RoleColor;
+        }
+        
+        [OnlyHost]
+        void OnInvokeSabotage(PlayerInvokeSabotageHostEvent ev)
+        {
+            StringBuilder sb = new();
+            sb.Append("玩家 ");
+            sb.Append(ev.Player);
+            sb.Append(" 触发了 ");
+            sb.Append(ev.Sabotage);
+            sb.Append(" 破坏");
+            SendMessageToGM.Invoke(sb.ToString());
+        }
+        [Local]
+        void OnMurderPlayer(PlayerMurderedEvent ev)
+        {
+            StringBuilder sb = new();
+            if (ev.Dead==ev.Murderer)
+            {
+                sb.Append("玩家 ").Append(ev.Dead.PlayerName).Append(" 自杀了");
+            }
+            else
+            {
+                sb.Append("玩家 ").Append(ev.Murderer.PlayerName).Append(" 杀死了玩家 ").Append(ev.Dead.PlayerName);
+            }
+            SendMessageToGM.LocalInvoke(sb.ToString());
         }
         [Local]
         public void EditLightRange(LightRangeUpdateEvent ev)

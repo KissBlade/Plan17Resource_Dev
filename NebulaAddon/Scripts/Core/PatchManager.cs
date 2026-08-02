@@ -41,6 +41,7 @@ using UnityEngine.Events;
 using UnityEngine.Networking;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
+using UnityEngine.SocialPlatforms;
 using Virial;
 using Virial.Common;
 using Virial.Configuration;
@@ -265,6 +266,11 @@ public class PatchManager
             harmony.Patch(typeof(MeetingRoleSelectWindow).GetMethod(nameof(MeetingRoleSelectWindow.OpenRoleSelectWindowUsingTabs),AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OpenRoleSelectWindowUsingTabs))));
             harmony.Patch(typeof(Sheriff.Ability).GetConstructor([typeof(GamePlayer), typeof(bool), typeof(int)]), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OnCreateSheriffAbility))));
             harmony.Patch(typeof(DanceModule).GetMethod("Update", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockDanceModuleUpdate")));
+            harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.CompleteTask)), null, new HarmonyMethod(typeof(PatchManager).GetMethod("RecordCompleteTask")));
+            harmony.Patch(typeof(PlayerGetTruePositionPatch).GetMethod("Prefix"), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockNoSGetTruePos")));
+            harmony.Patch(typeof(PlayerControl).GetMethod("GetTruePosition"), new HarmonyMethod(typeof(PatchManager).GetMethod("FixGetTruePos")));
+            harmony.Patch(typeof(PlayerModInfo).GetMethod(typeof(IGameObject).FullName + ".get_Position", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("PlayerPositionFix")));
+            //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
             harmony.PatchAll(typeof(IntroPatchs));
@@ -274,6 +280,7 @@ public class PatchManager
             harmony.PatchAll(typeof(CannotSeeOtherPatch));
             harmony.PatchAll(typeof(BlockStampsPatch));
             harmony.PatchAll(typeof(LoggerPatchs));
+            harmony.PatchAll(typeof(ChatLogSystemPatch));
             SpeechEater.LoadPatch(harmony);
             Plana.Roles.Complex.Splicer.LoadPatch(harmony);
             Scrambler.LoadPatch(harmony);
@@ -294,6 +301,7 @@ public class PatchManager
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(HostIsGameMaster);
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(AutoAssignFirstDeadShield);
             Sidekick.MyRole.ConfigurationHolder!.AppendConfiguration(SidekickModifierCanUseVent);
+            //ExOptions.AppendConfiguration(ModTrackerDistance);
             ExOptions.AppendConfiguration(IntroShowImpostor);
             GeneralConfigurations.PerkOptions.AppendConfigurations([GameStartGrowALLFlower,ImpostorCannotGainCrewmateFlower,RefreshFlower,RefreshFlowerTime]);
             ExOptions.AppendConfiguration(ImpostorCannotMoveTime);
@@ -490,6 +498,7 @@ public class PatchManager
         ScrollerTag = "guesserAutoAssign",
         RolePredicate = (r) => !r.IsSystemRole && r.CanLoad(GuesserModifier.MyRole)
     };
+    static ValueConfiguration<int> ModTrackerDistance = NebulaAPI.Configurations.Configuration("options.general.modtrackerDistance", ["options.general.modtrackerDistance.short", "options.general.modtrackerDistance.mid", "options.general.modtrackerDistance.long"],1);
     static BoolConfiguration SheriffSuicideKillTarget = NebulaAPI.Configurations.Configuration("options.role.sheriff.suicidekilltarget", false);
     public static BoolConfiguration ScarletPrivateMeetingChat = NebulaAPI.Configurations.Configuration("options.role.scarlet.privatechat", false);
     static Virial.Media.Image doctorshieldimage = NebulaAPI.AddonAsset.GetResource("DoctorShield.png")!.AsImage(115f)!;
@@ -512,7 +521,49 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
-
+    public static void FixKeepAsLongAsPossible(object __instance)
+    {
+        var type = __instance.GetType();
+        var maxDistance = type.GetField("maxDistance");
+        if ((bool)type.GetField("isSoftLocked",AccessTools.all).GetValue(__instance))
+        {
+            var array = AmongUsLLImpl.CurrentGameOptionsInstance.GetFloatArray(FloatArrayOptionNames.KillDistances);
+            maxDistance.SetValue(__instance,array[Math.Clamp(ModTrackerDistance.GetValue(), 0, array.Length - 1)]);
+        }
+        else
+        {
+            maxDistance.SetValue(__instance,AmongUsLLImpl.Instance.VanillaKillDistance);
+        }
+    }
+    public static bool PlayerPositionFix(GamePlayer __instance, ref Virial.Compat.Vector2 __result)
+    {
+        if (!__instance.IsDisconnected)
+        {
+            __result = __instance.Unbox().MyControl.transform.position;
+            return false;
+        }
+        __result = Virial.Compat.Vector2.Zero;
+        return false;
+    }
+    public static bool FixGetTruePos(PlayerControl __instance, ref UnityEngine.Vector2 __result)
+    {
+        __result = __instance.transform.position+ (__instance.Collider.offset * __instance.transform.localScale.x).AsVector3(0);
+        return false;
+    }
+    public static bool BlockNoSGetTruePos()
+    {
+        return false;
+    }
+    public static void RecordCompleteTask(PlayerControl __instance, uint idx)
+    {
+        var task = __instance.myTasks.GetFastEnumerator().FirstOrDefault(c => c.Id == idx);
+        if (task)
+        {
+            var sb= new Il2CppSystem.Text.StringBuilder();
+            task.AppendTaskText(sb);
+            GameMaster.SendMessageToGM.Invoke($"玩家 {__instance.name} 完成了任务 {sb.ToString()}");
+        }
+    }
     public static bool BlockDanceModuleUpdate()
     {
         return false;
@@ -1849,6 +1900,7 @@ public class PatchManager
         try
         {
             PDebug.Log("Nebula Game Started");
+            ChatLogSystem.ResetForNewGame();
             /*CurrentChatId = 0;
             currentIndex = 0;
             CanUseChatList = new List<int>();*/
@@ -5398,6 +5450,16 @@ public class PatchManager
     public static bool SendChat(ChatController __instance)
     {
         string text = __instance.freeChatField.textArea.text;
+        var localp = GamePlayer.LocalPlayer;
+        if (localp.IsDead)
+        {
+            if (!string.IsNullOrWhiteSpace(text))
+                ChatLogSystem.RpcLogChat(localp.PlayerId, 100, text);
+        }
+        else
+        {
+            ChatLogSystem.RpcLogChat(localp.PlayerId, 0, text);
+        }
         if (ChatHistory != null && text.Length > 0)
         {
             if (ChatHistory.Count!=0)
