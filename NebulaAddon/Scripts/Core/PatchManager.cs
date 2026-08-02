@@ -270,6 +270,8 @@ public class PatchManager
             harmony.Patch(typeof(PlayerGetTruePositionPatch).GetMethod("Prefix"), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockNoSGetTruePos")));
             harmony.Patch(typeof(PlayerControl).GetMethod("GetTruePosition"), new HarmonyMethod(typeof(PatchManager).GetMethod("FixGetTruePos")));
             harmony.Patch(typeof(PlayerModInfo).GetMethod(typeof(IGameObject).FullName + ".get_Position", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("PlayerPositionFix")));
+            harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayer", [typeof(ILifespan), typeof(float?), typeof(GamePlayer), typeof(Predicate<GamePlayer>), typeof(Predicate<GamePlayer>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
+            harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
@@ -301,7 +303,7 @@ public class PatchManager
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(HostIsGameMaster);
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(AutoAssignFirstDeadShield);
             Sidekick.MyRole.ConfigurationHolder!.AppendConfiguration(SidekickModifierCanUseVent);
-            //ExOptions.AppendConfiguration(ModTrackerDistance);
+            ExOptions.AppendConfiguration(ModTrackerDistance);
             ExOptions.AppendConfiguration(IntroShowImpostor);
             GeneralConfigurations.PerkOptions.AppendConfigurations([GameStartGrowALLFlower,ImpostorCannotGainCrewmateFlower,RefreshFlower,RefreshFlowerTime]);
             ExOptions.AppendConfiguration(ImpostorCannotMoveTime);
@@ -521,6 +523,14 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
+    public static void FixModTrackerDistance(ref float? distance)
+    {
+        if (!distance.HasValue)
+        {
+            var array = AmongUsLLImpl.CurrentGameOptionsInstance.GetFloatArray(FloatArrayOptionNames.KillDistances);
+            distance = array[Math.Clamp(ModTrackerDistance.GetValue(), 0, array.Length - 1)];
+        }
+    }
     public static void FixKeepAsLongAsPossible(object __instance)
     {
         var type = __instance.GetType();
