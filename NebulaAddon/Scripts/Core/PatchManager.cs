@@ -5459,15 +5459,21 @@ public class PatchManager
     public static bool SendChat(ChatController __instance)
     {
         string text = __instance.freeChatField.textArea.text;
-        var localp = GamePlayer.LocalPlayer;
-        if (localp.IsDead)
+        if (!LobbyBehaviour.Instance.AsBoolFast())
         {
-            if (!string.IsNullOrWhiteSpace(text))
-                ChatLogSystem.RpcLogChat(localp.PlayerId, 100, text);
-        }
-        else
-        {
-            ChatLogSystem.RpcLogChat(localp.PlayerId, 0, text);
+            var localp = GamePlayer.LocalPlayer;
+            if (localp != null)
+            {
+                if (localp.IsDead)
+                {
+                    if (!string.IsNullOrWhiteSpace(text))
+                        ChatLogSystem.RpcLogChat(localp.PlayerId, 100, text);
+                }
+                else
+                {
+                    ChatLogSystem.RpcLogChat(localp.PlayerId, 0, text);
+                }
+            }
         }
         if (ChatHistory != null && text.Length > 0)
         {
