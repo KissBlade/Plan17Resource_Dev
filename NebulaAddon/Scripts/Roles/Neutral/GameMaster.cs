@@ -128,7 +128,7 @@ public class GameMaster : DefinedRoleTemplate, DefinedRole, HasCitation ,IAssign
         {
             StringBuilder sb = new();
             sb.Append("玩家 ");
-            sb.Append(ev.Player);
+            sb.Append(ev.Player.PlayerName);
             sb.Append(" 触发了 ");
             sb.Append(ev.Sabotage);
             sb.Append(" 破坏");

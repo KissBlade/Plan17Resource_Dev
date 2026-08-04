@@ -264,7 +264,7 @@ public class PatchManager
             harmony.Patch(typeof(MeetingRoleSelectWindow).GetMethod(nameof(MeetingRoleSelectWindow.OpenRoleSelectWindowUsingTabs), AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OpenRoleSelectWindowUsingTabs))));
             harmony.Patch(typeof(Sheriff.Ability).GetConstructor([typeof(GamePlayer), typeof(bool), typeof(int)]), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OnCreateSheriffAbility))));
             harmony.Patch(typeof(DanceModule).GetMethod("Update", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockDanceModuleUpdate")));
-            harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.CompleteTask)), null, new HarmonyMethod(typeof(PatchManager).GetMethod("RecordCompleteTask")));
+            //harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.CompleteTask)), null, new HarmonyMethod(typeof(PatchManager).GetMethod("RecordCompleteTask")));
             harmony.Patch(typeof(PlayerGetTruePositionPatch).GetMethod("Prefix"), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockNoSGetTruePos")));
             harmony.Patch(typeof(PlayerControl).GetMethod("GetTruePosition"), new HarmonyMethod(typeof(PatchManager).GetMethod("FixGetTruePos")));
             harmony.Patch(typeof(PlayerModInfo).GetMethod(typeof(IGameObject).FullName + ".get_Position", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("PlayerPositionFix")));
