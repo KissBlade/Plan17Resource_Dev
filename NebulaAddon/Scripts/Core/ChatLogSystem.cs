@@ -142,7 +142,7 @@ public static class ChatLogSystem
             string gameDir = Path.GetDirectoryName(UnityEngine.Application.dataPath)!;
             string gamechatlogDir = "GameChatLogs";
             var gamechatlogDirPath = Path.Combine(gameDir, gamechatlogDir);
-            if (Directory.Exists(gamechatlogDirPath))
+            if (!Directory.Exists(gamechatlogDirPath))
             {
                 Directory.CreateDirectory(gamechatlogDirPath);
             }
