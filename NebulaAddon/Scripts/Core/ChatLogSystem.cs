@@ -140,7 +140,13 @@ public static class ChatLogSystem
         try
         {
             string gameDir = Path.GetDirectoryName(UnityEngine.Application.dataPath)!;
-            string p = Path.Combine(gameDir, fileName);
+            string gamechatlogDir = "GameChatLogs";
+            var gamechatlogDirPath = Path.Combine(gameDir, gamechatlogDir);
+            if (Directory.Exists(gamechatlogDirPath))
+            {
+                Directory.CreateDirectory(gamechatlogDirPath);
+            }
+            string p = Path.Combine(gamechatlogDirPath, fileName);
             File.WriteAllText(p, content, encoding);
             written = p;
         }
@@ -293,11 +299,11 @@ public static class ChatLogSystem
                 sb.AppendLine();
                 sb.AppendLine(e.Round == 0 ? "【开局 / 首次会议前】" : ("【第 " + e.Round + " 次会议】"));
             }
-            sb.Append("  ").Append(e.Time.ToString("HH:mm:ss"));
+            sb.Append("  ").Append(e.Time.ToString("HH:mm:ss")).Append("  ");
             var label = ChannelLabel(e.ChannelTag);
             if (!string.IsNullOrEmpty(label))
             {
-                sb.Append("  [").Append(label).Append("]  ");
+                sb.Append("[").Append(label).Append("]  ");
             }
             sb.Append(e.SenderName).Append(": ").Append(e.Text);
             sb.AppendLine();

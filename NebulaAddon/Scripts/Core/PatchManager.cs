@@ -26,7 +26,6 @@ using Nebula.Roles.Neutral;
 using Nebula.Roles.Perks;
 using Nebula.Utilities;
 using Nebula.VoiceChat;
-using Newtonsoft.Json;
 using Plana.Roles.Crewmate;
 using Plana.Roles.Impostor;
 using Plana.Roles.Modifier;
@@ -49,7 +48,6 @@ using Virial.Events.Game.Minimap;
 using Virial.Game;
 using Virial.Helpers;
 using Virial.Runtime;
-using static FilterPopUp.FilterInfoUI;
 using BindingFlags = System.Reflection.BindingFlags;
 using Color = Virial.Color;
 using DirectoryInfo = System.IO.DirectoryInfo;
@@ -68,7 +66,7 @@ public class PatchManager
         Init();
     }
     static Harmony? harmony;
-    static AssetBundle? ab,indexDeviceAb;
+    static AssetBundle? ab, indexDeviceAb;
     public static AudioClip GetSound(string name)
     {
         try
@@ -157,7 +155,7 @@ public class PatchManager
             harmony.Patch(typeof(Guesser.Ability).GetConstructor(new Type[] { typeof(GamePlayer), typeof(bool), typeof(int) }), null, new HarmonyMethod(typeof(PatchManager).GetMethod("OnCreateGuesserAbility")));
             harmony.Patch(typeof(GuesserModifier.Instance).GetPrivateMethodInfoType("OnMeetingStart"), new HarmonyMethod(typeof(PatchManager).GetMethod("GuesserModifierMeetingStart")));
             harmony.Patch(typeof(GuesserModifier.Instance).GetPrivateMethodInfoType("OnDead"), new HarmonyMethod(typeof(PatchManager).GetMethod("GuesserDead")));
-            harmony.Patch(typeof(PlayerModInfo).GetMethod("UpdateRoleText",AccessTools.all), null, new HarmonyMethod(typeof(GuesserSystem).GetMethod("GuessedLockTargets",AccessTools.all)));
+            harmony.Patch(typeof(PlayerModInfo).GetMethod("UpdateRoleText", AccessTools.all), null, new HarmonyMethod(typeof(GuesserSystem).GetMethod("GuessedLockTargets", AccessTools.all)));
             harmony.Patch(typeof(Spectre.Instance).GetPrivateMethodInfoType("CheckAndTrackKiller"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("SpectreArrowPatch")), null, null, null);
             harmony.Patch(typeof(Sheriff.Ability).GetPrivateMethodInfoType("CanKill"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("SheriffCanKillPatch")), null, null, null);
             harmony.Patch(typeof(Doctor.Ability).GetConstructor(new Type[] { typeof(GamePlayer), typeof(bool), typeof(float) }), null, new HarmonyMethod(typeof(PatchManager).GetMethod("DoctorShieldButton")));
@@ -262,8 +260,8 @@ public class PatchManager
             harmony.Patch(typeof(ItemSupplier).GetMethod("get_CanObtainForRole", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ImpostorCannotGainCrewmateFlowerPatch")));
             harmony.Patch(typeof(ItemSupplier).GetMethod("TryGainPerk"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("RefreshFlowerPatch")));
             harmony.Patch(typeof(LobbyBehaviour).GetMethod(nameof(LobbyBehaviour.Start)), null, new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OnLobbyStart))));
-            harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.HandleRpc)), null, null, null, new HarmonyMethod(typeof(PatchManager).GetMethod("HandleRpcFinalizer")),null);
-            harmony.Patch(typeof(MeetingRoleSelectWindow).GetMethod(nameof(MeetingRoleSelectWindow.OpenRoleSelectWindowUsingTabs),AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OpenRoleSelectWindowUsingTabs))));
+            harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.HandleRpc)), null, null, null, new HarmonyMethod(typeof(PatchManager).GetMethod("HandleRpcFinalizer")), null);
+            harmony.Patch(typeof(MeetingRoleSelectWindow).GetMethod(nameof(MeetingRoleSelectWindow.OpenRoleSelectWindowUsingTabs), AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OpenRoleSelectWindowUsingTabs))));
             harmony.Patch(typeof(Sheriff.Ability).GetConstructor([typeof(GamePlayer), typeof(bool), typeof(int)]), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OnCreateSheriffAbility))));
             harmony.Patch(typeof(DanceModule).GetMethod("Update", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockDanceModuleUpdate")));
             harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.CompleteTask)), null, new HarmonyMethod(typeof(PatchManager).GetMethod("RecordCompleteTask")));
@@ -306,7 +304,7 @@ public class PatchManager
             ExOptions.AppendConfiguration(ModTrackerDistance);
             ExOptions.AppendConfiguration(HideLevelOption);
             ExOptions.AppendConfiguration(IntroShowImpostor);
-            GeneralConfigurations.PerkOptions.AppendConfigurations([GameStartGrowALLFlower,ImpostorCannotGainCrewmateFlower,RefreshFlower,RefreshFlowerTime]);
+            GeneralConfigurations.PerkOptions.AppendConfigurations([GameStartGrowALLFlower, ImpostorCannotGainCrewmateFlower, RefreshFlower, RefreshFlowerTime]);
             ExOptions.AppendConfiguration(ImpostorCannotMoveTime);
             ExOptions.AppendConfiguration(CrewmateHasEchoSkill);
             ExOptions.AppendConfiguration(EchoSkillUseTime);
@@ -354,7 +352,7 @@ public class PatchManager
             Jester.MyRole.ConfigurationHolder!.AppendConfiguration(JesterCanCallMeeting);
             Guesser.MyNiceRole.ConfigurationHolder!.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, NiceGuesserSafeGuessNum]);
             Guesser.MyEvilRole.ConfigurationHolder!.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, EvilGuesserSafeGuessNum]);
-            GuesserModifier.MyRole.ConfigurationHolder!.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, GuesserAutoAssign,GuesserOnlyInGameAutoAssign, GuesserAutoAssignFilter]);
+            GuesserModifier.MyRole.ConfigurationHolder!.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, GuesserAutoAssign, GuesserOnlyInGameAutoAssign, GuesserAutoAssignFilter]);
             Destroyer.MyRole.ConfigurationHolder!.AppendConfiguration(InVisibleDestroyCanMove);
             Snatcher.MyRole.ConfigurationHolder!.AppendConfiguration(SnatcherCannotGuessSnatchedPlayer);
             Mayor.MyRole.ConfigurationHolder!.AppendConfiguration(MayorExtraVoteAnonymousVote);
@@ -476,12 +474,12 @@ public class PatchManager
     public static BoolConfiguration LoverMeetingChat = NebulaAPI.Configurations.Configuration("options.general.LoverMeetingChat", false);
     public static BoolConfiguration MoriartyMeetingChat = NebulaAPI.Configurations.Configuration("options.general.moriartyMeetingChat", false);
     public static BoolConfiguration FantastMeetingChat = NebulaAPI.Configurations.Configuration("options.general.fantastMeetingChat", false);
-    static BoolConfiguration CanInvokeSpecialMeeting = NebulaAPI.Configurations.Configuration("options.diagnosis.caninvokespecialMeeting", false, () => AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false);
-    static BoolConfiguration DiagnosisIsActive = NebulaAPI.Configurations.Configuration("options.diagnosis.IsActive", false, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting);
-    static IntegerConfiguration DiagnosisChance = NebulaAPI.Configurations.Configuration("options.diagnosis.chance", new ValueTuple<int, int, int>(0, 100, 10), 0, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive, val => val.ToString() + "%");
+    static bool CanInvokeSpecialMeeting = false;//NebulaAPI.Configurations.Configuration("options.diagnosis.caninvokespecialMeeting", false, () => AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false);
+    static bool DiagnosisIsActive = false;//NebulaAPI.Configurations.Configuration("options.diagnosis.IsActive", false, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting);
+    static int DiagnosisChance = 0;// NebulaAPI.Configurations.Configuration("options.diagnosis.chance", new ValueTuple<int, int, int>(0, 100, 10), 0, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive, val => val.ToString() + "%");
     static FloatConfiguration StartKillTime = NebulaAPI.Configurations.Configuration("options.diagnosis.startkilltime", (0f, 60f, 2.5f), 17.5f, FloatConfigurationDecorator.Second, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive);
     static IntegerConfiguration KillChance = NebulaAPI.Configurations.Configuration("options.diagnosis.killchance", new ValueTuple<int, int, int>(0, 100, 10), 40, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive, val => val.ToString() + "%");
-    static GroupConfiguration DiagnosisOptions = new GroupConfiguration("options.diagnosis.group", [CanInvokeSpecialMeeting, DiagnosisIsActive, DiagnosisChance, StartKillTime, KillChance], ViolatorTeam.Color.ToUnityColor(), () => AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false);
+    //static GroupConfiguration DiagnosisOptions = new GroupConfiguration("options.diagnosis.group", [CanInvokeSpecialMeeting, DiagnosisIsActive, DiagnosisChance, StartKillTime, KillChance], ViolatorTeam.Color.ToUnityColor(), () => AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false);
     static BoolConfiguration ExileShowEvilModifier = NebulaAPI.Configurations.Configuration("options.exile.showevilmodifier", false, () => ExileShowAllModifier != null && !ExileShowAllModifier);
     static BoolConfiguration ExileShowAllModifier = NebulaAPI.Configurations.Configuration("options.exile.showallmodifier", false, () => !ExileShowEvilModifier);
     static BoolConfiguration MayorExtraVoteAnonymousVote = NebulaAPI.Configurations.Configuration("options.role.mayor.extravoteAnonymous", false);
@@ -495,13 +493,13 @@ public class PatchManager
     static BoolConfiguration CannotUseSabotage = NebulaAPI.Configurations.Configuration("options.general.cannotUseSabotage", false);
     static BoolConfiguration MeetingDeadSendNotice = NebulaAPI.Configurations.Configuration("options.general.meetingDeadSendNotice", false);
     static BoolConfiguration GuesserAutoAssign = NebulaAPI.Configurations.Configuration("options.role.guesser.autoassign", false);
-    static BoolConfiguration GuesserOnlyInGameAutoAssign = NebulaAPI.Configurations.Configuration("options.role.guesser.onlyInGameAutoAssign",true);
+    static BoolConfiguration GuesserOnlyInGameAutoAssign = NebulaAPI.Configurations.Configuration("options.role.guesser.onlyInGameAutoAssign", true);
     static SimpleRoleFilterConfiguration GuesserAutoAssignFilter = new SimpleRoleFilterConfiguration("options.role.guesser.autoassignFilter")
     {
         ScrollerTag = "guesserAutoAssign",
         RolePredicate = (r) => !r.IsSystemRole && r.CanLoad(GuesserModifier.MyRole)
     };
-    static ValueConfiguration<int> ModTrackerDistance = NebulaAPI.Configurations.Configuration("options.general.modtrackerDistance", ["options.general.modtrackerDistance.short", "options.general.modtrackerDistance.mid", "options.general.modtrackerDistance.long"],1);
+    static ValueConfiguration<int> ModTrackerDistance = NebulaAPI.Configurations.Configuration("options.general.modtrackerDistance", ["options.general.modtrackerDistance.short", "options.general.modtrackerDistance.mid", "options.general.modtrackerDistance.long"], 1);
     static BoolConfiguration SheriffSuicideKillTarget = NebulaAPI.Configurations.Configuration("options.role.sheriff.suicidekilltarget", false);
     public static BoolConfiguration ScarletPrivateMeetingChat = NebulaAPI.Configurations.Configuration("options.role.scarlet.privatechat", false);
     static BoolConfiguration HideLevelOption = NebulaAPI.Configurations.Configuration("options.general.hidelevel", false);
@@ -527,7 +525,7 @@ public class PatchManager
     public static GameObject EnterCodeSelectServer;
     public static void FixModTrackerDistance(ref float? distance)
     {
-        var local=GamePlayer.LocalPlayer;
+        var local = GamePlayer.LocalPlayer;
         if (local.Role is Arsonist.Instance || local.TryGetAbility<Oracle.Ability>(out var a) || local.TryGetAbility<Sommelier.Ability>(out var ab))
         {
             if (!distance.HasValue)
@@ -541,14 +539,14 @@ public class PatchManager
     {
         var type = __instance.GetType();
         var maxDistance = type.GetField("maxDistance");
-        if ((bool)type.GetField("isSoftLocked",AccessTools.all).GetValue(__instance))
+        if ((bool)type.GetField("isSoftLocked", AccessTools.all).GetValue(__instance))
         {
             var array = AmongUsLLImpl.CurrentGameOptionsInstance.GetFloatArray(FloatArrayOptionNames.KillDistances);
-            maxDistance.SetValue(__instance,array[Math.Clamp(ModTrackerDistance.GetValue(), 0, array.Length - 1)]);
+            maxDistance.SetValue(__instance, array[Math.Clamp(ModTrackerDistance.GetValue(), 0, array.Length - 1)]);
         }
         else
         {
-            maxDistance.SetValue(__instance,AmongUsLLImpl.Instance.VanillaKillDistance);
+            maxDistance.SetValue(__instance, AmongUsLLImpl.Instance.VanillaKillDistance);
         }
     }
     public static bool PlayerPositionFix(GamePlayer __instance, ref Virial.Compat.Vector2 __result)
@@ -563,7 +561,7 @@ public class PatchManager
     }
     public static bool FixGetTruePos(PlayerControl __instance, ref UnityEngine.Vector2 __result)
     {
-        __result = __instance.transform.position+ (__instance.Collider.offset * __instance.transform.localScale.x).AsVector3(0);
+        __result = __instance.transform.position + (__instance.Collider.offset * __instance.transform.localScale.x).AsVector3(0);
         return false;
     }
     public static bool BlockNoSGetTruePos()
@@ -575,7 +573,7 @@ public class PatchManager
         var task = __instance.myTasks.GetFastEnumerator().FirstOrDefault(c => c.Id == idx);
         if (task)
         {
-            var sb= new Il2CppSystem.Text.StringBuilder();
+            var sb = new Il2CppSystem.Text.StringBuilder();
             task.AppendTaskText(sb);
             GameMaster.SendMessageToGM.Invoke($"玩家 {__instance.name} 完成了任务 {sb.ToString()}");
         }
@@ -703,7 +701,7 @@ public class PatchManager
         }
         return false;
     }
-    static public bool OpenRoleSelectWindowUsingTabs(IEnumerable<DefinedRole>? roles, (string? tab, Predicate<DefinedRole>? predicate)[] tabs, bool impRolesArrangeAtFirst, string underText, Action<DefinedRole> onSelected,ref MetaScreen __result)
+    static public bool OpenRoleSelectWindowUsingTabs(IEnumerable<DefinedRole>? roles, (string? tab, Predicate<DefinedRole>? predicate)[] tabs, bool impRolesArrangeAtFirst, string underText, Action<DefinedRole> onSelected, ref MetaScreen __result)
     {
         var window = MetaScreen.GenerateWindow(new(7.6f, 4.2f), AmongUsLLImpl.HudManagerInstance.transform, new Vector3(0, 0, -50f), true, false);
 
@@ -772,7 +770,7 @@ public class PatchManager
         bool HasButtonWithText(IMetaWidgetOld widget, string[] query)
         {
             if (widget is MetaWidgetOld.Button button)
-                return query.All(q=>button.Text.GetString().Contains(q));
+                return query.All(q => button.Text.GetString().Contains(q));
             if (widget is CombinedWidgetOld combined)
             {
                 foreach (var child in combined.contents)
@@ -802,7 +800,7 @@ public class PatchManager
                 window.SetWidget(widget);
                 return;
             }
-            PDebug.Log("MeetingRoleSelectWindow Search: " + string.Join(" ",queries));
+            PDebug.Log("MeetingRoleSelectWindow Search: " + string.Join(" ", queries));
             var matchedRoles = new List<IMetaParallelPlacableOld>();
             foreach (var widget in originalInnerContents)
             {
@@ -837,7 +835,7 @@ public class PatchManager
             (scroller.Inner as MetaWidgetOld).contents = newInner.contents;
             window.SetWidget(widget);
         }
-        widget.Append(new MetaWidgetOld.WrappedWidget(NebulaAPI.GUI.HorizontalHolder(GUIAlignment.Center,textField,NebulaAPI.GUI.LocalizedButton(GUIAlignment.Center, AttributeAsset.MarketplaceTabNonMaskedButton, "help.search.search", _ => OnSearch()))));
+        widget.Append(new MetaWidgetOld.WrappedWidget(NebulaAPI.GUI.HorizontalHolder(GUIAlignment.Center, textField, NebulaAPI.GUI.LocalizedButton(GUIAlignment.Center, AttributeAsset.MarketplaceTabNonMaskedButton, "help.search.search", _ => OnSearch()))));
         widget.Append(new MetaWidgetOld.VerticalMargin(0.05f));
         widget.Append(scroller);
 
@@ -864,7 +862,7 @@ public class PatchManager
         __result = window;
         return false;
     }
-    public static Exception HandleRpcFinalizer(byte callId,Hazel.MessageReader reader,Exception __exception)
+    public static Exception HandleRpcFinalizer(byte callId, Hazel.MessageReader reader, Exception __exception)
     {
         try
         {
@@ -887,7 +885,7 @@ public class PatchManager
     public static void OnLobbyStart()
     {
         var now = DateTime.Now;
-        if ((now.Month == 5 && now.Day >= 24)|| (now.Month == 6 && now.Day <= 7))
+        if ((now.Month == 5 && now.Day >= 24) || (now.Month == 6 && now.Day <= 7))
         {
             NebulaManager.Instance.StartDelayAction(1.75f, () =>
             {
@@ -919,9 +917,9 @@ public class PatchManager
             });
         }
     }
-    public static void ImpostorCannotGainCrewmateFlowerPatch(ItemSupplier __instance,ref bool __result)
+    public static void ImpostorCannotGainCrewmateFlowerPatch(ItemSupplier __instance, ref bool __result)
     {
-        if (ImpostorCannotGainCrewmateFlower&&!__instance.NoncrewmateOnly&&GamePlayer.LocalPlayer.IsImpostor)
+        if (ImpostorCannotGainCrewmateFlower && !__instance.NoncrewmateOnly && GamePlayer.LocalPlayer.IsImpostor)
         {
             __result = false;
         }
@@ -930,7 +928,7 @@ public class PatchManager
     {
         IEnumerable<IRegionInfo> enumerable = DestroyableSingleton<ServerManager>.Instance.AvailableRegions
             .Where((IRegionInfo r) => r.TranslateName == StringNames.NoTranslation)
-            .Concat(CustomServerLoader.CurrentAvailableRegions()).DistinctBy(r=>r.Name).ToArray<IRegionInfo>();
+            .Concat(CustomServerLoader.CurrentAvailableRegions()).DistinctBy(r => r.Name).ToArray<IRegionInfo>();
         IRegionInfo[] defaultRegions = ServerManager.DefaultRegions.ToArray<IRegionInfo>();
         IRegionInfo[] array = enumerable.OrderBy((IRegionInfo r) => defaultRegions.FindIndex((IRegionInfo d) => d.Name == r.Name)).ToArray<IRegionInfo>();
         int num = 0;
@@ -960,7 +958,7 @@ public class PatchManager
                 num++;
             }
         }
-        int columns = (num - 1) / 7+1;
+        int columns = (num - 1) / 7 + 1;
         __instance.background.transform.localPosition = new(0f, __instance.initialYPos + -0.3f * (float)(Math.Min(num, 7) - 1), 0f);
         __instance.background.size = new((float)columns * 4.2f, 0.6f + 0.6f * (float)Math.Min(num, 7));
         if (columns > 1)
@@ -989,7 +987,7 @@ public class PatchManager
                 {
                     var obj = UnityEngine.Object.Instantiate(mainmenu.createGameScreen.serverButton.transform.parent.gameObject, __instance.enterCodeField.transform.parent);
                     obj.name = "EnterCodeSelectServer";
-                    obj.transform.localPosition = new(2.8596f,1.234f);
+                    obj.transform.localPosition = new(2.8596f, 1.234f);
                     dropdown = UnityEngine.Object.Instantiate(mainmenu.createGameScreen.serverDropdown, obj.transform);
                     EnterCodeSelectServer = obj;
                 }
@@ -1033,7 +1031,7 @@ public class PatchManager
                     OpenServerDropdown();
                 });
                 dropdown.transform.GetChild(0).GetComponent<PassiveButton>().enabled = false;
-             
+
             }
         }
         catch (Exception e)
@@ -1041,7 +1039,7 @@ public class PatchManager
             PDebug.Log(e);
         }
     }
-    public static bool AutoKickNoSyncPlayer(Synchronizer __instance,Game container)
+    public static bool AutoKickNoSyncPlayer(Synchronizer __instance, Game container)
     {
         DebugScreen.Push(new FunctionalDebugTextContent(() => {
             if (__instance.LastSync == null) return null;
@@ -1072,11 +1070,11 @@ public class PatchManager
                 }
             }
             return Language.Translate("log.awaiting").Replace("%TAG%", __instance.LastSync.Value.tag.ToString()).Bold()
-                + waitFor.Join(p => "\n -" + p.name+$"({Mathn.Max(0f,Mathn.Abs(elapsedTime-13f))})").Bold();
+                + waitFor.Join(p => "\n -" + p.name + $"({Mathn.Max(0f, Mathn.Abs(elapsedTime - 13f))})").Bold();
         }, container));
         return false;
     }
-    public static void FixChatNoRoleIcon(ChatController __instance,ref ChatBubble __result)
+    public static void FixChatNoRoleIcon(ChatController __instance, ref ChatBubble __result)
     {
         __instance.chatBubblePool.Prefab.CastFast<ChatBubble>().TextArea.UseRoleIcon();
     }
@@ -1105,7 +1103,7 @@ public class PatchManager
     }
     public static bool OnShapeshiftPanelSelected(ShapeshifterMinigame __instance, PlayerControl target)
     {
-        if (!(GamePlayer.LocalPlayer.Role is Assistant.Instance||GamePlayer.LocalPlayer.Role.GetAbility<Almighty.Ability>()!=null))
+        if (!(GamePlayer.LocalPlayer.Role is Assistant.Instance || GamePlayer.LocalPlayer.Role.GetAbility<Almighty.Ability>() != null))
         {
             return true;
         }
@@ -1714,8 +1712,8 @@ public class PatchManager
         //左右どちらでキルすればよいか考える
         var targetTruePos = player.RealPlayer.TruePosition;
         var targetPos = player.Position;
-        var canMoveToLeft = Destroyer.Ability.CheckCanMove(__instance.MyPlayer.VanillaPlayer,__instance.MyPlayer.Position, Destroyer.Ability.GetDestroyKillPosition(targetPos, true), out var leftDis);
-        var canMoveToRight = Destroyer.Ability.CheckCanMove(__instance.MyPlayer.VanillaPlayer,__instance.MyPlayer.Position, Destroyer.Ability.GetDestroyKillPosition(targetPos, false), out var rightDis);
+        var canMoveToLeft = Destroyer.Ability.CheckCanMove(__instance.MyPlayer.VanillaPlayer, __instance.MyPlayer.Position, Destroyer.Ability.GetDestroyKillPosition(targetPos, true), out var leftDis);
+        var canMoveToRight = Destroyer.Ability.CheckCanMove(__instance.MyPlayer.VanillaPlayer, __instance.MyPlayer.Position, Destroyer.Ability.GetDestroyKillPosition(targetPos, false), out var rightDis);
         bool moveToLeft = false;
         if (canMoveToLeft && canMoveToRight && leftDis < rightDis) moveToLeft = true;
         else if (!canMoveToRight) moveToLeft = true;
@@ -1728,7 +1726,7 @@ public class PatchManager
         new StaticAchievementToken("destroyer.common2");
         achChallengeToken.Value++;
         NebulaAPI.CurrentGame?.KillButtonLikeHandler.StartCooldown();
-    }, filterHeavier: p => Destroyer.Ability.CheckDestroyKill(__instance.MyPlayer.VanillaPlayer, __instance.MyPlayer.Position,p.RealPlayer.Position)).SetLabelType(ModAbilityButton.LabelType.Impostor)
+    }, filterHeavier: p => Destroyer.Ability.CheckDestroyKill(__instance.MyPlayer.VanillaPlayer, __instance.MyPlayer.Position, p.RealPlayer.Position)).SetLabelType(ModAbilityButton.LabelType.Impostor)
      .SetAsUsurpableButton(__instance);
                 destroyButton.OnBroken = _ => Snatcher.RewindKillCooldown();
                 NebulaAPI.CurrentGame?.KillButtonLikeHandler.Register(destroyButton.GetKillButtonLike());
@@ -1738,7 +1736,7 @@ public class PatchManager
     }
     public static bool ShowMyRolesScreen(MetaScreen outsideScreen, ref Virial.Media.Image? backImage, ref IMetaWidgetOld __result)
     {
-        if (ClientOption.GetValue((ClientOption.ClientOptionType)129)==1)
+        if (ClientOption.GetValue((ClientOption.ClientOptionType)129) == 1)
         {
             return true;
         }
@@ -1859,11 +1857,11 @@ public class PatchManager
                 __instance.SetRole(AmongUsLLImpl.LocalPlayer.PlayerId, GameMaster.MyRole);
                 foreach (ValueTuple<DefinedRole, int[], byte> role in table!.roles)
                 {
-                    allInvokers.Add(PlayerModInfo.RpcSetAssignable.GetInvoker(new ValueTuple<byte, int, int[], RoleType,Virial.Assignable.RoleAssignType>(role.Item3, role.Item1.Id, role.Item2, RoleType.Role,RoleAssignType.Standard)));
+                    allInvokers.Add(PlayerModInfo.RpcSetAssignable.GetInvoker(new ValueTuple<byte, int, int[], RoleType, Virial.Assignable.RoleAssignType>(role.Item3, role.Item1.Id, role.Item2, RoleType.Role, RoleAssignType.Standard)));
                 }
                 foreach (ValueTuple<DefinedModifier, int[], byte> modifier in table.modifiers)
                 {
-                    allInvokers.Add(PlayerModInfo.RpcSetAssignable.GetInvoker(new ValueTuple<byte, int, int[], RoleType,Virial.Assignable.RoleAssignType>(modifier.Item3, modifier.Item1.Id, modifier.Item2, RoleType.Modifier,RoleAssignType.Standard)));
+                    allInvokers.Add(PlayerModInfo.RpcSetAssignable.GetInvoker(new ValueTuple<byte, int, int[], RoleType, Virial.Assignable.RoleAssignType>(modifier.Item3, modifier.Item1.Id, modifier.Item2, RoleType.Modifier, RoleAssignType.Standard)));
                 }
                 allInvokers.Add(NebulaGameManager.RpcStartGame.GetInvoker(true));
                 CombinedRemoteProcess.CombinedRPC.Invoke(false, allInvokers.ToArray());
@@ -2075,12 +2073,12 @@ public class PatchManager
                         NebulaManager.Instance.StartCoroutine(NightmareKillAnim().WrapToIl2Cpp());
                     }
                 }
-                if (MeetingDeadSendNotice&&MeetingHud.Instance.AsBoolFast())
+                if (MeetingDeadSendNotice && MeetingHud.Instance.AsBoolFast())
                 {
                     var targetPlayer = PlayerControl.AllPlayerControls.GetFastEnumerator().FirstOrDefault(p => !p.Data.IsDead);
                     var originName = targetPlayer.name;
                     targetPlayer.SetName("System".Color(Palette.CrewmateBlue));
-                    AmongUsLLImpl.HudManagerBridge.Chat.AddChat(targetPlayer,Language.Translate("options.general.meetingdeadNotice").Replace("%DEAD%",ev.Player.PlayerName));
+                    AmongUsLLImpl.HudManagerBridge.Chat.AddChat(targetPlayer, Language.Translate("options.general.meetingdeadNotice").Replace("%DEAD%", ev.Player.PlayerName));
                     targetPlayer.SetName(originName);
                 }
             }, __instance);
@@ -2209,7 +2207,7 @@ public class PatchManager
             {
                 //CurrentChatId = 0;
                 //currentIndex = 0;
-                firstDeadName = NebulaGameManager.Instance?.AllPlayerInfo.Where(p=>p.IsDead).MinBy(p => p.DeathTime)?.PlayerName ?? "";
+                firstDeadName = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => p.IsDead).MinBy(p => p.DeathTime)?.PlayerName ?? "";
                 ChatLogSystem.ExportNow();
             }, __instance);
             VitalsMinigame OpenSpecialVitalsMinigame()
@@ -2596,7 +2594,7 @@ public class PatchManager
             EvilTrapperKillCD -= Time.deltaTime;
             return false;
         }
-        if (MeetingHud.Instance||ExileController.Instance)
+        if (MeetingHud.Instance || ExileController.Instance)
         {
             return false;
         }
@@ -3247,73 +3245,12 @@ public class PatchManager
             __result = true;
             return false;
         }
-        [HarmonyPatch(typeof(NebulaGameManager),nameof(NebulaGameManager.CheckGameState)),HarmonyPrefix]
-        public static bool ReplaceCheckGameState(Game __instance,bool asNormalGame)
-        {
-            if (RoleDraft.isEnabled)
-            {
-                var instance = __instance as NebulaGameManager;
-                if (instance.GameState == NebulaGameStates.NotStarted && PlayerControl.AllPlayerControls.Count == instance.allModPlayers.Count)
-                {
-                    instance.LobbySlideManager.Abandon();
-                    if (asNormalGame)
-                    {
-                        NoSVCRoom noSVCRoom = ModSingleton<NoSVCRoom>.Instance;
-                        if (noSVCRoom != null)
-                        {
-                            noSVCRoom.OnGameStart();
-                        }
-                    }
-                    instance.GameState = NebulaGameStates.Initialized;
-                }
-                return false;
-            }
-            return true;
-        }
         [HarmonyPatch(typeof(IntroCutscene), "CoBegin"), HarmonyPrefix]
         public static bool CoShowIntro(IntroCutscene __instance, ref Il2CppSystem.Collections.IEnumerator __result)
         {
-            if (RoleDraft.isEnabled)
-            {
-                __result = CoRoleDraft(__instance).WrapToIl2Cpp();
-                return false;
-            }
             NebulaAPI.CurrentGame!.SetGameMode(GeneralConfigurations.CurrentGameMode.InstantiateModule());
             __result = CoBegin(__instance).WrapToIl2Cpp();
             return false;
-        }
-        static System.Collections.IEnumerator CoRoleDraft(IntroCutscene __instance)
-        {
-            IntroCutscene.Instance = __instance;
-            yield return RoleDraft.CoSelectRoles(__instance);
-            __instance.HideAndSeekPanels.SetActive(false);
-            __instance.CrewmateRules.SetActive(false);
-            __instance.ImpostorRules.SetActive(false);
-            __instance.ImpostorName.gameObject.SetActive(false);
-            __instance.ImpostorTitle.gameObject.SetActive(false);
-            var myInfo = GamePlayer.LocalPlayer;
-            var introInfo = GameOperatorManager.Instance.Run<GameShowIntroLocalEvent>(new GameShowIntroLocalEvent(myInfo.Role.Role.Team, myInfo.Role), false, false);
-            if (GeneralConfigurations.MapFlipXOption || GeneralConfigurations.MapFlipYOption)
-            {
-                Vector2 vec = new(1f, 1f);
-                if (GeneralConfigurations.MapFlipXOption)
-                {
-                    PlayerModInfo.RpcAttrModulator.LocalInvoke((myInfo!.PlayerId, new AttributeModulator(PlayerAttributes.FlipX, 100000f, true, 0, null, false), true));
-                    vec.x = -1f;
-                }
-                if (GeneralConfigurations.MapFlipYOption)
-                {
-                    PlayerModInfo.RpcAttrModulator.LocalInvoke((myInfo!.PlayerId, new AttributeModulator(PlayerAttributes.FlipY, 100000f, true, 0, null, false), true));
-                    vec.y = -1f;
-                }
-                PlayerModInfo.RpcAttrModulator.LocalInvoke((myInfo!.PlayerId, new SpeedModulator(1f, vec, true, 100000f, true, 0, null, false), true));
-            }
-            yield return CoShowRole(__instance,myInfo,introInfo);
-            AmongUsLLImpl.ShipStatusInstance.StartSFX();
-            GameObject.Destroy(__instance.gameObject);
-            NebulaGameManager.Instance?.OnGameStart();
-            DestroyableSingleton<HudManager>.Instance.ShowVanillaKeyGuide();
-            NebulaAPI.CurrentGame!.SetGameMode(GeneralConfigurations.CurrentGameMode.InstantiateModule());
         }
         static System.Collections.IEnumerator CoBegin(IntroCutscene __instance)
         {
@@ -3362,10 +3299,10 @@ public class PatchManager
                 switch (introInfo.RevealType)
                 {
                     case Virial.Assignable.TeamRevealType.OnlyMe:
-                        shownPlayers = shownPlayers.Where(p=>p.AmOwner || introInfo.ShouldShowAdditionally(p.PlayerId));
+                        shownPlayers = shownPlayers.Where(p => p.AmOwner || introInfo.ShouldShowAdditionally(p.PlayerId));
                         break;
                     case Virial.Assignable.TeamRevealType.Teams:
-                        shownPlayers = shownPlayers.Where(p => p.GetModInfo()?.Role.Role.Team == myInfo.Role.Role.Team||introInfo.ShouldShowAdditionally(p.PlayerId));
+                        shownPlayers = shownPlayers.Where(p => p.GetModInfo()?.Role.Role.Team == myInfo.Role.Role.Team || introInfo.ShouldShowAdditionally(p.PlayerId));
                         break;
                 }
             }
@@ -3385,7 +3322,7 @@ public class PatchManager
                 PlayerModInfo.RpcAttrModulator.LocalInvoke((myInfo!.PlayerId, new SpeedModulator(1f, vec, true, 100000f, true, 0, null, false), true));
             }
 
-            yield return CoShowTeam(__instance, myInfo!, shownPlayers.ToArray(), 3f, introInfo,lover!=null);
+            yield return CoShowTeam(__instance, myInfo!, shownPlayers.ToArray(), 3f, introInfo, lover != null);
             yield return CoShowRole(__instance, myInfo!, introInfo);
             AmongUsLLImpl.ShipStatusInstance.StartSFX();
             GameObject.Destroy(__instance.gameObject);
@@ -3393,12 +3330,12 @@ public class PatchManager
             DestroyableSingleton<HudManager>.Instance.ShowVanillaKeyGuide();
         }
 
-        static System.Collections.IEnumerator CoShowTeam(IntroCutscene __instance, GamePlayer myInfo, PlayerControl[] shownPlayers, float duration, GameShowIntroLocalEvent introInfo,bool isLover=false)
+        static System.Collections.IEnumerator CoShowTeam(IntroCutscene __instance, GamePlayer myInfo, PlayerControl[] shownPlayers, float duration, GameShowIntroLocalEvent introInfo, bool isLover = false)
         {
             __instance.overlayHandle ??= DestroyableSingleton<DualshockLightManager>.Instance.AllocateLight();
             yield return AmongUsLLImpl.ShipStatusInstance.CosmeticsCache.PopulateFromPlayers();
             AmongUsLLImpl.SoundManagerInstance.PlaySound(__instance.IntroStinger, false, 1f, null);
-            UnityEngine.Color c = isLover?Lover.Colors[0].ToUnityColor():introInfo.TeamColor.ToUnityColor();
+            UnityEngine.Color c = isLover ? Lover.Colors[0].ToUnityColor() : introInfo.TeamColor.ToUnityColor();
             var toColor = introInfo.TeamFadeColor == null ? c : introInfo.TeamFadeColor.Value.ToUnityColor();
             if (!isLover)
             {
@@ -3561,7 +3498,7 @@ public class PatchManager
             __result = true;
             return false;
         }
-        [HarmonyPatch(typeof(MemoryLogger), "AppendLog"),HarmonyPrefix]
+        [HarmonyPatch(typeof(MemoryLogger), "AppendLog"), HarmonyPrefix]
         private static bool MemoryLoggerAppendLogPrefix()
         {
             return false;
@@ -4428,7 +4365,7 @@ public class PatchManager
                             }
                             catch (Exception e)
                             {
-                                PDebug.Log("OxygenSabHudUpdateError:"+e.ToString());
+                                PDebug.Log("OxygenSabHudUpdateError:" + e.ToString());
                             }
                         }, new GameObjectLifespan(MapBehaviour.Instance.gameObject), 100);
                     }
@@ -4595,7 +4532,7 @@ public class PatchManager
                 {
                     ev.Color = Virial.Color.ImpostorColor;
                 }
-            },NebulaAPI.CurrentGame);
+            }, NebulaAPI.CurrentGame);
         }
     }
     public static void GrowALLFlowers(IGameOperator __instance)
@@ -4638,7 +4575,7 @@ public class PatchManager
             var allplayer = NebulaGameManager.Instance.AllPlayerInfo;
             if (allplayer.Count(p => !p.IsDead && !p.IsDisconnected) >= GenerateIfPlayer && allplayer.Count(p => !p.IsDead && !p.IsDisconnected && p.IsImpostor) == 1 && !allplayer.Any(p => p.TryGetModifier<Infected.Instance>(out var i)))
             {
-                var players = allplayer.Where(p => !p.IsDead && !p.IsDisconnected && p.IsCrewmate && !p.IsModMadmate() && !p.TryGetModifier<HasLove.Instance>(out var h) && !p.TryGetModifier<SidekickModifier.Instance>(out var m)&&p.Role.Role.CanLoad(Infected.MyRole)&&p.Modifiers.All(m=>Infected.modifierFilter.Test(m.Modifier))).ToList();
+                var players = allplayer.Where(p => !p.IsDead && !p.IsDisconnected && p.IsCrewmate && !p.IsModMadmate() && !p.TryGetModifier<HasLove.Instance>(out var h) && !p.TryGetModifier<SidekickModifier.Instance>(out var m) && p.Role.Role.CanLoad(Infected.MyRole) && p.Modifiers.All(m => Infected.modifierFilter.Test(m.Modifier))).ToList();
                 int index = UnityEngine.Random.Range(0, players.Count);
                 if (players != null && players[index] != null)
                 {
@@ -4674,8 +4611,8 @@ public class PatchManager
             GameOperatorManager instance = GameOperatorManager.Instance!;
             var p = NebulaGameManager.Instance.AllPlayerInfo.FirstOrDefault(p => p.PlayerName == playerName);
             var local = GamePlayer.LocalPlayer;
-            PlayerDecorateNameEvent ev = ((instance != null) ? instance.Run<PlayerDecorateNameEvent>(new PlayerDecorateNameEvent(p, "",false), false) : null);
-            if (ImpostorCannotSeeOther&&(p?.IsImpostor??false) && (local?.IsImpostor ?? false))
+            PlayerDecorateNameEvent ev = ((instance != null) ? instance.Run<PlayerDecorateNameEvent>(new PlayerDecorateNameEvent(p, "", false), false) : null);
+            if (ImpostorCannotSeeOther && (p?.IsImpostor ?? false) && (local?.IsImpostor ?? false))
             {
                 __instance.NameText.color = UnityEngine.Color.white;
                 return;
@@ -4727,7 +4664,7 @@ public class PatchManager
             ObjectTracker<GamePlayer> myTracker = ObjectTrackers.ForPlayer(__instance, null, __instance.MyPlayer, p => ObjectTrackers.StandardPredicate(p) && !used, new(0, 221, 255, 255), false, false);
             var selectbutton = NebulaAPI.Modules.AbilityButton(__instance, false, false, 0, false).BindKey(Virial.Compat.VirtualKeyInput.SecondaryAbility, null);
             selectbutton.Availability = (button) => myTracker.CurrentTarget != null && __instance.MyPlayer.CanMove;
-            selectbutton.Visibility = (button) => !__instance.MyPlayer.IsDead&&!used;
+            selectbutton.Visibility = (button) => !__instance.MyPlayer.IsDead && !used;
             (selectbutton as Virial.Components.ModAbilityButton).SetImage(doctorshieldimage);
             selectbutton.OnClick = delegate (ModAbilityButton button)
             {
@@ -4805,7 +4742,7 @@ public class PatchManager
         if (player.Role.Role.IsKiller)
         {
             SpectreExArrowList.Add(new TrackingArrowAbility(player, 0f, player.Role.Role.Color, false).Register(__instance));
-        }    
+        }
     }
     public static bool GuesserDead()
     {
@@ -4999,7 +4936,7 @@ public class PatchManager
         }
         if (modPlayer != null && CannotReport)
         {
-           bridge.ReportButton.ToggleVisible(!flag && modRole != null && !CannotReport && GameManager.Instance.CanReportBodies() && AmongUsLLImpl.ShipStatusInstance != null);
+            bridge.ReportButton.ToggleVisible(!flag && modRole != null && !CannotReport && GameManager.Instance.CanReportBodies() && AmongUsLLImpl.ShipStatusInstance != null);
         }
         if (modPlayer != null && modPlayer.TryGetAbility<Almighty.Ability>(out var ab))
         {
@@ -5089,7 +5026,7 @@ public class PatchManager
     }
     public static void SetLevel(PlayerVoteArea __instance, NetworkedPlayerInfo playerInfo)
     {
-        if (HideLevelOption||Pollyanna.MyRole.IsSpawnableInSomeForm())
+        if (HideLevelOption || Pollyanna.MyRole.IsSpawnableInSomeForm())
         {
             __instance.LevelNumberText.text = "???";
         }
@@ -5123,7 +5060,7 @@ public class PatchManager
             if (DataManager.Settings.Language.CurrentLanguage == SupportedLangs.SChinese)
             {
                 var now = DateTime.Now;
-                if (now.Month == 9 &&  now.Day == 15)
+                if (now.Month == 9 && now.Day == 15)
                 {
                     AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "今天是开发者Plana的生日!");
                     /*new RemoteProcess("SChat2", delegate (bool _)
@@ -5152,7 +5089,7 @@ public class PatchManager
                 List<GamePlayer> RandomSelectTarget = new List<GamePlayer>();
                 foreach (var p in NebulaGameManager.Instance.AllPlayerInfo)
                 {
-                    if (p==null)
+                    if (p == null)
                     {
                         continue;
                     }
@@ -5196,7 +5133,7 @@ public class PatchManager
     }
     static List<SponserInfo> GetSponsersInfo(int lvl)
     {
-        return lvl==1?sponserInfoList.sponser:lvl==2?sponserInfoList.contributor:lvl==3?sponserInfoList.admin:sponserInfoList.developer;
+        return lvl == 1 ? sponserInfoList.sponser : lvl == 2 ? sponserInfoList.contributor : lvl == 3 ? sponserInfoList.admin : sponserInfoList.developer;
     }
     static bool IsDev(PlayerControl player, bool blockHost = false)
     {
@@ -5211,7 +5148,7 @@ public class PatchManager
     static bool IsAdmin(PlayerControl player)
     {
         var code = GetClient(player).FriendCode;
-        if (IsDev(player,false))
+        if (IsDev(player, false))
         {
             return true;
         }
@@ -5259,7 +5196,7 @@ public class PatchManager
         });
     });
     static PlayerControl? SendKickPlayer;
-    static string SendKickreason=string.Empty;
+    static string SendKickreason = string.Empty;
     public static bool CustomKickReasonPatch(DisconnectPopup __instance)
     {
         //PDebug.Log("pre:" + SendKickreason);
@@ -5269,7 +5206,7 @@ public class PatchManager
             __instance._textArea.text = SendKickreason;
             SelectableHyperLinkHelper.AddSelectableUiForHyperlinks(__instance.selectableHyperLinks, __instance.name);
             __instance.OnTextChanged();
-            NebulaManager.Instance.StartDelayAction(1f,()=>SendKickreason = string.Empty);
+            NebulaManager.Instance.StartDelayAction(1f, () => SendKickreason = string.Empty);
             //PDebug.Log("EndIf");
             return false;
         }
@@ -5327,7 +5264,7 @@ public class PatchManager
         }
         if (Input.GetKeyDown(KeyCode.UpArrow) && ChatHistory.Count > 0)
         {
-            CurrentHistorySelection = Mathn.Clamp(--CurrentHistorySelection, 0,ChatHistory.Count - 1);
+            CurrentHistorySelection = Mathn.Clamp(--CurrentHistorySelection, 0, ChatHistory.Count - 1);
             __instance?.freeChatField?.textArea.SetText(ChatHistory[CurrentHistorySelection], "");
         }
         if (Input.GetKeyDown(KeyCode.DownArrow) && ChatHistory.Count > 0)
@@ -5454,7 +5391,7 @@ public class PatchManager
             PDebug.Log(e);
         }*/
     }
-    public static List<string> ChatHistory=new();
+    public static List<string> ChatHistory = new();
     public static int CurrentHistorySelection = -1;
     public static bool SendChat(ChatController __instance)
     {
@@ -5477,9 +5414,9 @@ public class PatchManager
         }
         if (ChatHistory != null && text.Length > 0)
         {
-            if (ChatHistory.Count!=0)
+            if (ChatHistory.Count != 0)
             {
-                if (ChatHistory[ChatHistory.Count-1]==text)
+                if (ChatHistory[ChatHistory.Count - 1] == text)
                 {
                     goto IL_1;
                 }
@@ -5505,7 +5442,7 @@ public class PatchManager
                     {
                         break;
                     }
-                    NebulaManager.Instance.StartCoroutine(CoLoadLobbyMusic(OpenSelectMusicWindow(),true));
+                    NebulaManager.Instance.StartCoroutine(CoLoadLobbyMusic(OpenSelectMusicWindow(), true));
                     break;
                 case "/changelobbymusic":
                 case "/更改大厅音乐":
@@ -5701,13 +5638,13 @@ public class PatchManager
                         {
                             break;
                         }
-                        if (!CanSendAdminMessage &&!IsAdmin(AmongUsLLImpl.LocalPlayer))
+                        if (!CanSendAdminMessage && !IsAdmin(AmongUsLLImpl.LocalPlayer))
                         {
                             break;
                         }
                         __instance.freeChatField.Clear();
                         var p = AmongUsLLImpl.LocalPlayer;
-                        var messagename=("Special Message Sender:" + p.name).Color(UnityEngine.Color.yellow);
+                        var messagename = ("Special Message Sender:" + p.name).Color(UnityEngine.Color.yellow);
                         if (IsDev(p, true))
                         {
                             messagename = "Developer Message".Color(new Color32(232, 31, 99, 255));
@@ -5732,7 +5669,7 @@ public class PatchManager
                         {
                             messagename = ("Sponser Message Sender:" + p.name).Color(UnityEngine.Color.cyan);
                         }
-                        RpcSendChat.Invoke((p.PlayerId,messagename, string.Join(" ", strs.Skip(1))));
+                        RpcSendChat.Invoke((p.PlayerId, messagename, string.Join(" ", strs.Skip(1))));
                         return false;
                     }
                     break;
@@ -5770,11 +5707,11 @@ public class PatchManager
                     }
                     __instance.freeChatField.Clear();
                     bool isimp = false;
-                    if (strs[1].ToLower()=="impostor")
+                    if (strs[1].ToLower() == "impostor")
                     {
                         isimp = true;
                     }
-                    TheIndexDevice.SendCommandRpc.Invoke((string.Join(' ',strs.Skip(2)), isimp));
+                    TheIndexDevice.SendCommandRpc.Invoke((string.Join(' ', strs.Skip(2)), isimp));
                     return false;
             }
         }
@@ -5976,7 +5913,7 @@ public class PatchManager
                 jackalMask |= myMask;
                 Lover.Instance lover;
                 //死亡しておらず、同チーム、かつラバーズでないか相方死亡ラバー
-                int aliveJackals = GamePlayer.AllPlayers.Count(p=>
+                int aliveJackals = GamePlayer.AllPlayers.Count(p =>
                 {
                     return !p.IsDead && isJackalTeam(p) && jackal.IsSameTeam(p) && (!p.TryGetModifier<Lover.Instance>(out lover!) || lover.IsAloneLover) && !p.IsModMadmate();
                 });
@@ -6002,7 +5939,7 @@ public class PatchManager
             return true;
         }
     }
-    static RemoteProcess<(byte sendPlayer,string spName,string message)> RpcSendChat = new("SendAdminChat",
+    static RemoteProcess<(byte sendPlayer, string spName, string message)> RpcSendChat = new("SendAdminChat",
 (message, _) =>
 {
     var p = PlayerControl.AllPlayerControls.GetFastEnumerator().FirstOrDefault(p => p.PlayerId == message.sendPlayer);
@@ -6064,7 +6001,7 @@ public class PatchManager
                 {
                     return;
                 }
-                if (ev.Player == message.Item1&&(!DoctorShieldNoBlockGuessedOption||ev.PlayerState!=PlayerStates.Guessed))
+                if (ev.Player == message.Item1 && (!DoctorShieldNoBlockGuessedOption || ev.PlayerState != PlayerStates.Guessed))
                 {
                     ev.Result = KillResult.Rejected;
                     TryKillShieldPlayer.Invoke((message.Item1, message.Item2, true));
@@ -6086,7 +6023,7 @@ public class PatchManager
                 {
                     return;
                 }
-                if (ev.Player==ev.Killer)
+                if (ev.Player == ev.Killer)
                 {
                     return;
                 }
@@ -6149,7 +6086,7 @@ public class PatchManager
         {
             return !ImpostorCannotSeeOther;
         }
-        [HarmonyPatch(typeof(NoSVCRoom), "RegisterRadioChannel",typeof(string),typeof(Virial.Media.Image),typeof(Func<GamePlayer,bool>),typeof(ILifespan),typeof(Color))]
+        [HarmonyPatch(typeof(NoSVCRoom), "RegisterRadioChannel", typeof(string), typeof(Virial.Media.Image), typeof(Func<GamePlayer, bool>), typeof(ILifespan), typeof(Color))]
         [HarmonyPrefix]
         public static bool AllPlayerBlockRun()
         {
@@ -6407,12 +6344,7 @@ public class PatchManager
         [HarmonyPatch(typeof(StandardRoleAllocator), "Assign"), HarmonyPrefix]
         public static bool Assign(StandardRoleAllocator __instance, List<byte> impostors, List<byte> others)
         {
-            if (RoleDraft.isEnabled)
-            {
-                SetVanillaRole(impostors.ToArray());
-                return false;
-            }
-            if (CanInvokeSpecialMeeting && DiagnosisIsActive && Mathn.Prob(DiagnosisChance / 100f))
+            /*if (CanInvokeSpecialMeeting && DiagnosisIsActive && Mathn.Prob(DiagnosisChance / 100f))
             {
                 RoleTable table = new();
                 var customChances = AssignmentType.AllTypes.Select((AssignmentType t) => new List<BetterRoleChance>(from r in Nebula.Roles.Roles.AllRoles.Where(delegate (DefinedRole r)
@@ -6480,82 +6412,28 @@ public class PatchManager
                 table.Determine();
             }
             else
+            {*/
+            try
             {
-                try
+                RoleTable table = new();
+                List<BetterRoleChance> impostorRoles;
+                List<BetterRoleChance> crewmateRoles;
+                List<BetterRoleChance> neutralRoles;
+                List<BetterRoleChance>[] customChances;
+                List<BetterRoleChance>[] allRoles;
+                CreateRolePool(out impostorRoles, out crewmateRoles, out neutralRoles, out customChances, out allRoles);
+                int impnums = GeneralConfigurations.AssignmentImpostorOption, neunums = GeneralConfigurations.AssignmentNeutralOption, crewnums = GeneralConfigurations.AssignmentCrewmateOption < 0 ? 24 : GeneralConfigurations.AssignmentCrewmateOption;
+                foreach (var tuple in RoleUpList)
                 {
-                    RoleTable table = new();
-                    List<BetterRoleChance> impostorRoles;
-                    List<BetterRoleChance> crewmateRoles;
-                    List<BetterRoleChance> neutralRoles;
-                    List<BetterRoleChance>[] customChances;
-                    List<BetterRoleChance>[] allRoles;
-                    CreateRolePool(out impostorRoles, out crewmateRoles, out neutralRoles, out customChances, out allRoles);
-                    int impnums = GeneralConfigurations.AssignmentImpostorOption, neunums = GeneralConfigurations.AssignmentNeutralOption, crewnums = GeneralConfigurations.AssignmentCrewmateOption < 0 ? 24 : GeneralConfigurations.AssignmentCrewmateOption;
-                    foreach (var tuple in RoleUpList)
+                    try
                     {
-                        try
-                        {
-                            if (allRoles.Any(r => r.Any(r => r.role.Id == tuple.role.Id)))
-                            {
-                                if (Mathn.Prob(tuple.chance / 100f))
-                                {
-                                    if (impostors.Contains(tuple.player))
-                                    {
-                                        if (tuple.role.Category != RoleCategory.ImpostorRole)
-                                        {
-                                            impostors.Remove(tuple.player);
-                                            var otherplayer = others.Random();
-                                            impostors.Add(otherplayer);
-                                            others.Remove(otherplayer);
-                                        }
-                                        else
-                                        { impostors.Remove(tuple.player); }
-                                    }
-                                    else if (others.Contains(tuple.player))
-                                    {
-                                        if (tuple.role.Category == RoleCategory.ImpostorRole)
-                                        {
-                                            var imp = impostors.Random();
-                                            impostors.Remove(imp);
-                                            others.Add(imp);
-                                        }
-                                        others.Remove(tuple.player);
-                                    }
-                                    switch (tuple.role.Category)
-                                    {
-                                        case RoleCategory.ImpostorRole:
-                                            impnums--;
-                                            break;
-                                        case RoleCategory.NeutralRole:
-                                            neunums--;
-                                            break;
-                                        case RoleCategory.CrewmateRole:
-                                            crewnums--;
-                                            break;
-                                    }
-                                    BetterRoleChance targetRoleChance = allRoles.FirstOrDefault(r => r.Any(r => r.role.Id == tuple.role.Id))!.FirstOrDefault(r => r.role.Id == tuple.role.Id)!;
-                                    var rolepool = targetRoleChance!.role.Category == RoleCategory.ImpostorRole ? impostorRoles : targetRoleChance.role
-                                        .Category == RoleCategory.NeutralRole ? neutralRoles : crewmateRoles;
-                                    SingleSetRole(__instance, table, tuple.player, targetRoleChance.role.Category == RoleCategory.ImpostorRole ? impostors : others, others, targetRoleChance, rolepool, allRoles);
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            PDebug.Log("RoleUpError:" + e.ToString());
-                        }
-                    }
-                    foreach (var tuple in CategoryUpList)
-                    {
-                        try
+                        if (allRoles.Any(r => r.Any(r => r.role.Id == tuple.role.Id)))
                         {
                             if (Mathn.Prob(tuple.chance / 100f))
                             {
-                                var usedRoleList = tuple.role == RoleCategory.ImpostorRole ? impostorRoles : tuple.role == RoleCategory.NeutralRole ? neutralRoles : crewmateRoles;
-
                                 if (impostors.Contains(tuple.player))
                                 {
-                                    if (tuple.role != RoleCategory.ImpostorRole)
+                                    if (tuple.role.Category != RoleCategory.ImpostorRole)
                                     {
                                         impostors.Remove(tuple.player);
                                         var otherplayer = others.Random();
@@ -6567,7 +6445,7 @@ public class PatchManager
                                 }
                                 else if (others.Contains(tuple.player))
                                 {
-                                    if (tuple.role == RoleCategory.ImpostorRole)
+                                    if (tuple.role.Category == RoleCategory.ImpostorRole)
                                     {
                                         var imp = impostors.Random();
                                         impostors.Remove(imp);
@@ -6575,62 +6453,115 @@ public class PatchManager
                                     }
                                     others.Remove(tuple.player);
                                 }
-                                switch (tuple.role)
+                                switch (tuple.role.Category)
                                 {
                                     case RoleCategory.ImpostorRole:
-                                        usedRoleList = impostorRoles;
                                         impnums--;
                                         break;
                                     case RoleCategory.NeutralRole:
-                                        usedRoleList = neutralRoles;
                                         neunums--;
                                         break;
                                     case RoleCategory.CrewmateRole:
-                                        usedRoleList = crewmateRoles;
                                         crewnums--;
                                         break;
                                 }
-                                CategoryAssign(__instance, table, 1, [tuple.player], others, usedRoleList, allRoles);
+                                BetterRoleChance targetRoleChance = allRoles.FirstOrDefault(r => r.Any(r => r.role.Id == tuple.role.Id))!.FirstOrDefault(r => r.role.Id == tuple.role.Id)!;
+                                var rolepool = targetRoleChance!.role.Category == RoleCategory.ImpostorRole ? impostorRoles : targetRoleChance.role
+                                    .Category == RoleCategory.NeutralRole ? neutralRoles : crewmateRoles;
+                                SingleSetRole(__instance, table, tuple.player, targetRoleChance.role.Category == RoleCategory.ImpostorRole ? impostors : others, others, targetRoleChance, rolepool, allRoles);
                             }
                         }
-                        catch (Exception e)
-                        {
-                            PDebug.Log("CategoryUpError:" + e.ToString());
-                        }
                     }
-                    void AssignCustomAbilities(RoleCategory category)
+                    catch (Exception e)
                     {
-                        foreach (var assignmentType in AssignmentType.AllTypes)
+                        PDebug.Log("RoleUpError:" + e.ToString());
+                    }
+                }
+                foreach (var tuple in CategoryUpList)
+                {
+                    try
+                    {
+                        if (Mathn.Prob(tuple.chance / 100f))
                         {
-                            if (assignmentType.IsActive && assignmentType.RelatedRole.Category == category)
+                            var usedRoleList = tuple.role == RoleCategory.ImpostorRole ? impostorRoles : tuple.role == RoleCategory.NeutralRole ? neutralRoles : crewmateRoles;
+
+                            if (impostors.Contains(tuple.player))
                             {
-                                var targetRole = assignmentType.RelatedRole;
-                                List<byte> players = (from r in table.roles
-                                                      where r.Item1 == targetRole
-                                                      select r.Item3).ToList<byte>();
-                                CategoryAssign(__instance, table, players.Count, players, players, customChances[assignmentType.Id], allRoles, delegate (DefinedRole role, byte player)
+                                if (tuple.role != RoleCategory.ImpostorRole)
                                 {
-                                    table.EditRole(player, (ValueTuple<DefinedRole, int[]> last) => (last.Item1, assignmentType.EditArguments(last.Item2, role)));
-                                });
+                                    impostors.Remove(tuple.player);
+                                    var otherplayer = others.Random();
+                                    impostors.Add(otherplayer);
+                                    others.Remove(otherplayer);
+                                }
+                                else
+                                { impostors.Remove(tuple.player); }
                             }
+                            else if (others.Contains(tuple.player))
+                            {
+                                if (tuple.role == RoleCategory.ImpostorRole)
+                                {
+                                    var imp = impostors.Random();
+                                    impostors.Remove(imp);
+                                    others.Add(imp);
+                                }
+                                others.Remove(tuple.player);
+                            }
+                            switch (tuple.role)
+                            {
+                                case RoleCategory.ImpostorRole:
+                                    usedRoleList = impostorRoles;
+                                    impnums--;
+                                    break;
+                                case RoleCategory.NeutralRole:
+                                    usedRoleList = neutralRoles;
+                                    neunums--;
+                                    break;
+                                case RoleCategory.CrewmateRole:
+                                    usedRoleList = crewmateRoles;
+                                    crewnums--;
+                                    break;
+                            }
+                            CategoryAssign(__instance, table, 1, [tuple.player], others, usedRoleList, allRoles);
                         }
                     }
-                    CategoryAssign(__instance, table, impnums, impostors, others, impostorRoles, allRoles);
-                    AssignCustomAbilities(RoleCategory.ImpostorRole);
-                    CategoryAssign(__instance, table, neunums, others, others, neutralRoles, allRoles);
-                    AssignCustomAbilities(RoleCategory.NeutralRole);
-                    CategoryAssign(__instance, table, crewnums, others, others, crewmateRoles, allRoles);
-                    AssignCustomAbilities(RoleCategory.CrewmateRole);
-                    foreach (var p in impostors) table.SetRole(p, Impostor.MyRole);
-                    foreach (var p in others) table.SetRole(p, Crewmate.MyRole);
-                    foreach (var m in Nebula.Roles.Roles.AllAllocatableModifiers().OrderBy(im => im.AssignPriority)) m.TryAssign(table);
-                    GameOperatorManager.Instance?.Run<PreFixAssignmentEvent>(new PreFixAssignmentEvent(table), false, true);
-                    table.Determine();
+                    catch (Exception e)
+                    {
+                        PDebug.Log("CategoryUpError:" + e.ToString());
+                    }
                 }
-                catch (Exception e)
+                void AssignCustomAbilities(RoleCategory category)
                 {
-                    PDebug.Log("StandardRoleAssign Error:" + e.ToString());
+                    foreach (var assignmentType in AssignmentType.AllTypes)
+                    {
+                        if (assignmentType.IsActive && assignmentType.RelatedRole.Category == category)
+                        {
+                            var targetRole = assignmentType.RelatedRole;
+                            List<byte> players = (from r in table.roles
+                                                  where r.Item1 == targetRole
+                                                  select r.Item3).ToList<byte>();
+                            CategoryAssign(__instance, table, players.Count, players, players, customChances[assignmentType.Id], allRoles, delegate (DefinedRole role, byte player)
+                            {
+                                table.EditRole(player, (ValueTuple<DefinedRole, int[]> last) => (last.Item1, assignmentType.EditArguments(last.Item2, role)));
+                            });
+                        }
+                    }
                 }
+                CategoryAssign(__instance, table, impnums, impostors, others, impostorRoles, allRoles);
+                AssignCustomAbilities(RoleCategory.ImpostorRole);
+                CategoryAssign(__instance, table, neunums, others, others, neutralRoles, allRoles);
+                AssignCustomAbilities(RoleCategory.NeutralRole);
+                CategoryAssign(__instance, table, crewnums, others, others, crewmateRoles, allRoles);
+                AssignCustomAbilities(RoleCategory.CrewmateRole);
+                foreach (var p in impostors) table.SetRole(p, Impostor.MyRole);
+                foreach (var p in others) table.SetRole(p, Crewmate.MyRole);
+                foreach (var m in Nebula.Roles.Roles.AllAllocatableModifiers().OrderBy(im => im.AssignPriority)) m.TryAssign(table);
+                GameOperatorManager.Instance?.Run<PreFixAssignmentEvent>(new PreFixAssignmentEvent(table), false, true);
+                table.Determine();
+            }
+            catch (Exception e)
+            {
+                PDebug.Log("StandardRoleAssign Error:" + e.ToString());
             }
             Reload();
             return false;
