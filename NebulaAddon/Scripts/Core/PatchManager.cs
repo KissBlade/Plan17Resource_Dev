@@ -6003,8 +6003,8 @@ public class PatchManager
                 }
                 if (ev.Player == message.Item1 && (!DoctorShieldNoBlockGuessedOption || ev.PlayerState != PlayerStates.Guessed))
                 {
-                    ev.Result = KillResult.Rejected;
-                    TryKillShieldPlayer.Invoke((message.Item1, message.Item2, true));
+                    ev.Result = KillResult.ObviousGuard;
+                    TryKillShieldPlayer.Invoke((message.Item1, ev.Killer, true));
                 }
             }, a, -1);
         }
@@ -6029,8 +6029,8 @@ public class PatchManager
                 }
                 if (ev.Player == message.Item1 && (!DoctorShieldNoBlockGuessedOption || ev.PlayerState != PlayerStates.Guessed))
                 {
-                    ev.Result = KillResult.Rejected;
-                    TryKillShieldPlayer.Invoke((message.Item1, message.Item2, true));
+                    ev.Result = KillResult.ObviousGuard;
+                    TryKillShieldPlayer.Invoke((message.Item1, ev.Killer, true));
                 }
             }, ab, -1);
         }
