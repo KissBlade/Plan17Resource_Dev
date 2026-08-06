@@ -328,7 +328,7 @@ public class PrivateChatPatchs
     public static void ChatUpdate(ChatController __instance)
     {
         var srmt = __instance.sendRateMessageText;
-        if (AmongUsLLImpl.LobbyInstance.AsBoolFast() || (AmongUsLLImpl.LocalPlayer?.Data?.IsDead ?? false))
+        if (AmongUsLLImpl.LobbyInstance.AsBoolFast() || (AmongUsLLImpl.LocalPlayer?.Data?.IsDead ?? true))
         {
             chatTeamText.GetIfNull()?.gameObject.SetActive(false);
 
