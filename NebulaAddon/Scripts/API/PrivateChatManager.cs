@@ -146,7 +146,7 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
     {
         channels.RemoveAll(c => c.Lifespan.IsDeadObject);
     }
-    public void RefreshChannel(ChatController c, TextMeshPro chatTeamText)
+    public void RefreshChannel(ChatController c, TextMeshPro? chatTeamText)
     {
         RemoveDeadObject();
         if (currentChat == null || !currentChat.CanUseChannel || currentChat.Lifespan.IsDeadObject)
@@ -177,16 +177,15 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
             }
             currentChat = currentChannel;
         }
-        if (chatTeamText != null)
-        {
-            chatTeamText!.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat.LocalizedName.Color(currentChat.Color.ToUnityColor()));
-        }
-        var color = currentChat.TextFieldColor.ToUnityColor();
+
+        chatTeamText?.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat?.LocalizedName.Color(currentChat.Color.ToUnityColor()));
+
+        var color = currentChat!.TextFieldColor.ToUnityColor();
         c.freeChatField.background.color = color;
         c.quickChatField.background.color = color;
         c.freeChatField.textArea.outputText.color = UnityEngine.Color.black;
     }
-    public void ChangeChannel(ChatController c, TextMeshPro chatTeamText, ChatChannel nextchannel = null)
+    public void ChangeChannel(ChatController c, TextMeshPro chatTeamText, ChatChannel? nextchannel = null)
     {
         RemoveDeadObject();
         if (nextchannel == null)
@@ -329,24 +328,20 @@ public class PrivateChatPatchs
     public static void ChatUpdate(ChatController __instance)
     {
         var srmt = __instance.sendRateMessageText;
-        if (AmongUsLLImpl.LobbyInstance || (AmongUsLLImpl.LocalPlayer?.Data?.IsDead ?? true))
+        if (AmongUsLLImpl.LobbyInstance.AsBoolFast() || (AmongUsLLImpl.LocalPlayer?.Data?.IsDead ?? false))
         {
-            chatTeamText?.gameObject.SetActive(false);
-            if (srmt != null)
-            {
-                srmt.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
-            }
+            chatTeamText.GetIfNull()?.gameObject.SetActive(false);
+
+            srmt.GetIfNull()?.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
             return;
         }
         try
         {
             if (PrivateChatManager.Instance?.AllChannels.Count(c => c.CanUseChannel) <= 1 && PrivateChatManager.Instance.AllChannels.Any(c => c.CanUseChannel && c.Id is "public"))
             {
-                chatTeamText?.gameObject?.SetActive(false);
-                if (srmt != null)
-                {
-                    srmt.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
-                }
+                chatTeamText.GetIfNull()?.gameObject.SetActive(false);
+
+                srmt.GetIfNull()?.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
                 return;
             }
             if (chatTeamText == null)
@@ -355,32 +350,33 @@ public class PrivateChatPatchs
                 countText.gameObject.SetActive(true);
                 countText.gameObject.GetComponent<TextTranslatorTMP>().enabled = false;
                 countText.alignment = TextAlignmentOptions.Left;
-                countText.transform.localPosition = new UnityEngine.Vector3(-0.14f, 0.49f);
+                countText.transform.localPosition = new Vector3(-0.14f, 0.49f);
                 countText.color = Palette.White;
                 countText.rectTransform.sizeDelta = new(6f, 0.4496f);
-                countText.text = Language.Translate("chat.current").Replace("%CHAT%", (PrivateChatManager.Instance.currentChat == null ? "" : PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(PrivateChatManager.Instance.currentChat.Color.ToUnityColor())));
+                countText.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat == null ? "" : PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(PrivateChatManager.Instance.currentChat.Color.ToUnityColor()));
                 chatTeamText = countText;
             }
-            chatTeamText?.gameObject.SetActive(true);
-            srmt?.transform.localPosition = new Vector3(-3.3719f, -1.22f, -5f);
+            chatTeamText.GetIfNull()?.gameObject.SetActive(true);
+            srmt.GetIfNull()?.transform.localPosition = new Vector3(-3.3719f, -1.22f, -5f);
             if (Input.GetMouseButtonDown(1))
             {
                 PrivateChatManager.Instance?.ChangeChannel(__instance, chatTeamText);
             }
             if (PrivateChatManager.Instance?.currentChat?.Id is not "public")
             {
-                var c = PrivateChatManager.Instance?.currentChat.Color.ToUnityColor();
-                var c2 = PrivateChatManager.Instance?.currentChat.TextFieldColor.ToUnityColor();
+                var c = PrivateChatManager.Instance?.currentChat?.Color.ToUnityColor();
+                var c2 = PrivateChatManager.Instance?.currentChat?.TextFieldColor.ToUnityColor();
                 __instance.freeChatField.background.color = c2 ?? UnityEngine.Color.white;
                 __instance.quickChatField.background.color = c2 ?? UnityEngine.Color.white;
-                chatTeamText!.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(c ?? UnityEngine.Color.white));
+                chatTeamText.GetIfNull()?.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(c ?? Color.White));
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            //PDebug.Log(e.ToString());
+            PDebug.Log(ex);
         }
     }
+
     [HarmonyPatch(typeof(ChatController), "SendChat"), HarmonyPrefix,HarmonyPriority(100)]
     public static bool BlockSendChat(ChatController __instance)
     {
