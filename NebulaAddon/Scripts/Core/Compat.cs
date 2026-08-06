@@ -2,6 +2,7 @@ using Nebula.Roles.Assignment;
 using Plana.Roles.Crewmate;
 using Plana.Roles.Modifier;
 using Steamworks;
+using Virial.Helpers;
 
 namespace Plana.Core;
 
@@ -101,6 +102,15 @@ public static class APICompat
         }
         return false;
     }
+
+    public static T? GetIfNull<T>(this T? component) where T : UnityEngine.Component
+    {
+        if (component.AsBoolFast(out var c))
+            return c;
+        else
+            return null;
+    }
+
     static public bool IsModMadmate(this GamePlayer player)
     {
         if (player.IsMadmate)
