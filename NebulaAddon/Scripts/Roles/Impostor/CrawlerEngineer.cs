@@ -399,17 +399,20 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
         }
         );
     }
+    
     public class CrawlerPad : EquipableAbility
     {
         Virial.Media.MultiImage PadSprite = NebulaAPI.AddonAsset.GetResource("CrawlerPad.png")!.AsMultiImage(4,2, 100f)!;
         protected override float Size => 0.68f;
         protected override float Distance => 0.7f;
+
         public CrawlerPad(GamePlayer owner) : base(owner, false, "CrawlerPad")
         {
             animing = false;
             spriteIndex = 4;
             NebulaManager.Instance.StartCoroutine(CoAppear().WrapToIl2Cpp());
         }
+
         protected override void HudUpdate(GameHudUpdateEvent ev)
         {
             return;
@@ -439,6 +442,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
         System.Collections.IEnumerator CoAppear()
         {
             var visibleTime = CrawlerEngineer.PadVisibleTime;
+            while (!Renderer.AsBoolFast()) yield return null;
 
             if (base.Owner.AmOwner || visibleTime <= 0f)
             {
@@ -460,7 +464,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
 
                 while (Renderer.color.a < 1)
                 {
-                    tmp.a = Mathf.Min(Renderer.color.a + (Time.deltaTime / 1f), 1f);
+                    tmp.a = Mathn.Min(Renderer.color.a + (Time.deltaTime / 1f), 1f);
                     Renderer.color = tmp;
 
                     yield return null;
@@ -478,6 +482,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             }
             Release();
         }
+
         public void UnUsePad()
         {
             NebulaManager.Instance.StartCoroutine(CoDisappear().WrapToIl2Cpp());
