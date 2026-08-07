@@ -21,8 +21,8 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
     [NebulaRPCHolder]
     public class Ability : AbstractPlayerUsurpableAbility, IPlayerAbility
     {
-        static Image meetingButton = NebulaAPI.AddonAsset.GetResource("SommelierMeetingSkill.png")!.AsImage(115f);
-        static Image markButton = NebulaAPI.AddonAsset.GetResource("SommelierMark.png")!.AsImage(115f);
+        static Image? meetingButton = NebulaAPI.AddonAsset.GetResource("SommelierMeetingSkill.png")?.AsImage(115f);
+        static Image? markButton = NebulaAPI.AddonAsset.GetResource("SommelierMark.png")?.AsImage(115f);
         static Image? MeetingResultIcon = NebulaAPI.AddonAsset.GetResource("SommelierGetRole.png")?.AsImage(135f);
         static readonly RemoteProcess<ValueTuple<GamePlayer, GamePlayer>> RpcUpdateStatus = new RemoteProcess<ValueTuple<GamePlayer, GamePlayer>>("UpdateSommelier", (m, _) =>
         {

@@ -26,8 +26,8 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
     {
         public static readonly GameEnd SpinnerWin = NebulaAPI.Preprocessor!.CreateEnd("spinner", MyRole.RoleColor);
         DefinedRole RuntimeRole.Role => MyRole;
-        static Image? markImage = null;//暂无
-        static Image? spinImage = null;//暂无
+        static Image? markImage = NebulaAPI.AddonAsset.GetResource("SpinnerDraw.png")!.AsImage(115f);
+        static Image? spinImage = NebulaAPI.AddonAsset.GetResource("SpinnerSpin.png")!.AsImage(115f);
         ModAbilityButton? drawButton, spinButton;
         List<GamePlayer> unSpinDrawedPlayers = new();
         List<SpinString> allStrings = new();
@@ -42,7 +42,7 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
                 drawButton = NebulaAPI.Modules.AbilityButton(this, false, false, 0, false).BindKey(Virial.Compat.VirtualKeyInput.Ability, null);
                 drawButton.Availability = (button) => myTracker.CurrentTarget != null && this.MyPlayer.CanMove;
                 drawButton.Visibility = (button) => !base.MyPlayer.IsDead;
-                //drawButton.SetImage(markImage);
+                drawButton.SetImage(markImage);
                 drawButton.OnClick = delegate (ModAbilityButton button)
                 {
                     unSpinDrawedPlayers.Add(myTracker.CurrentTarget);
@@ -54,7 +54,7 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
                 spinButton = NebulaAPI.Modules.AbilityButton(this, false, false, 0, false).BindKey(Virial.Compat.VirtualKeyInput.SecondaryAbility, null);
                 spinButton.Availability = (button) => this.MyPlayer.CanMove && unSpinDrawedPlayers.Count >= CanSpinMinPlayerNum;
                 spinButton.Visibility = (button) => !base.MyPlayer.IsDead;
-                //spinButton.SetImage(spinImage);
+                spinButton.SetImage(spinImage);
                 spinButton.OnClick = delegate (ModAbilityButton button)
                 {
                     allStrings.Add(new SpinString(unSpinDrawedPlayers, this));
