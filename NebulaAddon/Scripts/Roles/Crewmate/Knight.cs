@@ -34,12 +34,13 @@ public class Knight : DefinedSingleAbilityRoleTemplate<Knight.Ability>, DefinedR
 
         static private Virial.Media.Image KillImage = NebulaAPI.AddonAsset.GetResource("KILL.png").AsImage(100f);
         int leftKill;
+
         public Ability(GamePlayer player, bool isUsurped, int shots)
             : base(player, isUsurped)
         {
+            leftKill = shots;
             if (AmOwner)
             {
-                leftKill = shots;
                 SpriteRenderer lockSprite = null;
                 ObjectTracker<GamePlayer> killTracker = ObjectTrackers.ForPlayer(this, null, base.MyPlayer, ObjectTrackers.KillablePredicate(base.MyPlayer), null, CanKillHidingPlayerOption, false);
                 killButton = NebulaAPI.Modules.AbilityButton(this, false, true, 0, false).BindKey(base.MyPlayer.IsCrewmate ? Virial.Compat.VirtualKeyInput.Kill : Virial.Compat.VirtualKeyInput.Ability, null).SetAsUsurpableButton(this);
@@ -75,7 +76,6 @@ public class Knight : DefinedSingleAbilityRoleTemplate<Knight.Ability>, DefinedR
                 }
                 killButton.OnClick = button=>
                 {
-                    leftKill--;
                     var target = killTracker.CurrentTarget;
                     var cancelable = GameOperatorManager.Instance?.Run(new PlayerTryVanillaKillLocalEventAbstractPlayerEvent(MyPlayer, target));
                     if (!(cancelable?.IsCanceled ?? false))
@@ -101,11 +101,8 @@ public class Knight : DefinedSingleAbilityRoleTemplate<Knight.Ability>, DefinedR
                                 {
                                     new StaticAchievementToken("knight.challenge1");
                                 }
+                                leftKill--;
                                 killButton.UpdateUsesIcon(leftKill.ToString());
-                            }
-                            else
-                            {
-                                leftKill++;
                             }
                         });
                     }
