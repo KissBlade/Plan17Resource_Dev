@@ -359,7 +359,7 @@ public class PatchManager
             Mayor.MyRole.ConfigurationHolder!.AppendConfiguration(MayorExtraVoteAnonymousVote);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowEvilModifier);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowAllModifier);
-            Scarlet.MyRole.ConfigurationHolder.AppendConfiguration(ScarletPrivateMeetingChat);
+            Scarlet.MyRole.ConfigurationHolder.AppendConfigurations([ScarletPrivateMeetingChat,ScarletCannotGuessScarletTeam]);
             new ClientOption((ClientOption.ClientOptionType)123, "useairshipSound", ["options.switch.off", "options.switch.on"], 0);
             new ClientOption((ClientOption.ClientOptionType)124, "darktheme", ["options.switch.off", "options.switch.on"], 0);
             new ClientOption((ClientOption.ClientOptionType)125, "ggdGuesserSound", ["options.switch.off", "options.switch.on"], 0);
