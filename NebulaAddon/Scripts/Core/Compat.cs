@@ -103,7 +103,7 @@ public static class APICompat
         return false;
     }
 
-    public static T? GetIfNull<T>(this T? component) where T : UnityEngine.Component
+    public static T? GetIfNotNull<T>(this T? component) where T : UnityEngine.Component
     {
         if (component.AsBoolFast(out var c))
             return c;
