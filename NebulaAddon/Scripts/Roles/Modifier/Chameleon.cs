@@ -1,18 +1,18 @@
-﻿using Plana.Core;
+using Plana.Core;
 
 namespace Plana.Roles.Modifier;
 
-public class chameleon : DefinedAllocatableModifierTemplate, HasCitation, DefinedAllocatableModifier, IAssignableDocument
+public class Chameleon : DefinedAllocatableModifierTemplate, HasCitation, DefinedAllocatableModifier, IAssignableDocument
 {
-    private chameleon() : base("chameleon", "cha", new(130, 193, 111), [quiescentTime])
+    private Chameleon() : base("chameleon", "CAN", new(130, 193, 111), [QuiescentTime])
     {
     }
 
     Citation? HasCitation.Citation => Citations.TheOtherRoles;
 
-    static private FloatConfiguration quiescentTime = NebulaAPI.Configurations.Configuration("options.role.chameleon.quiescentTime", (0.25f, 2f, 0.25f), 1f, FloatConfigurationDecorator.Second);
+    static private FloatConfiguration QuiescentTime = NebulaAPI.Configurations.Configuration("options.role.chameleon.quiescentTime", (0.25f, 2f, 0.25f), 1f, FloatConfigurationDecorator.Second);
 
-    static public chameleon MyRole = new chameleon();
+    static public Chameleon MyRole = new Chameleon();
     bool IAssignableDocument.HasTips => true;
     RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
 
@@ -51,7 +51,7 @@ public class chameleon : DefinedAllocatableModifierTemplate, HasCitation, Define
             {
                 lastMoveTime += ev.DeltaTime;
             }
-            if (lastMoveTime > quiescentTime)
+            if (lastMoveTime > QuiescentTime)
             {
                 MyPlayer.GainAttribute(MyPlayer.IsImpostor ? PlayerAttributes.InvisibleElseImpostor : PlayerAttributes.Invisible, 0.25f, false, 0, "chameleon:vanish");
             }
