@@ -128,7 +128,7 @@ public class PatchManager
             harmony.Patch(typeof(HudOverrideTask).GetMethod("Complete"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("CommCamouflagerEffectComptele")));
 
             PDebug.Log(1);
-            //harmony.Patch(typeof(AmongUsClient).GetMethod("CoStartGame", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("CoStartGame")));
+            harmony.Patch(typeof(AmongUsClient).GetMethod("CoStartGame", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("CoStartGame")));
             harmony.Patch(typeof(ShipStatus).GetMethod("Start"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ShipStatusStartPos")));
             harmony.Patch(typeof(PlayerVoteArea).GetMethod("SetCosmetics", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("SetLevel")));
             try
@@ -5055,11 +5055,7 @@ public class PatchManager
     {
         var now = DateTime.Now;
         bool flag = false;
-        if (now.Month == 9 && (now.Day == 13 || now.Day == 14 || now.Day == 15))
-        {
-            flag = true;
-        }
-        if (now.Month == 6 && now.Day == 13)
+        if (now.Month == 9 && now.Day == 15)
         {
             flag = true;
         }
@@ -5073,7 +5069,7 @@ public class PatchManager
             __instance.transform.FindChild("BirthdayDecorSkeld")?.gameObject.SetActive(true);
         }
     }
-    /*public static void CoStartGame()
+    public static void CoStartGame()
     {
         try
         {
@@ -5086,7 +5082,7 @@ public class PatchManager
                     /*new RemoteProcess("SChat2", delegate (bool _)
                     {
                         AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "今天是开发者Plana的生日!");
-                    }).Invoke();
+                    }).Invoke();*/
                 }
                 //AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "test");
             }
@@ -5095,11 +5091,7 @@ public class PatchManager
         {
             PDebug.Log(e);
         }
-        if (AmongUsLLImpl.AmongUsClientInstance.AmHost)
-        {
-            setShieldPlayer.Invoke(new ValueTuple<GamePlayer, GamePlayer>(null!, null!));
-        }
-    }*/
+    }
     public static void CommCamouflagerEffectInitialize()
     {
         if (CommSabCamouflagerEffectActive)
