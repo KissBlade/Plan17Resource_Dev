@@ -268,7 +268,6 @@ public class PatchManager
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayer", [typeof(ILifespan), typeof(float?), typeof(GamePlayer), typeof(Predicate<GamePlayer>), typeof(Predicate<GamePlayer>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
-            harmony.Patch(typeof(PlayerModInfo).GetMethod("SetPlayer", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("SetPlayerSync")));
             harmony.Patch(typeof(ExileController).GetMethod("Begin"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ExileSnatcherPatch")) { priority = -100});
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
@@ -537,19 +536,6 @@ public class PatchManager
             {
                 __instance.completeString = Language.Translate("game.meeting.roleText").Replace("%PLAYER%", init.networkedPlayer.PlayerName).Replace("%ROLE%", ability.UsurpedRole.DisplayName);
             }
-        }
-    }
-
-    public static void SetPlayerSync(PlayerModInfo __instance, PlayerControl myPlayer)
-    {
-        try
-        {
-            __instance.UpdateModDead(myPlayer.Data.IsDead);
-            __instance.IsDisconnected = myPlayer.Data.Disconnected;
-        }
-        catch (Exception ex)
-        {
-            PDebug.Log(ex);
         }
     }
 
