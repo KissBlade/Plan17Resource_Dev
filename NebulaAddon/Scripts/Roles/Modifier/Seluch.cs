@@ -1,15 +1,24 @@
-﻿using Plana.Core;
+using Plana.Core;
+using Plana.Roles.Crewmate;
 
 namespace Plana.Roles.Modifier;
 
-public class Seluch : DefinedAllocatableModifierTemplate, HasCitation, DefinedAllocatableModifier, IAssignableDocument
+public class Scrambler : DefinedAllocatableModifierTemplate, DefinedAllocatableModifier, DefinedModifier, DefinedAssignable, IRoleID, RuntimeAssignableGenerator<RuntimeModifier>, ICodeName, HasRoleFilter, HasAssignmentRoutine, ISpawnable, IAssignToCategorizedRole,HasCitation, IAssignableDocument
 {
-private Seluch(): base("seluch", "sel", new(117, 72, 78), [ShowModifier]) {
+    private Scrambler() : base("scrambler", "sc", new(183,31,29), [BlockSkillNum,NoActiveMeeting],false,true,false)
+    {
     }
-    Citation? HasCitation.Citation { get { return PCitations.TownOfUs; } }
-    public static BoolConfiguration ShowModifier = NebulaAPI.Configurations.Configuration("options.roles.seluch.showmodifier", true);
-    static public Seluch MyRole = new Seluch();
+    Citation HasCitation.Citation => PCitations.PlanaANDKC;
+    static IntegerConfiguration BlockSkillNum = NebulaAPI.Configurations.Configuration("options.role.scrambler.blockskillnum", (1, 15), 2);
+    static IntegerConfiguration NoActiveMeeting = NebulaAPI.Configurations.Configuration("options.role.scrambler.meeting", (1, 15), 2);
+    static public Scrambler MyRole = new Scrambler();
     bool IAssignableDocument.HasTips => true;
+    public static void LoadPatch(Harmony harmony)
+    {
+        PDebug.Log("Scrambler Patch");
+        harmony.Patch(typeof(ModAbilityButtonImpl).GetMethod("get_OnClick"), new HarmonyMethod(typeof(Scrambler.Instance).GetMethod("ClickPatch")));
+        PDebug.Log("Done");
+    }
     RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
     public class Instance : RuntimeAssignableTemplate, RuntimeModifier
     {
@@ -18,55 +27,77 @@ private Seluch(): base("seluch", "sel", new(117, 72, 78), [ShowModifier]) {
         public Instance(GamePlayer player) : base(player)
         {
         }
-
-        void RuntimeAssignable.OnActivated() {
+        public static int UseSkillnum;
+        public static int ActiveMeeting;
+        static RemoteProcess<ValueTuple<int, int>> SetRpc = new RemoteProcess<ValueTuple<int, int>>("ScramblerSetNumRPC", delegate (
+            ValueTuple<int, int> message, bool _)
+        {
+            UseSkillnum = message.Item1;
+            if (message.Item2 != 999)
+            {
+                ActiveMeeting = message.Item2;
+            }
+        });
+        void RuntimeAssignable.OnActivated()
+        {
+            if (AmOwner)
+            {
+                UseSkillnum = 0;
+                ActiveMeeting = 0;
+                SetRpc.Invoke(new ValueTuple<int, int>(UseSkillnum, ActiveMeeting));
+            }
         }
         void RuntimeAssignable.DecorateNameConstantly(ref string name, bool canSeeAllInfo, bool inEndScene)
         {
-            if (AmOwner || canSeeAllInfo||inEndScene) name += "▼".Color(MyRole.RoleColor.ToUnityColor());
+            if (AmOwner || canSeeAllInfo||inEndScene) name += "Φ".Color(MyRole.RoleColor.ToUnityColor());
         }
-        [Local]
-        void OnReported(ReportDeadBodyEvent ev)
+        void OnMeetingPreEnd(MeetingEndEvent ev)
+        {
+            if (AmOwner)
+            {
+                UseSkillnum = 0;
+                ActiveMeeting++;
+                SetRpc.Invoke(new ValueTuple<int, int>(UseSkillnum, ActiveMeeting));
+            }
+        }
+        public static bool ClickPatch(ModAbilityButtonImpl __instance)
         {
             try
             {
-                if (ev.Reporter.AmOwner&&ev.Reported!=null)
+                /* (__instance.VanillaButton.buttonLabelText.text.Contains(Language.Translate("button.label.agent")))
                 {
-                    string text = ev.Reported.Role.DisplayColoredName;
-                    if (ShowModifier)
+                    return true;
+                }*/
+                if (!NebulaGameManager.Instance!.AllPlayerInfo.Any(r=>r.Modifiers.Any(r=>r is Scrambler.Instance)))
+                {
+                    return true;
+                }
+                var pl = AmongUsLLImpl.LocalPlayer;
+                if (pl==null)
+                {
+                    return true;
+                }
+                var p = pl.ToNebulaPlayer();
+                if (p==null)
+                {
+                    return true;
+                }
+                if (p.IsCrewmate&&!(p.Role.Role is Sheriff||p.Role.Role is Knight||p.Role is Agent.Instance))
+                {
+                    if (UseSkillnum < BlockSkillNum && ActiveMeeting < NoActiveMeeting)
                     {
-                        ev.Reported.Modifiers?.Do(runtimeModifier =>
-                        {
-                            var newtext = runtimeModifier.OverrideRoleName(text, false,true);
-                            if (!string.IsNullOrEmpty(newtext))
-                            {
-                                text = newtext;
-                            }
-                            var tempText = string.Empty;
-                            runtimeModifier.DecorateNameConstantly(ref tempText, true,false);
-                            if (runtimeModifier is DefinedAssignable assignable)
-                            {
-                                tempText.Replace(assignable.InternalName, "masked_" + assignable.InternalName);
-                            }
-	            text+=tempText;
-                        });
-                    }
-                    AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, Language.Translate("role.seluch.reportText") + text);
-                    if (ev.Reported.Role.Role.LocalizedName.Contains("busker"))
-                    {
-                        new StaticAchievementToken("seluch.another1");
-                    }
-                    if (ev.Reported.Role.Role.LocalizedName.Contains("bait") || ev.Reported.Modifiers.Any((RuntimeModifier m) => m.Modifier.LocalizedName.Contains("baitM")))
-                    {
-                        new StaticAchievementToken("seluch.another2");
+                        UseSkillnum++;
+                        SetRpc.Invoke(new ValueTuple<int, int>(UseSkillnum, 999));
+                        __instance.StartCoolDown();
+                        return false;
                     }
                 }
             }
-            catch (Exception e)
+            catch(Exception ex)
             {
-                PDebug.Log(e);
+                PDebug.Log(ex);
             }
+            return true;
         }
-        string? RuntimeModifier.DisplayIntroBlurb => Language.Translate("role.seluch.blurb");
     }
 }
