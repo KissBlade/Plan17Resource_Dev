@@ -221,7 +221,7 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
         }
         if (chatTeamText != null)
         {
-            chatTeamText!.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat.LocalizedName.Color(currentChat.Color.ToUnityColor()));
+            chatTeamText.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat.LocalizedName.Color(currentChat.Color.ToUnityColor()));
         }
         var color = currentChat.TextFieldColor.ToUnityColor();
         c.freeChatField.background.color = color;
@@ -330,18 +330,18 @@ public class PrivateChatPatchs
         var srmt = __instance.sendRateMessageText;
         if (AmongUsLLImpl.LobbyInstance.AsBoolFast() || (AmongUsLLImpl.LocalPlayer?.Data?.IsDead ?? true))
         {
-            chatTeamText.GetIfNull()?.gameObject.SetActive(false);
+            chatTeamText.GetIfNotNull()?.gameObject.SetActive(false);
 
-            srmt.GetIfNull()?.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
+            srmt.GetIfNotNull()?.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
             return;
         }
         try
         {
             if (PrivateChatManager.Instance?.AllChannels.Count(c => c.CanUseChannel) <= 1 && PrivateChatManager.Instance.AllChannels.Any(c => c.CanUseChannel && c.Id is "public"))
             {
-                chatTeamText.GetIfNull()?.gameObject.SetActive(false);
+                chatTeamText.GetIfNotNull()?.gameObject.SetActive(false);
 
-                srmt.GetIfNull()?.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
+                srmt.GetIfNotNull()?.transform.localPosition = new Vector3(-3.3719f, -1.5046f, -5f);
                 return;
             }
             if (chatTeamText == null)
@@ -356,8 +356,8 @@ public class PrivateChatPatchs
                 countText.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat == null ? "" : PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(PrivateChatManager.Instance.currentChat.Color.ToUnityColor()));
                 chatTeamText = countText;
             }
-            chatTeamText.GetIfNull()?.gameObject.SetActive(true);
-            srmt.GetIfNull()?.transform.localPosition = new Vector3(-3.3719f, -1.22f, -5f);
+            chatTeamText.GetIfNotNull()?.gameObject.SetActive(true);
+            srmt.GetIfNotNull()?.transform.localPosition = new Vector3(-3.3719f, -1.22f, -5f);
             if (Input.GetMouseButtonDown(1))
             {
                 PrivateChatManager.Instance?.ChangeChannel(__instance, chatTeamText);
@@ -368,7 +368,7 @@ public class PrivateChatPatchs
                 var c2 = PrivateChatManager.Instance?.currentChat?.TextFieldColor.ToUnityColor();
                 __instance.freeChatField.background.color = c2 ?? UnityEngine.Color.white;
                 __instance.quickChatField.background.color = c2 ?? UnityEngine.Color.white;
-                chatTeamText.GetIfNull()?.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(c ?? Color.White));
+                chatTeamText.GetIfNotNull()?.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(c ?? Color.White));
             }
         }
         catch (Exception ex)
@@ -506,11 +506,11 @@ public class PrivateChatPatchs
                 PrivateChatManager.Instance.Register(color, color, "Lovers" + __instance.LoversId, () => (Language.Translate("chat.lovertext") + ("(" + __instance.MyLover.Get().PlayerName + ")").Color(Lover.Colors[loverCount - 1])),
                     __instance, () =>
                     {
-                        if (MeetingHud.Instance && PatchManager.LoverMeetingChat)
+                        if (MeetingHud.Instance.AsBoolFast() && PatchManager.LoverMeetingChat)
                         {
                             return true;
                         }
-                        if (!MeetingHud.Instance && PatchManager.ChatOption)
+                        if (!MeetingHud.Instance.AsBoolFast() && PatchManager.ChatOption)
                         {
                             return true;
                         }
