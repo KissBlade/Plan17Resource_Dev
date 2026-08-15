@@ -270,6 +270,7 @@ public class PatchManager
             harmony.Patch(typeof(PlayerModInfo).GetMethod(typeof(IGameObject).FullName + ".get_Position", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("PlayerPositionFix")));
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayer", [typeof(ILifespan), typeof(float?), typeof(GamePlayer), typeof(Predicate<GamePlayer>), typeof(Predicate<GamePlayer>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
+            harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
@@ -502,6 +503,7 @@ public class PatchManager
     static ValueConfiguration<int> ModTrackerDistance = NebulaAPI.Configurations.Configuration("options.general.modtrackerDistance", ["options.general.modtrackerDistance.short", "options.general.modtrackerDistance.mid", "options.general.modtrackerDistance.long"], 1);
     static BoolConfiguration SheriffSuicideKillTarget = NebulaAPI.Configurations.Configuration("options.role.sheriff.suicidekilltarget", false);
     public static BoolConfiguration ScarletPrivateMeetingChat = NebulaAPI.Configurations.Configuration("options.role.scarlet.privatechat", false);
+    static BoolConfiguration ScarletCannotGuessScarletTeam = NebulaAPI.Configurations.Configuration("options.role.scarlet.cannotguessScarletTeam", false);
     static BoolConfiguration HideLevelOption = NebulaAPI.Configurations.Configuration("options.general.hidelevel", false);
     static Virial.Media.Image doctorshieldimage = NebulaAPI.AddonAsset.GetResource("DoctorShield.png")!.AsImage(115f)!;
     static Virial.Media.Image globalscanimage = NebulaAPI.AddonAsset.GetResource("GlobalScan.png")!.AsImage(115f)!;
@@ -523,6 +525,24 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
+    public static void EditScarletGuessable(RuntimeRole __instance)
+    {
+        if (!ScarletCannotGuessScarletTeam)
+        {
+            return;
+        }
+        var scarlet = __instance as Scarlet.Instance;
+        if (scarlet.AmOwner)
+        {
+            GameOperatorManager.Instance.Subscribe<PlayerCanGuessPlayerLocalEvent>(ev =>
+            {
+                if (scarlet.IsMyLover(ev.Player))
+                {
+                    ev.CanGuess = false;
+                }
+            }, scarlet);
+        }
+    }
     public static void FixModTrackerDistance(ref float? distance)
     {
         var local = GamePlayer.LocalPlayer;

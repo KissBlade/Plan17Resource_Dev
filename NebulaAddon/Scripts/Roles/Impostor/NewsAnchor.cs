@@ -138,6 +138,10 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
             {
                 return;
             }
+            if (CoAnchorPlayer != null)
+            {
+                CoAnchorPlayer.RemoveOutfitByTag("CoAnchor");
+            }
             if (MyPlayer.IsAlive && leftSkill > 0 && !forceSkilled && meetingnum > ForceUseSkillMeetingNumOption)
             {
                 leftSkill--;
@@ -215,18 +219,12 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                 ev.Name = "Co-Anchor";
             }
         }
+        [Local]
         void OnMeetingEnd(MeetingEndEvent ev)
         {
             if (CoAnchorPlayer!=null)
             {
                 CoAnchorPlayer.AddOutfit(new OutfitCandidate(CoAnchorOutfit, "CoAnchor", 20, true, null));
-            }
-        }
-        void OnMeetingPreStart(MeetingPreStartEvent ev)
-        {
-            if (CoAnchorPlayer!=null)
-            {
-                CoAnchorPlayer.RemoveOutfitByTag("CoAnchor");
             }
         }
         void OnPlayerDie(PlayerDieOrDisconnectEvent ev)
