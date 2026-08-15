@@ -11,6 +11,7 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Reflection;
 using Il2CppSystem.Runtime.CompilerServices;
 using InnerNet;
+using NAudio.CoreAudioApi;
 using Nebula.Bridge;
 using Nebula.Listeners;
 using Nebula.Map;
@@ -268,6 +269,7 @@ public class PatchManager
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
             harmony.Patch(typeof(PlayerModInfo).GetMethod("SetPlayer", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("SetPlayerSync")));
+            harmony.Patch(typeof(ExileController).GetMethod("Begin"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ExileSnatcherPatch")) { priority = -100});
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
@@ -352,7 +354,7 @@ public class PatchManager
             Guesser.MyEvilRole.ConfigurationHolder?.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, EvilGuesserSafeGuessNum]);
             GuesserModifier.MyRole.ConfigurationHolder?.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, GuesserAutoAssign, GuesserOnlyInGameAutoAssign, GuesserAutoAssignFilter]);
             Destroyer.MyRole.ConfigurationHolder?.AppendConfiguration(InVisibleDestroyCanMove);
-            Snatcher.MyRole.ConfigurationHolder?.AppendConfiguration(SnatcherCannotGuessSnatchedPlayer);
+            Snatcher.MyRole.ConfigurationHolder?.AppendConfigurations([SnatcherCannotGuessSnatchedPlayer, SnatcherExileUseUsurpRole]);
             Mayor.MyRole.ConfigurationHolder?.AppendConfiguration(MayorExtraVoteAnonymousVote);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowEvilModifier);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowAllModifier);
@@ -502,6 +504,7 @@ public class PatchManager
     static BoolConfiguration SheriffSuicideKillTarget = NebulaAPI.Configurations.Configuration("options.role.sheriff.suicidekilltarget", false);
     public static BoolConfiguration ScarletPrivateMeetingChat = NebulaAPI.Configurations.Configuration("options.role.scarlet.privatechat", false);
     static BoolConfiguration ScarletCannotGuessScarletTeam = NebulaAPI.Configurations.Configuration("options.role.scarlet.cannotguessScarletTeam", false);
+    static BoolConfiguration SnatcherExileUseUsurpRole = NebulaAPI.Configurations.Configuration("options.role.snatcher.exileUseUsurpRole", true);
     static BoolConfiguration HideLevelOption = NebulaAPI.Configurations.Configuration("options.general.hidelevel", false);
     static Virial.Media.Image doctorshieldimage = NebulaAPI.AddonAsset.GetResource("DoctorShield.png")!.AsImage(115f)!;
     static Virial.Media.Image globalscanimage = NebulaAPI.AddonAsset.GetResource("GlobalScan.png")!.AsImage(115f)!;
@@ -523,6 +526,19 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
+
+    public static void ExileSnatcherPatch(ExileController __instance, [HarmonyArgument(0)] ref ExileController.InitProperties init)
+    {
+        if (MeetingHudExtension.IsObvious || (MeetingHudExtension.ExiledAllModCache?.Length ?? 0) > 1 || !SnatcherExileUseUsurpRole) return;
+        if (GeneralConfigurations.ShowRoleOfExiled && AmongUsUtil.GetCurrentNormalOption().ConfirmImpostor)
+        {
+            var player = NebulaGameManager.Instance?.GetPlayer(init.networkedPlayer.PlayerId);
+            if (player?.TryGetAbility<Snatcher.Ability>(out var ability) ?? false && ability.UsurpedRole != null)
+            {
+                __instance.completeString = Language.Translate("game.meeting.roleText").Replace("%PLAYER%", init.networkedPlayer.PlayerName).Replace("%ROLE%", ability.UsurpedRole.DisplayName);
+            }
+        }
+    }
 
     public static void SetPlayerSync(PlayerModInfo __instance, PlayerControl myPlayer)
     {
