@@ -40,7 +40,7 @@ public class Splicer : DefinedSingleAbilityRoleTemplate<IUsurpableAbility>, Defi
     MultipleAssignmentType DefinedRole.MultipleAssignment => MultipleAssignmentType.Allowed;
     bool AssignableFilterHolder.CanLoadDefault(DefinedAssignable assignable)
     {
-        return base.CanLoadDefaultTemplate(assignable) && !(assignable is chameleon);
+        return base.CanLoadDefaultTemplate(assignable) && assignable is not Chameleon;
     }
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => !IsEvil ? AbilityAssignmentStatus.CanLoadToMadmate : AbilityAssignmentStatus.Killers;
     public bool IsEvil => Category == RoleCategory.ImpostorRole;
