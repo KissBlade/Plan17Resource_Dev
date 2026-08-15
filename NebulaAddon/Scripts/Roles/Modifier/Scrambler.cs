@@ -1,4 +1,4 @@
-﻿using Plana.Core;
+using Plana.Core;
 using Plana.Roles.Crewmate;
 
 namespace Plana.Roles.Modifier;
@@ -82,7 +82,7 @@ public class Scrambler : DefinedAllocatableModifierTemplate, DefinedAllocatableM
                 {
                     return true;
                 }
-                if (p.IsCrewmate&&!(p.Role.Role is Sheriff||p.Role.Role is Knight|p.Role is Agent.Instance))
+                if (p.IsCrewmate&&!(p.Role.Role is Sheriff||p.Role.Role is Knight||p.Role is Agent.Instance))
                 {
                     if (UseSkillnum < BlockSkillNum && ActiveMeeting < NoActiveMeeting)
                     {
