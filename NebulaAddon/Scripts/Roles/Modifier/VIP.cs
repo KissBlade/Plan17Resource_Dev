@@ -1,4 +1,4 @@
-﻿using Plana.Core;
+using Plana.Core;
 
 namespace Plana.Roles.Modifier;
 
@@ -42,7 +42,7 @@ message, bool _)
             {
                 return;
             }
-            UnityEngine.Object.Instantiate(GameManagerCreator.Instance.HideAndSeekManagerPrefab.DeathPopupPrefab, AmongUsLLImpl.HudManagerInstance.transform.parent).Show(message.VanillaPlayer, 0);
+            UnityEngine.Object.Instantiate(AmongUsUtil.HnSPrefab.DeathPopupPrefab, AmongUsLLImpl.HudManagerInstance.transform.parent).Show(message.VanillaPlayer, 0);
         });
         [OnlyMyPlayer]
         [Local]
