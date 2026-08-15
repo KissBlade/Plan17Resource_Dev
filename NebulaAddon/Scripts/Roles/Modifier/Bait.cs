@@ -1,11 +1,10 @@
-﻿using Virial.Helpers;
+using Virial.Helpers;
 
 namespace Plana.Roles.Modifier;
 
 public class BaitM : DefinedAllocatableModifierTemplate, HasCitation, DefinedAllocatableModifier, IAssignableDocument
 {
-    private BaitM()
-        : base("baitM", "biM", new Virial.Color(0, 247, byte.MaxValue, byte.MaxValue), [
+    private BaitM() : base("baitM", "BIM", new Virial.Color(0, 247, byte.MaxValue, byte.MaxValue), [
                 ShowKillFlashOption,ReportDelayOption,ReportDelayDispersionOption,
                 CanSeeVentFlashOption])
         {
@@ -44,8 +43,7 @@ public class BaitM : DefinedAllocatableModifierTemplate, HasCitation, DefinedAll
             }
         }
 
-        public Instance(GamePlayer player)
-            : base(player)
+        public Instance(GamePlayer player) : base(player)
         {
         }
 
@@ -58,19 +56,18 @@ public class BaitM : DefinedAllocatableModifierTemplate, HasCitation, DefinedAll
         {
             new StaticAchievementToken("bait.another1");
         }
-        AchievementToken<ValueTuple<bool, bool>> acTokenChallenge;
+
+        AchievementToken<ValueTuple<bool, bool>>? acTokenChallenge;
+
         [Local]
         private void OnReported(ReportDeadBodyEvent ev)
         {
-            Player reported = ev.Reported;
+            Player? reported = ev.Reported;
             if (reported != null && reported.AmOwner && ev.Reporter == base.MyPlayer.MyKiller && !ev.Reporter.AmOwner)
             {
                 NebulaAPI.IncrementStatsEntry("stats.bait.bait", 1);
                 new StaticAchievementToken("bait.common1");
-                if (this.acTokenChallenge == null)
-                {
-                    this.acTokenChallenge = new AchievementToken<ValueTuple<bool, bool>>("bait.challenge", new ValueTuple<bool, bool>(false, true),(ValueTuple<bool, bool> val, ProgressRecord _) => val.Item1);
-                }
+                this.acTokenChallenge ??= new AchievementToken<ValueTuple<bool, bool>>("bait.challenge", new ValueTuple<bool, bool>(false, true),(ValueTuple<bool, bool> val, ProgressRecord _) => val.Item1);
             }
         }
         private void OnMeetingEnd(TaskPhaseRestartEvent ev)
@@ -93,14 +90,14 @@ public class BaitM : DefinedAllocatableModifierTemplate, HasCitation, DefinedAll
         [Local]
         private void OnPlayerExiled(PlayerExiledEvent ev)
         {
-            AchievementToken<ValueTuple<bool, bool>> achievementToken = this.acTokenChallenge;
+            AchievementToken<ValueTuple<bool, bool>>? achievementToken = this.acTokenChallenge;
             if (achievementToken != null && achievementToken.Value.Item2)
             {
                 byte playerId = ev.Player.PlayerId;
-                Player myKiller = base.MyPlayer.MyKiller;
+                Player? myKiller = base.MyPlayer.MyKiller;
                 if (playerId == ((myKiller != null) ? myKiller.PlayerId : 255))
                 {
-                    this.acTokenChallenge.Value.Item1 = true;
+                    this.acTokenChallenge?.Value.Item1 = true;
                 }
             }
         }
@@ -116,6 +113,7 @@ public class BaitM : DefinedAllocatableModifierTemplate, HasCitation, DefinedAll
             murderer.CmdReportDeadBody(MyPlayer.VanillaPlayer.Data);
             NebulaAPI.IncrementStatsEntry("stats.bait.killer", 1);
         }
+
         [OnlyMyPlayer]
         private void BaitReportOnMurdered(PlayerMurderedEvent ev)
         {
@@ -124,10 +122,12 @@ public class BaitM : DefinedAllocatableModifierTemplate, HasCitation, DefinedAll
                 NebulaManager.Instance.StartCoroutine(this.CoReport(ev.Murderer.VanillaPlayer).WrapToIl2Cpp());
             }
         }
+
         void RuntimeAssignable.DecorateNameConstantly(ref string name, bool canSeeAllInfo, bool inEndScene)
         {
             if (AmOwner || canSeeAllInfo||inEndScene) name += "@".Color(MyRole.RoleColor.ToUnityColor());
         }
+
         [Local]
         private void OnEnterVent(PlayerVentEnterEvent ev)
         {
