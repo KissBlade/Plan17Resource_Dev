@@ -1,15 +1,10 @@
-﻿namespace Plana.Roles.Modifier;
+namespace Plana.Roles.Modifier;
 
 public class Desperate : DefinedModifierTemplate, DefinedModifier, DefinedAssignable, IRoleID, RuntimeAssignableGenerator<RuntimeModifier>, HasCitation, IAssignableDocument
 {
     private Desperate() : base("desperate", NebulaTeams.ImpostorTeam.Color, [NoActiveMeeting,SuicideTime],true,()=>PatchManager.DesperateAssignToImp)
     {
-        IConfigurationHolder configurationHolder = base.ConfigurationHolder;
-        if (configurationHolder == null)
-        {
-            return;
-        }
-        configurationHolder.ScheduleAddRelated(() => [GeneralConfigurations.AssignmentOptions]);
+        base.ConfigurationHolder?.ScheduleAddRelated(() => [GeneralConfigurations.AssignmentOptions]);
     }
     Citation HasCitation.Citation => PCitations.PlanaANDKC;
     static IntegerConfiguration NoActiveMeeting = NebulaAPI.Configurations.Configuration("options.role.desperate.meeting", (1, 15), 2);
@@ -28,7 +23,7 @@ public class Desperate : DefinedModifierTemplate, DefinedModifier, DefinedAssign
         int ActiveMeeting;
         float time;
         int killnum;
-        TextMeshPro tmp;
+        TextMeshPro? tmp;
 
         [OnlyMyPlayer]
         [Local]
@@ -49,8 +44,8 @@ public class Desperate : DefinedModifierTemplate, DefinedModifier, DefinedAssign
                 ActiveMeeting = 0;
                 GameObject TextHolder = UnityHelper.CreateObject("SuicideTime", DestroyableSingleton<HudManager>.Instance.KillButton.transform.parent, UnityEngine.Vector3.zero, null);
                 this.BindGameObject(TextHolder.gameObject);
-                TextMeshPro tmPro = null;
-                Size size;
+                TextMeshPro? tmPro = null;
+
                 new NoSGUIText(GUIAlignment.Bottom, new TextAttribute(NebulaGUIWidgetEngine.API.GetAttribute(AttributeParams.StandardBaredBoldLeftNonFlexible))
                 {
                     Alignment = Virial.Text.TextAlignment.Top,
@@ -63,33 +58,30 @@ public class Desperate : DefinedModifierTemplate, DefinedModifier, DefinedAssign
                         tmPro = t;
                         tmPro.sortingOrder = 0;
                     }
-                }.Instantiate(new Anchor(new global::Virial.Compat.Vector2(0f, 0f), new global::Virial.Compat.Vector3(-0.5f, -0.5f, 0f)), new Size(20f, 20f), out size).transform.SetParent(TextHolder.transform, false);
-                GameOperatorManager instance = GameOperatorManager.Instance;
-                if (instance != null)
+                }.Instantiate(new Anchor(new global::Virial.Compat.Vector2(0f, 0f), new global::Virial.Compat.Vector3(-0.5f, -0.5f, 0f)), new Size(20f, 20f), out Size size)?.transform.SetParent(TextHolder.transform, false);
+
+                GameOperatorManager.Instance?.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
                 {
-                    instance.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
+                    if (tmPro)
                     {
-                        if (tmPro)
+                        if (!AmongUsUtil.InMeeting && MyPlayer.TryGetModifier<Desperate.Instance>(out var m))
                         {
-                            if (!MeetingHud.Instance&&!ExileController.Instance&&MyPlayer.TryGetModifier<Desperate.Instance>(out var m))
+                            tmPro?.gameObject.SetActive(true);
+                            time += Time.deltaTime;
+                            tmPro?.text = Language.Translate("role.desperate.suicideTimeText") + ":" + Math.Floor(SuicideTime - time);
+                            if (time >= SuicideTime)
                             {
-                                tmPro.gameObject.SetActive(true);
-                                time += Time.deltaTime;
-                                tmPro.text = Language.Translate("role.desperate.suicideTimeText") +":"+ Math.Floor(SuicideTime-time);
-                                if (time>=SuicideTime)
-                                {
-                                    MyPlayer.Suicide(PatchManager.DesperateDead, null, KillParameter.NormalKill);
-                                }
-                                tmPro.transform.localPosition = new UnityEngine.Vector3(-0.07f, -2.34f, 0f);
+                                MyPlayer.Suicide(PatchManager.DesperateDead, null, KillParameter.NormalKill);
                             }
-                            else
-                            {
-                                tmPro.gameObject.SetActive(false);
-                            }
+                            tmPro?.transform.localPosition = new Virial.Compat.Vector3(-0.07f, -2.34f, 0f);
                         }
-                    }, this, 100);
-                    tmp = tmPro;
-                }
+                        else
+                        {
+                            tmPro?.gameObject.SetActive(false);
+                        }
+                    }
+                }, this, 100);
+                tmp = tmPro;
             }
         }
         void RuntimeAssignable.OnInactivated()
