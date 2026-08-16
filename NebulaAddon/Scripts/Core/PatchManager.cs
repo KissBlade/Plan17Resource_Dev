@@ -300,6 +300,7 @@ public class PatchManager
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(HostIsGameMaster);
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(AutoAssignFirstDeadShield);
             Sidekick.MyRole.ConfigurationHolder!.AppendConfiguration(SidekickModifierCanUseVent);
+            ExOptions.AppendConfiguration(BeforeStartGameDisconnectKickAll);
             ExOptions.AppendConfiguration(ModTrackerDistance);
             ExOptions.AppendConfiguration(HideLevelOption);
             ExOptions.AppendConfiguration(IntroShowImpostor);
@@ -505,6 +506,7 @@ public class PatchManager
     static BoolConfiguration ScarletCannotGuessScarletTeam = NebulaAPI.Configurations.Configuration("options.role.scarlet.cannotguessScarletTeam", false);
     static BoolConfiguration SnatcherExileUseUsurpRole = NebulaAPI.Configurations.Configuration("options.role.snatcher.exileUseUsurpRole", true);
     static BoolConfiguration HideLevelOption = NebulaAPI.Configurations.Configuration("options.general.hidelevel", false);
+    static BoolConfiguration BeforeStartGameDisconnectKickAll = NebulaAPI.Configurations.Configuration("options.general.beforeStartGameDisconnectKickAll", true);
     static Virial.Media.Image doctorshieldimage = NebulaAPI.AddonAsset.GetResource("DoctorShield.png")!.AsImage(115f)!;
     static Virial.Media.Image globalscanimage = NebulaAPI.AddonAsset.GetResource("GlobalScan.png")!.AsImage(115f)!;
     static ModAbilityButton? scanbutton;
@@ -1091,10 +1093,10 @@ public class PatchManager
         __instance.chatBubblePool.Prefab.CastFast<ChatBubble>().TextArea.UseRoleIcon();
     }
 
-    //Prefix if language is sc block loading news.
+    //Prefix if language is not jp block loading news.
     public static bool BlockLoadNews()
     {
-        return DataManager.Settings.Language.CurrentLanguage == SupportedLangs.SChinese;
+        return DataManager.Settings.Language.CurrentLanguage == SupportedLangs.Japanese;
     }
 
     public static void FixKillerTeamCallbackCrewmate(KillerTeamCallback __instance)
@@ -3253,7 +3255,26 @@ public class PatchManager
     [HarmonyPatch]
     public class IntroPatchs
     {
+        [NebulaRPC]
+        public static void RpcExitAll(int senderClientId, string reason)
+        {
+            var client = AmongUsLLImpl.AmongUsClientInstance;
+            if (client == null)
+            {
+                PDebug.Log($"[KickAll] RPC rejected: AmongUsClient is null, senderClientId={senderClientId}");
+                return;
+            }
+            SendKickreason = reason;
+            void Exit()
+            {
+                 AmongUsLLImpl.AmongUsClientInstance.ExitGame(DisconnectReasons.Custom);
+            }
 
+            if (client.ClientId == senderClientId)
+                NebulaManager.Instance.StartDelayAction(1f, Exit);
+            else
+                Exit();
+        }
         [HarmonyPatch(typeof(ShowIntroPatch), "Prefix"), HarmonyPrefix]
         public static bool BlockNoSShow(ref bool __result)
         {
@@ -3269,6 +3290,15 @@ public class PatchManager
         }
         static System.Collections.IEnumerator CoBegin(IntroCutscene __instance)
         {
+            if (BeforeStartGameDisconnectKickAll)
+            {
+                var allplayers = GameData.Instance.AllPlayers.GetFastEnumerator();
+                if (allplayers.Any(p => p.Disconnected))
+                {
+                    RpcExitAll(PlayerControl.LocalPlayer.Data.ClientId, Language.Translate("options.general.disconnectKickAllReason"));
+                    yield break;
+                }
+            }
             IntroCutscene.Instance = __instance;
             AmongUsLLImpl.HudManagerInstance.HideGameLoader();
             __instance.HideAndSeekPanels.SetActive(false);

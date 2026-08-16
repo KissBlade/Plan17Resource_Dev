@@ -419,6 +419,8 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                     {
                         inner = GUI.API.VerticalHolder(GUIAlignment.Center,[GUI.API.Arrange(Virial.Media.GUIAlignment.Center, NebulaGameManager.Instance.AllPlayerInfo.Select(p => GUI.API.RawButton(Virial.Media.GUIAlignment.Center, roleMaskedTittleAttr, p.Unbox().ColoredDefaultName, button =>
                         {
+                            MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerBridge.MyTransform,()=>
+                            {
                             if (ability.CoAnchorPlayer==p)
                             {
                                 ability.MyPlayer.MurderPlayer(ability.CoAnchorPlayer, PlayerStates.Dead, EventDetails.Kill, KillParameter.MeetingKill, KillCondition.BothAlive);
@@ -431,7 +433,8 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                             ability.leftGuess--;
                             ability.leftMeetingGuess--;
                             RpcUpdateNewsAnchorNumInfo.Invoke((ability.MyPlayer, ability.leftSkill, ability.leftGuess,ability.leftMeetingGuess));
-                            window.CloseScreen();
+                            window.CloseScreen(); },()=>{ },Language.Translate("role.newsanchor.confirmGuess").Replace("%PLAYER%",p.PlayerName));
+
                         })), 4),GUI.API.RawText(GUIAlignment.Center, NebulaAPI.GUI.GetAttribute(AttributeParams.StandardBold),Language.Translate("roles.newsanchor.leftguess") + ability.leftMeetingGuess+$"({ability.leftGuess})")]);
                     }
                     var widget = GUI.API.VerticalHolder(Virial.Media.GUIAlignment.Center, holder,

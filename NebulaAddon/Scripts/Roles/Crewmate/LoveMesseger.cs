@@ -239,7 +239,15 @@ public class HasLove : DefinedModifierTemplate, DefinedModifier, DefinedAssignab
         {
             ev.IsWin = ev.GameEnd == NebulaGameEnd.CrewmateWin;
         }
-
+        [OnlyMyPlayer]
+        void CheckExtraWin(PlayerCheckExtraWinEvent ev)
+        {
+            if (ev.Phase!=ExtraWinCheckPhase.Phase7)
+            {
+                return;
+            }
+            ev.SetWinIf(ev.GameEnd == NebulaGameEnd.CrewmateWin);
+        }
         [OnlyMyPlayer]
         void OnCheckKill(PlayerCheckCanKillLocalEvent ev)
         {

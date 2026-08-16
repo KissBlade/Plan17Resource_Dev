@@ -85,7 +85,7 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
         [OnlyHost]
         void OnUpdate(GameUpdateEvent ev)
         {
-            if (NebulaGameManager.Instance.AllPlayerInfo.Count(p => p.PlayerState == EndofFate) >= WinNeedEndOfFateNum)
+            if (allStrings.Select(c=>c.stringPlayers).SelectMany(l=>l).Count(p=>p.IsDead)-allStrings.Count>= WinNeedEndOfFateNum)
             {
                 NebulaAPI.CurrentGame.TriggerGameEnd(SpinnerWin, GameEndReason.Situation);
             }
@@ -93,7 +93,7 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
     }
     public class SpinString : FlexibleLifespan, IGameOperator
     {
-        private List<GamePlayer> stringPlayers;
+        public List<GamePlayer> stringPlayers;
         Spinner.Instance instance;
         public SpinString(List<GamePlayer> players, Spinner.Instance instance)
         {
