@@ -106,25 +106,29 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
             }
         }
     }
+    
     void OnSetRole(PlayerRoleSetEvent ev)
     {
-        try
+        if (ev.Player.AmOwner)
         {
-            if (PatchManager.AllPlayerCannotSeeOtherNameColor)
+            try
             {
-                goto refreshChannel;
+                if (PatchManager.AllPlayerCannotSeeOtherNameColor)
+                {
+                    goto refreshChannel;
+                }
+                if (PatchManager.ImpostorMeetingChat && !PatchManager.ImpostorCannotSeeOther && ev.Role.Role.Category == RoleCategory.ImpostorRole)
+                {
+                    Instance.Register(NebulaTeams.ImpostorTeam.Color, new(0.7f, 0.2f, 0.2f), "Impostor", Language.Translate("chat.impostortext"), ev.Role, () => MeetingHud.Instance && GamePlayer.LocalPlayer.IsImpostor && NebulaGameManager.Instance.AllPlayerInfo.Any(p => p.IsImpostor && p.TryGetAbility<CrawlerEngineer.Ability>(out var ab)), (p1, p2) => (p1.IsImpostor && p2.IsImpostor));
+                }
             }
-            if (ev.Player.AmOwner && PatchManager.ImpostorMeetingChat && !PatchManager.ImpostorCannotSeeOther && ev.Role.Role.Category == RoleCategory.ImpostorRole)
+            catch (Exception e)
             {
-                Instance.Register(NebulaTeams.ImpostorTeam.Color, new(0.7f, 0.2f, 0.2f), "Impostor", Language.Translate("chat.impostortext"), ev.Role, () => MeetingHud.Instance && GamePlayer.LocalPlayer.IsImpostor && NebulaGameManager.Instance.AllPlayerInfo.Any(p => p.IsImpostor && p.TryGetAbility<CrawlerEngineer.Ability>(out var ab)), (p1, p2) => (p1.IsImpostor && p2.IsImpostor));
+                PDebug.Log(e);
             }
+        refreshChannel:;
+            RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText);
         }
-        catch (Exception e)
-        {
-            PDebug.Log(e);
-        }
-    refreshChannel:;
-        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText);
     }
     void OnSetModifier(PlayerModifierSetEvent ev)
     {
