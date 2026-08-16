@@ -393,18 +393,18 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                         hasVote = true;
                         widgets.Add(GUI.API.LocalizedButton(Virial.Media.GUIAlignment.Center, roleTitleAttr, "roles.newsanchor.tabs.vote", (button) => SetWidget(0), color: tab == 0 ? Virial.Color.Yellow : null));
                     }
-                    if (ability.leftGuess > 0&&(!AnchorCannotGuessCoAnchorOption||!ability!.AmOwner))
+                    if (ability.leftGuess > 0 && (!AnchorCannotGuessCoAnchorOption || !ability!.AmOwner))
                     {
                         hasGuess = true;
                         widgets.Add(GUI.API.LocalizedButton(Virial.Media.GUIAlignment.Center, roleTitleAttr, "roles.newsanchor.tabs.guess", (button) => SetWidget(1), color: tab == 1 ? Virial.Color.Yellow : null));
                     }
-                    var holder = GUI.API.VerticalHolder(GUIAlignment.Center, GUI.API.HorizontalHolder(Virial.Media.GUIAlignment.Center,widgets));
+                    var holder = GUI.API.VerticalHolder(GUIAlignment.Center, GUI.API.HorizontalHolder(Virial.Media.GUIAlignment.Center, widgets));
                     GUIWidget inner = GUIEmptyWidget.Default;
-                    if (tab == 0&&hasVote)
+                    if (tab == 0 && hasVote)
                     {
                         inner = GUI.API.Arrange(Virial.Media.GUIAlignment.Center, NebulaGameManager.Instance.AllPlayerInfo.Select(p => GUI.API.RawButton(Virial.Media.GUIAlignment.Center, roleMaskedTittleAttr, p.Unbox().ColoredDefaultName, button =>
                         {
-                            if (MeetingHud.Instance.state!=MeetingHud.VoteStates.NotVoted)
+                            if (MeetingHud.Instance.state != MeetingHud.VoteStates.NotVoted)
                             {
                                 return;
                             }
@@ -415,10 +415,12 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                             AmongUsLLImpl.SoundManagerInstance.PlaySound(MeetingHud.Instance.VoteLockinSound, false, 1f, null);
                         })), 4);
                     }
-                    else if (hasGuess)
+                    else if (hasGuess && ability.leftMeetingGuess > 0 && ability.leftGuess > 0)
                     {
-                        inner = GUI.API.VerticalHolder(GUIAlignment.Center,[GUI.API.Arrange(Virial.Media.GUIAlignment.Center, NebulaGameManager.Instance.AllPlayerInfo.Select(p => GUI.API.RawButton(Virial.Media.GUIAlignment.Center, roleMaskedTittleAttr, p.Unbox().ColoredDefaultName, button =>
+                        inner = GUI.API.VerticalHolder(GUIAlignment.Center, [GUI.API.Arrange(Virial.Media.GUIAlignment.Center, NebulaGameManager.Instance.AllPlayerInfo.Select(p => GUI.API.RawButton(Virial.Media.GUIAlignment.Center, roleMaskedTittleAttr, p.Unbox().ColoredDefaultName, button =>
                         {
+                            if (ability.leftMeetingGuess>0&&ability.leftGuess>0)
+                            {
                             MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerBridge.MyTransform,()=>
                             {
                             if (ability.CoAnchorPlayer==p)
@@ -434,7 +436,7 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                             ability.leftMeetingGuess--;
                             RpcUpdateNewsAnchorNumInfo.Invoke((ability.MyPlayer, ability.leftSkill, ability.leftGuess,ability.leftMeetingGuess));
                             window.CloseScreen(); },()=>{ },Language.Translate("role.newsanchor.confirmGuess").Replace("%PLAYER%",p.PlayerName));
-
+                            }
                         })), 4),GUI.API.RawText(GUIAlignment.Center, NebulaAPI.GUI.GetAttribute(AttributeParams.StandardBold),Language.Translate("roles.newsanchor.leftguess") + ability.leftMeetingGuess+$"({ability.leftGuess})")]);
                     }
                     var widget = GUI.API.VerticalHolder(Virial.Media.GUIAlignment.Center, holder,
