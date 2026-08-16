@@ -1,10 +1,10 @@
-﻿using Plana.Core;
+using Plana.Core;
 
 namespace Plana.Roles.Modifier;
 
 public class ButtonBarry : DefinedAllocatableModifierTemplate, HasCitation, DefinedAllocatableModifier, IAssignableDocument
 {
-    private ButtonBarry() : base("buttonbarry", "butbar", new(191, 107, 51), [CallMeetingCooldown, InSabotageCanCallMeeting, DonotCallMeetingRequireMeetingnum])
+    private ButtonBarry() : base("buttonbarry", "BBY", new(191, 107, 51), [CallMeetingCooldown, InSabotageCanCallMeeting, DonotCallMeetingRequireMeetingnum])
     {
     }
     Citation? HasCitation.Citation { get { return PCitations.TownOfUs; } }
@@ -37,6 +37,8 @@ public class ButtonBarry : DefinedAllocatableModifierTemplate, HasCitation, Defi
                 button.OnClick = button =>
                 {
                     used = true;
+
+                    if (GamePlayer.LocalPlayer == null) return;
                     MeetingHudExtension.ModCmdReportDeadBody(GamePlayer.LocalPlayer, null, MeetingHudExtension.ReportType.EmergencyMeeting, InSabotageCanCallMeeting, false);
                 };
             }

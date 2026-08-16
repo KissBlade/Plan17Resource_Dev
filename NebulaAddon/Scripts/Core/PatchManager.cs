@@ -1,4 +1,4 @@
-﻿global using Plana.Core;
+global using Plana.Core;
 global using Plana.Core.API;
 using Amongus.GameModes.HideAndSeek;
 using AmongUs.Data;
@@ -11,6 +11,7 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Reflection;
 using Il2CppSystem.Runtime.CompilerServices;
 using InnerNet;
+using NAudio.CoreAudioApi;
 using Nebula.Bridge;
 using Nebula.Listeners;
 using Nebula.Map;
@@ -65,6 +66,7 @@ public class PatchManager
     {
         Init();
     }
+
     static Harmony? harmony;
     static AssetBundle? ab, indexDeviceAb;
     public static AudioClip GetSound(string name)
@@ -263,14 +265,10 @@ public class PatchManager
             harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.HandleRpc)), null, null, null, new HarmonyMethod(typeof(PatchManager).GetMethod("HandleRpcFinalizer")), null);
             harmony.Patch(typeof(MeetingRoleSelectWindow).GetMethod(nameof(MeetingRoleSelectWindow.OpenRoleSelectWindowUsingTabs), AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OpenRoleSelectWindowUsingTabs))));
             harmony.Patch(typeof(Sheriff.Ability).GetConstructor([typeof(GamePlayer), typeof(bool), typeof(int)]), new HarmonyMethod(typeof(PatchManager).GetMethod(nameof(PatchManager.OnCreateSheriffAbility))));
-            harmony.Patch(typeof(DanceModule).GetMethod("Update", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockDanceModuleUpdate")));
-            //harmony.Patch(typeof(PlayerControl).GetMethod(nameof(PlayerControl.CompleteTask)), null, new HarmonyMethod(typeof(PatchManager).GetMethod("RecordCompleteTask")));
-            harmony.Patch(typeof(PlayerGetTruePositionPatch).GetMethod("Prefix"), new HarmonyMethod(typeof(PatchManager).GetMethod("BlockNoSGetTruePos")));
-            harmony.Patch(typeof(PlayerControl).GetMethod("GetTruePosition"), new HarmonyMethod(typeof(PatchManager).GetMethod("FixGetTruePos")));
-            harmony.Patch(typeof(PlayerModInfo).GetMethod(typeof(IGameObject).FullName + ".get_Position", AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("PlayerPositionFix")));
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayer", [typeof(ILifespan), typeof(float?), typeof(GamePlayer), typeof(Predicate<GamePlayer>), typeof(Predicate<GamePlayer>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
+            harmony.Patch(typeof(ExileController).GetMethod("Begin"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ExileSnatcherPatch")) { priority = -100});
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
@@ -291,13 +289,13 @@ public class PatchManager
             Disposer.LoadPatch(harmony);
             Pollyanna.LoadPatch(harmony);
             NewsAnchor.LoadPatch(harmony);
-            Lover.MyRole.ConfigurationHolder!.AppendConfiguration(ChatOption);
-            Lover.MyRole.ConfigurationHolder!.AppendConfiguration(LoverDisConnectedRemoveLover);
-            Sheriff.MyRole.ConfigurationHolder!.AppendConfiguration(SheriffCanKillMadmateModifierOption);
-            Sheriff.MyRole.ConfigurationHolder!.AppendConfiguration(SheriffCanKillSidekickModifierOption);
-            Sheriff.MyRole.ConfigurationHolder!.AppendConfiguration(SheriffSuicideKillTarget);
-            Doctor.MyRole.ConfigurationHolder!.AppendConfiguration(DoctorCanUseShieldOption);
-            Doctor.MyRole.ConfigurationHolder!.AppendConfiguration(DoctorShieldNoBlockGuessedOption);
+            Lover.MyRole.ConfigurationHolder?.AppendConfiguration(ChatOption);
+            Lover.MyRole.ConfigurationHolder?.AppendConfiguration(LoverDisConnectedRemoveLover);
+            Sheriff.MyRole.ConfigurationHolder?.AppendConfiguration(SheriffCanKillMadmateModifierOption);
+            Sheriff.MyRole.ConfigurationHolder?.AppendConfiguration(SheriffCanKillSidekickModifierOption);
+            Sheriff.MyRole.ConfigurationHolder?.AppendConfiguration(SheriffSuicideKillTarget);
+            Doctor.MyRole.ConfigurationHolder?.AppendConfiguration(DoctorCanUseShieldOption);
+            Doctor.MyRole.ConfigurationHolder?.AppendConfiguration(DoctorShieldNoBlockGuessedOption);
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(AssignHostOpOption);
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(HostIsGameMaster);
             GeneralConfigurations.AssignmentOptions.AppendConfiguration(AutoAssignFirstDeadShield);
@@ -337,29 +335,29 @@ public class PatchManager
             ExOptions.AppendConfiguration(CannotUseSabotage);
             ExOptions.AppendConfiguration(MeetingDeadSendNotice);
             GeneralConfigurations.AssignmentOptions.AppendConfigurations([DesperateAssignToImp, DesperateDoNotAssignToLoverImp/*,DiagnosisOptions*/]);
-            Sniper.MyRole.ConfigurationHolder!.AppendConfigurations([SniperCanUseNormalKill, SniperCanLockMini]);
-            Raider.MyRole.ConfigurationHolder!.AppendConfiguration(RaiderCanUseNormalKill);
+            Sniper.MyRole.ConfigurationHolder?.AppendConfigurations([SniperCanUseNormalKill, SniperCanLockMini]);
+            Raider.MyRole.ConfigurationHolder?.AppendConfiguration(RaiderCanUseNormalKill);
             GeneralConfigurations.MapOptions.AppendConfigurations([PolusHasOxygenSabotage,PolusOxygenSabotageTime,CommSabCamouflagerEffectActive,
                 CommSabRandomCosmic,TimeLimit,TimeLimitMin]);
-            Navvy.MyRole.ConfigurationHolder!.AppendConfiguration(NavvyCanUseCamera);
-            Psychic.MyRole.ConfigurationHolder!.AppendConfiguration(PsychicSendMessageMode);
-            Collator.MyRole.ConfigurationHolder!.AppendConfiguration(collatorSendMessageMode);
-            Sidekick.MyRole.ConfigurationHolder.AppendConfigurations([SidekickPromoteToJackalNoJackalizedRole, SidekickPromoteToJackalRandomJackalizedRole]);
-            Jackal.MyRole.ConfigurationHolder!.AppendConfigurations([JackalCanInvokeSabotage, NoAliveImpostorSabotageJackalWin, JackalUseOldPromoteSidekick]);
+            Navvy.MyRole.ConfigurationHolder?.AppendConfiguration(NavvyCanUseCamera);
+            Psychic.MyRole.ConfigurationHolder?.AppendConfiguration(PsychicSendMessageMode);
+            Collator.MyRole.ConfigurationHolder?.AppendConfiguration(collatorSendMessageMode);
+            Sidekick.MyRole.ConfigurationHolder?.AppendConfigurations([SidekickPromoteToJackalNoJackalizedRole, SidekickPromoteToJackalRandomJackalizedRole]);
+            Jackal.MyRole.ConfigurationHolder?.AppendConfigurations([JackalCanInvokeSabotage, NoAliveImpostorSabotageJackalWin, JackalUseOldPromoteSidekick]);
             IEnumerable<IConfiguration> options = [AccelTrapCost, AccelTrapOnlyCrewmate, DecelTrapCost, DecelTrapOnlyImpostor, PlaceTrapNoMeetingStart];
-            Trapper.MyNiceRole.ConfigurationHolder!.AppendConfigurations(options);
-            Trapper.MyEvilRole.ConfigurationHolder!.AppendConfigurations(options);
-            Trapper.MyEvilRole.ConfigurationHolder!.AppendConfiguration(EvilTrapperKillTrapPLUS);
-            Jester.MyRole.ConfigurationHolder!.AppendConfiguration(JesterCanCallMeeting);
-            Guesser.MyNiceRole.ConfigurationHolder!.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, NiceGuesserSafeGuessNum]);
-            Guesser.MyEvilRole.ConfigurationHolder!.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, EvilGuesserSafeGuessNum]);
-            GuesserModifier.MyRole.ConfigurationHolder!.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, GuesserAutoAssign, GuesserOnlyInGameAutoAssign, GuesserAutoAssignFilter]);
-            Destroyer.MyRole.ConfigurationHolder!.AppendConfiguration(InVisibleDestroyCanMove);
-            Snatcher.MyRole.ConfigurationHolder!.AppendConfiguration(SnatcherCannotGuessSnatchedPlayer);
-            Mayor.MyRole.ConfigurationHolder!.AppendConfiguration(MayorExtraVoteAnonymousVote);
+            Trapper.MyNiceRole.ConfigurationHolder?.AppendConfigurations(options);
+            Trapper.MyEvilRole.ConfigurationHolder?.AppendConfigurations(options);
+            Trapper.MyEvilRole.ConfigurationHolder?.AppendConfiguration(EvilTrapperKillTrapPLUS);
+            Jester.MyRole.ConfigurationHolder?.AppendConfiguration(JesterCanCallMeeting);
+            Guesser.MyNiceRole.ConfigurationHolder?.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, NiceGuesserSafeGuessNum]);
+            Guesser.MyEvilRole.ConfigurationHolder?.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, EvilGuesserSafeGuessNum]);
+            GuesserModifier.MyRole.ConfigurationHolder?.AppendConfigurations([GuesserCannotGuessNoSpawnableRole, GuesserAutoAssign, GuesserOnlyInGameAutoAssign, GuesserAutoAssignFilter]);
+            Destroyer.MyRole.ConfigurationHolder?.AppendConfiguration(InVisibleDestroyCanMove);
+            Snatcher.MyRole.ConfigurationHolder?.AppendConfigurations([SnatcherCannotGuessSnatchedPlayer, SnatcherExileUseUsurpRole]);
+            Mayor.MyRole.ConfigurationHolder?.AppendConfiguration(MayorExtraVoteAnonymousVote);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowEvilModifier);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowAllModifier);
-            Scarlet.MyRole.ConfigurationHolder.AppendConfigurations([ScarletPrivateMeetingChat,ScarletCannotGuessScarletTeam]);
+            Scarlet.MyRole.ConfigurationHolder?.AppendConfigurations([ScarletPrivateMeetingChat,ScarletCannotGuessScarletTeam]);
             new ClientOption((ClientOption.ClientOptionType)123, "useairshipSound", ["options.switch.off", "options.switch.on"], 0);
             new ClientOption((ClientOption.ClientOptionType)124, "darktheme", ["options.switch.off", "options.switch.on"], 0);
             new ClientOption((ClientOption.ClientOptionType)125, "ggdGuesserSound", ["options.switch.off", "options.switch.on"], 0);
@@ -370,7 +368,7 @@ public class PatchManager
             new ClientOption((ClientOption.ClientOptionType)130, "blockStamps", ["options.switch.off", "options.switch.on"], 0);
             GeneralConfigurations.AssignmentOptions.ScheduleAddRelated(() => [Desperate.MyRole.ConfigurationHolder!]);
 
-            Hint WithImage(string id)
+            static Hint WithImage(string id)
             {
                 return new HintWithImage(NebulaAPI.AddonAsset.GetResource("Hints/" + id.HeadUpper() + ".png")!.AsImage()!, new TranslateTextComponent("hint." + id.HeadLower() + ".title"), new TranslateTextComponent("hint." + id.HeadLower() + ".detail"));
             }
@@ -477,7 +475,8 @@ public class PatchManager
     public static BoolConfiguration FantastMeetingChat = NebulaAPI.Configurations.Configuration("options.general.fantastMeetingChat", false);
     static bool CanInvokeSpecialMeeting = false;//NebulaAPI.Configurations.Configuration("options.diagnosis.caninvokespecialMeeting", false, () => AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false);
     static bool DiagnosisIsActive = false;//NebulaAPI.Configurations.Configuration("options.diagnosis.IsActive", false, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting);
-    static int DiagnosisChance = 0;// NebulaAPI.Configurations.Configuration("options.diagnosis.chance", new ValueTuple<int, int, int>(0, 100, 10), 0, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive, val => val.ToString() + "%");
+    //static int DiagnosisChance = 0;
+    // NebulaAPI.Configurations.Configuration("options.diagnosis.chance", new ValueTuple<int, int, int>(0, 100, 10), 0, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive, val => val.ToString() + "%");
     static FloatConfiguration StartKillTime = NebulaAPI.Configurations.Configuration("options.diagnosis.startkilltime", (0f, 60f, 2.5f), 17.5f, FloatConfigurationDecorator.Second, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive);
     static IntegerConfiguration KillChance = NebulaAPI.Configurations.Configuration("options.diagnosis.killchance", new ValueTuple<int, int, int>(0, 100, 10), 40, () => (AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false) && CanInvokeSpecialMeeting && DiagnosisIsActive, val => val.ToString() + "%");
     //static GroupConfiguration DiagnosisOptions = new GroupConfiguration("options.diagnosis.group", [CanInvokeSpecialMeeting, DiagnosisIsActive, DiagnosisChance, StartKillTime, KillChance], ViolatorTeam.Color.ToUnityColor(), () => AmongUsLLImpl.AmongUsClientInstance?.AmHost ?? false);
@@ -504,6 +503,7 @@ public class PatchManager
     static BoolConfiguration SheriffSuicideKillTarget = NebulaAPI.Configurations.Configuration("options.role.sheriff.suicidekilltarget", false);
     public static BoolConfiguration ScarletPrivateMeetingChat = NebulaAPI.Configurations.Configuration("options.role.scarlet.privatechat", false);
     static BoolConfiguration ScarletCannotGuessScarletTeam = NebulaAPI.Configurations.Configuration("options.role.scarlet.cannotguessScarletTeam", false);
+    static BoolConfiguration SnatcherExileUseUsurpRole = NebulaAPI.Configurations.Configuration("options.role.snatcher.exileUseUsurpRole", true);
     static BoolConfiguration HideLevelOption = NebulaAPI.Configurations.Configuration("options.general.hidelevel", false);
     static Virial.Media.Image doctorshieldimage = NebulaAPI.AddonAsset.GetResource("DoctorShield.png")!.AsImage(115f)!;
     static Virial.Media.Image globalscanimage = NebulaAPI.AddonAsset.GetResource("GlobalScan.png")!.AsImage(115f)!;
@@ -525,6 +525,20 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
+
+    public static void ExileSnatcherPatch(ExileController __instance, [HarmonyArgument(0)] ref ExileController.InitProperties init)
+    {
+        if (MeetingHudExtension.IsObvious || (MeetingHudExtension.ExiledAllModCache?.Length ?? 0) > 1 || !SnatcherExileUseUsurpRole) return;
+        if (GeneralConfigurations.ShowRoleOfExiled && AmongUsUtil.GetCurrentNormalOption().ConfirmImpostor)
+        {
+            var player = NebulaGameManager.Instance?.GetPlayer(init.networkedPlayer.PlayerId);
+            if (player?.TryGetAbility<Snatcher.Ability>(out var ability) ?? false && ability.UsurpedRole != null)
+            {
+                __instance.completeString = Language.Translate("game.meeting.roleText").Replace("%PLAYER%", init.networkedPlayer.PlayerName).Replace("%ROLE%", ability.UsurpedRole.DisplayName);
+            }
+        }
+    }
+
     public static void EditScarletGuessable(RuntimeRole __instance)
     {
         if (!ScarletCannotGuessScarletTeam)
@@ -532,9 +546,9 @@ public class PatchManager
             return;
         }
         var scarlet = __instance as Scarlet.Instance;
-        if (scarlet.AmOwner)
+        if (scarlet?.AmOwner ?? false)
         {
-            GameOperatorManager.Instance.Subscribe<PlayerCanGuessPlayerLocalEvent>(ev =>
+            GameOperatorManager.Instance?.Subscribe<PlayerCanGuessPlayerLocalEvent>(ev =>
             {
                 if (scarlet.IsMyLover(ev.Player))
                 {
@@ -543,10 +557,11 @@ public class PatchManager
             }, scarlet);
         }
     }
+
     public static void FixModTrackerDistance(ref float? distance)
     {
         var local = GamePlayer.LocalPlayer;
-        if (local.Role is Arsonist.Instance || local.TryGetAbility<Oracle.Ability>(out var a) || local.TryGetAbility<Sommelier.Ability>(out var ab))
+        if (local != null && (local.Role is Arsonist.Instance || local.TryGetAbility<Oracle.Ability>(out var a) || local.TryGetAbility<Sommelier.Ability>(out var ab)))
         {
             if (!distance.HasValue)
             {
@@ -555,11 +570,13 @@ public class PatchManager
             }
         }
     }
-    public static void FixKeepAsLongAsPossible(object __instance)
+
+    //I won't be using this patch for now
+    /*public static void FixKeepAsLongAsPossible(object __instance)
     {
         var type = __instance.GetType();
         var maxDistance = type.GetField("maxDistance");
-        if ((bool)type.GetField("isSoftLocked", AccessTools.all).GetValue(__instance))
+        if ((bool)type.GetField("isSoftLocked", AccessTools.all)?.GetValue(__instance))
         {
             var array = AmongUsLLImpl.CurrentGameOptionsInstance.GetFloatArray(FloatArrayOptionNames.KillDistances);
             maxDistance.SetValue(__instance, array[Math.Clamp(ModTrackerDistance.GetValue(), 0, array.Length - 1)]);
@@ -568,39 +585,17 @@ public class PatchManager
         {
             maxDistance.SetValue(__instance, AmongUsLLImpl.Instance.VanillaKillDistance);
         }
-    }
-    public static bool PlayerPositionFix(GamePlayer __instance, ref Virial.Compat.Vector2 __result)
-    {
-        if (!__instance.IsDisconnected)
-        {
-            __result = __instance.Unbox().MyControl.transform.position;
-            return false;
-        }
-        __result = Virial.Compat.Vector2.Zero;
-        return false;
-    }
-    public static bool FixGetTruePos(PlayerControl __instance, ref UnityEngine.Vector2 __result)
-    {
-        __result = __instance.transform.position + (__instance.Collider.offset * __instance.transform.localScale.x).AsVector3(0);
-        return false;
-    }
-    public static bool BlockNoSGetTruePos()
-    {
-        return false;
-    }
+    }*/
+
     public static void RecordCompleteTask(PlayerControl __instance, uint idx)
     {
         var task = __instance.myTasks.GetFastEnumerator().FirstOrDefault(c => c.Id == idx);
-        if (task)
+        if (task.AsBoolFast(out var taskObj))
         {
             var sb = new Il2CppSystem.Text.StringBuilder();
-            task.AppendTaskText(sb);
+            taskObj.AppendTaskText(sb);
             GameMaster.SendMessageToGM.Invoke($"玩家 {__instance.name} 完成了任务 {sb.ToString()}");
         }
-    }
-    public static bool BlockDanceModuleUpdate()
-    {
-        return false;
     }
 
     public static bool OnCreateSheriffAbility(Sheriff.Ability __instance, GamePlayer player, bool isUsurped, int shots)
@@ -659,12 +654,13 @@ public class PatchManager
                     }
                 }
 
-                bool killedAnyone = false;
                 __instance.killButton.Availability = (button) => killTracker.CurrentTarget != null && __instance.MyPlayer.CanMove && !__instance.MyPlayer.WillDie && lockSprite == null;
                 __instance.killButton.Visibility = (button) => !__instance.MyPlayer.IsDead && __instance.leftShots > 0;
                 __instance.killButton.OnClick = (button) =>
                 {
                     var player = killTracker.CurrentTarget;
+
+                    if (player == null) return;
                     __instance.acTokenAnother2.Value = false;
                     Sheriff.StatsShot.Progress();
                     if (!__instance.MyPlayer.IsMadmate && __instance.CanKill(player!.RealPlayer!))
@@ -676,7 +672,6 @@ public class PatchManager
                         __instance.MyPlayer.MurderPlayer(player!, PlayerState.Dead, EventDetail.Kill, Virial.Game.KillParameter.NormalKill);
 
                         acTokenAnother3.Value.triggered = true;
-                        killedAnyone = true;
                     }
                     else
                     {
@@ -784,7 +779,7 @@ public class PatchManager
             }), 4, -1, 0, 0.59f);
         }
         var originalInnerContents = new List<IMetaWidgetOld>(inner.contents);
-        GUITextField textField = null;
+        GUITextField? textField = null;
         MetaWidgetOld.ScrollView scroller = new(new(6.9f, 3f), inner, true) { Alignment = IMetaWidgetOld.AlignmentOption.Center };
         textField = new GUITextField(GUIAlignment.Center, new(5.8f, 0.38f)) { HintText = Language.Translate("help.search.hint").Color(UnityEngine.Color.gray), WithMaskMaterial = false, IsSharpField = false, MaxLines = 1, EnterAction = text => { OnSearch(); return true; }, GainFocus = true };
         bool HasButtonWithText(IMetaWidgetOld widget, string[] query)
@@ -795,32 +790,27 @@ public class PatchManager
             {
                 foreach (var child in combined.contents)
                 {
-                    if (HasButtonWithText(child as IMetaWidgetOld, query))
+                    var childWidget = child as IMetaWidgetOld;
+                    if (childWidget == null) return false;
+
+                    if (HasButtonWithText(childWidget, query))
                         return true;
                 }
             }
             return false;
         }
-        /*void OnSearch()
-        {
-            var query = textField.Artifact.First().Text.Split(' ', '　'); ;
-            PDebug.Log("MeetingRoleSelectWindow Search"+query.Join(" "));
-            var contents = originalInnerContents.Where(r => query.All(q=>string.IsNullOrEmpty(query))||
-            !(r is CombinedWidgetOld)||(r is CombinedWidgetOld combined&& HasButtonWithText(combined, query)));
-            (scroller.Inner as MetaWidgetOld).contents = contents.ToList();
-            window.SetWidget(widget);
-        }*/
+
         void OnSearch()
         {
-            var inputText = textField.Artifact.Last().Text;
-            var queries = inputText.Split(' ', '　');
-            if (string.IsNullOrWhiteSpace(inputText) || queries.All(string.IsNullOrEmpty))
+            var inputText = textField?.Artifact.Last().Text;
+            var queries = inputText?.Split(' ', '　');
+            if (string.IsNullOrWhiteSpace(inputText) || (queries?.All(string.IsNullOrEmpty) ?? false))
             {
-                (scroller.Inner as MetaWidgetOld).contents = originalInnerContents.ToList();
+                (scroller.Inner as MetaWidgetOld)?.contents = originalInnerContents.ToList();
                 window.SetWidget(widget);
                 return;
             }
-            PDebug.Log("MeetingRoleSelectWindow Search: " + string.Join(" ", queries));
+            PDebug.Log("MeetingRoleSelectWindow Search: " + string.Join(" ", queries ?? []));
             var matchedRoles = new List<IMetaParallelPlacableOld>();
             foreach (var widget in originalInnerContents)
             {
@@ -852,7 +842,7 @@ public class PatchManager
                     newInner.Append(new MetaWidgetOld.VerticalMargin(0.1f));
                 }*/
             }
-            (scroller.Inner as MetaWidgetOld).contents = newInner.contents;
+            (scroller.Inner as MetaWidgetOld)?.contents = newInner.contents;
             window.SetWidget(widget);
         }
         widget.Append(new MetaWidgetOld.WrappedWidget(NebulaAPI.GUI.HorizontalHolder(GUIAlignment.Center, textField, NebulaAPI.GUI.LocalizedButton(GUIAlignment.Center, AttributeAsset.MarketplaceTabNonMaskedButton, "help.search.search", _ => OnSearch()))));
@@ -882,6 +872,7 @@ public class PatchManager
         __result = window;
         return false;
     }
+
     public static Exception HandleRpcFinalizer(byte callId, Hazel.MessageReader reader, Exception __exception)
     {
         try
@@ -891,7 +882,7 @@ public class PatchManager
                 if (callId == 128)
                 {
                     PDebug.Log("PlayerControl Handle NebulaRpc Error callid:" + reader.PeekInt32().ToString() + " Error:" + __exception.ToString());
-                    return null;
+                    return null!;
                 }
                 PDebug.Log("PlayerControl Handle Rpc Error callid:" + callId.ToString() + " Error:" + __exception.ToString());
             }
@@ -902,6 +893,7 @@ public class PatchManager
         }
         return __exception;
     }
+
     public static void OnLobbyStart()
     {
         var now = DateTime.Now;
@@ -939,7 +931,7 @@ public class PatchManager
     }
     public static void ImpostorCannotGainCrewmateFlowerPatch(ItemSupplier __instance, ref bool __result)
     {
-        if (ImpostorCannotGainCrewmateFlower && !__instance.NoncrewmateOnly && GamePlayer.LocalPlayer.IsImpostor)
+        if (ImpostorCannotGainCrewmateFlower && !__instance.NoncrewmateOnly && (GamePlayer.LocalPlayer?.IsImpostor ?? false))
         {
             __result = false;
         }
@@ -1002,7 +994,7 @@ public class PatchManager
             var mainmenu = MainMenuManagerInstance.MainMenu;
             if (mainmenu != null)
             {
-                ServerDropdown dropdown = null;
+                ServerDropdown? dropdown = null;
                 if (!EnterCodeSelectServer)
                 {
                     var obj = UnityEngine.Object.Instantiate(mainmenu.createGameScreen.serverButton.transform.parent.gameObject, __instance.enterCodeField.transform.parent);
@@ -1098,11 +1090,13 @@ public class PatchManager
     {
         __instance.chatBubblePool.Prefab.CastFast<ChatBubble>().TextArea.UseRoleIcon();
     }
-    //Prefix if language is not jp block loading news.
+
+    //Prefix if language is sc block loading news.
     public static bool BlockLoadNews()
     {
-        return DataManager.Settings.Language.CurrentLanguage == SupportedLangs.Japanese;
+        return DataManager.Settings.Language.CurrentLanguage == SupportedLangs.SChinese;
     }
+
     public static void FixKillerTeamCallbackCrewmate(KillerTeamCallback __instance)
     {
         if (__instance.ExcludedTeam == NebulaTeams.CrewmateTeam && __instance.RemainingOtherTeam)
@@ -1118,12 +1112,12 @@ public class PatchManager
         if (HasGhostRolePlayerCannotSeeAllInfo && __result)
         {
             var player = GamePlayer.LocalPlayer;
-            __result = (player.GhostRole ?? null) == null;
+            __result = (player?.GhostRole ?? null) == null;
         }
     }
     public static bool OnShapeshiftPanelSelected(ShapeshifterMinigame __instance, PlayerControl target)
     {
-        if (!(GamePlayer.LocalPlayer.Role is Assistant.Instance || GamePlayer.LocalPlayer.Role.GetAbility<Almighty.Ability>() != null))
+        if ((GamePlayer.LocalPlayer?.Role is not Assistant.Instance) || GamePlayer.LocalPlayer.Role.GetAbility<Almighty.Ability>() != null)
         {
             return true;
         }
@@ -1137,7 +1131,7 @@ public class PatchManager
             VanillaRpc.ShapeshiftRpc.Invoke((GamePlayer.LocalPlayer, target.ToNebulaPlayer(), true, GamePlayer.LocalPlayer.Role is Assistant.Instance ? OutlawTeam.AssistantShapeshiftLeaveEvidence : Almighty.ShapeshiftLeaveEvidence));
             GameOperatorManager.Instance?.AllOperators.Where(p => p is ModAbilityButtonImpl).Select(p => p as ModAbilityButtonImpl).Do(impl =>
             {
-                if (impl.VanillaButton.buttonLabelText.text == Language.Translate("button.label.assistant.shapeshift"))
+                if (impl?.VanillaButton.buttonLabelText.text == Language.Translate("button.label.assistant.shapeshift"))
                 {
                     impl.ActivateEffect();
                 }
@@ -1153,8 +1147,7 @@ public class PatchManager
 
     public static bool LoverExtraWinFix(Lover.Instance __instance, AbstractPlayerEvent ev)
     {
-        PlayerCheckExtraWinEvent pev = ev as PlayerCheckExtraWinEvent;
-        if (pev == null)
+        if (ev is not PlayerCheckExtraWinEvent pev)
         {
             return true;
         }
@@ -2096,10 +2089,10 @@ public class PatchManager
                 if (MeetingDeadSendNotice && MeetingHud.Instance.AsBoolFast())
                 {
                     var targetPlayer = PlayerControl.AllPlayerControls.GetFastEnumerator().FirstOrDefault(p => !p.Data.IsDead);
-                    var originName = targetPlayer.name;
-                    targetPlayer.SetName("System".Color(Palette.CrewmateBlue));
+                    var originName = targetPlayer?.name;
+                    targetPlayer?.SetName("System".Color(Palette.CrewmateBlue));
                     AmongUsLLImpl.HudManagerBridge.Chat.AddChat(targetPlayer, Language.Translate("options.general.meetingdeadNotice").Replace("%DEAD%", ev.Player.PlayerName));
-                    targetPlayer.SetName(originName);
+                    targetPlayer?.SetName(originName);
                 }
             }, __instance);
             GameOperatorManager.Instance.Subscribe<EndCriteriaMetEvent>(ev =>
@@ -2327,12 +2320,14 @@ public class PatchManager
                             tm.color = new Color32(255, 45, 38, 255);
                         }
                     };
-                    GameObject gameObject = noSGUIText.Instantiate(new Anchor(new Virial.Compat.Vector2(1f, 0.5f), new Virial.Compat.Vector3(0f, 0f, 0f)), new Size(100f, 100f), out size);
-                    gameObject.transform.SetParent(AmongUsLLImpl.HudManagerInstance.SettingsButton.transform);
-                    gameObject.transform.localPosition = new Vector3(-3.75f, 0.18f, 0f);
-                    UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                    var lifespan = new GameObjectLifespan(gameObject);
-                    TextMeshPro countText = gameObject.GetComponent<TextMeshPro>();
+                    GameObject? gameObject = noSGUIText.Instantiate(new Anchor(new Virial.Compat.Vector2(1f, 0.5f), new Virial.Compat.Vector3(0f, 0f, 0f)), new Size(100f, 100f), out size);
+                    if (!gameObject.AsBoolFast(out var obj)) return;
+
+                    obj.transform.SetParent(AmongUsLLImpl.HudManagerInstance.SettingsButton.transform);
+                    obj.transform.localPosition = new Vector3(-3.75f, 0.18f, 0f);
+                    UnityEngine.Object.DontDestroyOnLoad(obj);
+                    var lifespan = new GameObjectLifespan(obj);
+                    TextMeshPro countText = obj.GetComponent<TextMeshPro>();
                     countText.text = GetFormattedTime(second);
                     GameOperatorManager.Instance.Subscribe<GameUpdateEvent>(ev =>
                     {
@@ -3342,7 +3337,7 @@ public class PatchManager
                 PlayerModInfo.RpcAttrModulator.LocalInvoke((myInfo!.PlayerId, new SpeedModulator(1f, vec, true, 100000f, true, 0, null, false), true));
             }
 
-            yield return CoShowTeam(__instance, myInfo!, shownPlayers.ToArray(), 3f, introInfo, lover != null);
+            yield return CoShowTeam(__instance, myInfo!, [.. shownPlayers], 3f, introInfo, lover != null);
             yield return CoShowRole(__instance, myInfo!, introInfo);
             AmongUsLLImpl.ShipStatusInstance.StartSFX();
             GameObject.Destroy(__instance.gameObject);
@@ -3888,8 +3883,8 @@ public class PatchManager
             }
             float minLength = maxLength;
             IPlayerlike result = null!;
-            var CanKillHidingPlayerOption = NebulaAPI.Configurations.Configuration("options.role.sniper.canKillHidingPlayer", false, null, null);
-            var CanKillImpostorOption = NebulaAPI.Configurations.Configuration("options.role.sniper.canKillImpostor", false, null, null);
+            var CanKillHidingPlayerOption = Sniper.CanKillHidingPlayerOption;
+            var CanKillImpostorOption = Sniper.CanKillImpostorOption;
             var renderer = __instance.CallPrivateMethod<SpriteRenderer>("get_Renderer");
             foreach (var p in GamePlayer.AllPlayerlikes)
             {
@@ -4216,69 +4211,7 @@ public class PatchManager
             __result = !SniperCanUseNormalKill;
         }
     }
-    private static Material highlightMaterial = null!;
-    private static Material GetHighlightMaterial()
-    {
-        if (highlightMaterial != null)
-        {
-            return new Material(highlightMaterial);
-        }
-        foreach (UnityEngine.Object mat in Resources.FindObjectsOfTypeAll(Il2CppInterop.Runtime.Il2CppType.Of<Material>()))
-        {
-            if (mat.name == "HighlightMat")
-            {
-                highlightMaterial = mat.TryCast<Material>()!;
-                break;
-            }
-        }
-        return new Material(highlightMaterial);
-    }
 
-    private static Console Consolize<C>(GameObject obj, SpriteRenderer renderer = null!) where C : global::Console
-    {
-        obj.layer = LayerMask.NameToLayer("ShortObjects");
-        global::Console console = obj.GetComponent<global::Console>();
-        UnityEngine.Object component = obj.GetComponent<PassiveButton>();
-        Collider2D collider = obj.GetComponent<Collider2D>();
-        if (!console)
-        {
-            console = obj.AddComponent<C>();
-            console.checkWalls = true;
-            console.usableDistance = 0.7f;
-            console.TaskTypes = new TaskTypes[0];
-            console.ValidTasks = new Il2CppReferenceArray<TaskSet>(0L);
-            List<global::Console> list = AmongUsLLImpl.ShipStatusInstance.AllConsoles.ToList<global::Console>();
-            list.Add(console);
-            AmongUsLLImpl.ShipStatusInstance.AllConsoles = new Il2CppReferenceArray<global::Console>(list.ToArray());
-        }
-        if (console.Image == null)
-        {
-            if (renderer != null)
-            {
-                console.Image = renderer;
-            }
-            else
-            {
-                console.Image = obj.GetComponent<SpriteRenderer>();
-                console.Image.material = GetHighlightMaterial();
-            }
-        }
-        if (!component)
-        {
-            PassiveButton passiveButton = obj.AddComponent<PassiveButton>();
-            passiveButton.OnMouseOut = new UnityEvent();
-            passiveButton.OnMouseOver = new UnityEvent();
-            passiveButton._CachedZ_k__BackingField = 0.1f;
-            passiveButton.CachedZ = 0.1f;
-        }
-        if (!collider)
-        {
-            CircleCollider2D circleCollider2D = obj.AddComponent<CircleCollider2D>();
-            circleCollider2D.radius = 0.4f;
-            circleCollider2D.isTrigger = true;
-        }
-        return console;
-    }
     public static Image? ChristmasTreeImage = NebulaAPI.AddonAsset.GetResource("ChristmasTree.png")!.AsImage();
     public static Image? TreeShadowImage = NebulaAPI.AddonAsset.GetResource("ChristmasTreeShadow.png")!.AsImage();
     public static void ModifyPolusEarly()
@@ -4297,7 +4230,7 @@ public class PatchManager
                 PlainShipRoom roomObj;
                 oxygenA.SetParent(AmongUsLLImpl.ShipStatusInstance.FastRooms.TryGetValue(SystemTypes.LifeSupp, out roomObj) ? roomObj.transform : AmongUsLLImpl.ShipStatusInstance.transform);
                 oxygenA.transform.localPosition = new UnityEngine.Vector3(0.42f, 1.65f, 0f);
-                Console console = Consolize<Console>(oxygenA.gameObject, null!);
+                Console console = ShipExtension.Consolize<Console>(oxygenA.gameObject, null!);
                 console.Room = SystemTypes.LifeSupp;
                 console.ConsoleId = 0;
                 list.Add(console);
@@ -4306,7 +4239,7 @@ public class PatchManager
                 PDebug.Log("GenerateOxygenB");
                 oxygenB.SetParent(AmongUsLLImpl.ShipStatusInstance.FastRooms.TryGetValue(SystemTypes.Laboratory, out roomObj) ? roomObj.transform : AmongUsLLImpl.ShipStatusInstance.transform);
                 oxygenB.transform.localPosition = new UnityEngine.Vector3(-0.83f, 1.78f, 0f);
-                console = Consolize<Console>(oxygenB.gameObject, null!);
+                console = ShipExtension.Consolize<Console>(oxygenB.gameObject, null!);
                 console.Room = SystemTypes.Laboratory;
                 console.ConsoleId = 1;
                 list.Add(console);
@@ -4546,7 +4479,7 @@ public class PatchManager
             {
                 AmongUsLLImpl.ShipStatusInstance.BreakEmergencyButton();
             }
-            GameOperatorManager.Instance.Subscribe<PlayerDecorateNameEvent>(ev =>
+            GameOperatorManager.Instance?.Subscribe<PlayerDecorateNameEvent>(ev =>
             {
                 if (impostors.Contains(ev.Player))
                 {
@@ -7031,7 +6964,7 @@ public class PatchManager
                                     {
                                         return;
                                     }
-                                    if (!(p.Role is Violator.Instance))
+                                    if (p.Role is not Violator.Instance)
                                     {
                                         bool isb = p.Role.GetAbility<Bait.Ability>() != null || p.Role.GetAbility<Provocateur.Ability>() != null || p.Modifiers.Any(r => r is BaitM);
                                         if (isb)

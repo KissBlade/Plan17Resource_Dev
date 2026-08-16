@@ -1,4 +1,4 @@
-﻿using Plana.Core;
+using Plana.Core;
 
 namespace Plana.Roles.Modifier;
 
