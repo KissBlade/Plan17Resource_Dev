@@ -85,7 +85,7 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
         [OnlyHost]
         void OnUpdate(GameUpdateEvent ev)
         {
-            if (allStrings.Select(c=>c.stringPlayers).SelectMany(l=>l).Count(p=>p.IsDead)-allStrings.Count>= WinNeedEndOfFateNum)
+            if (NebulaGameManager.Instance.AllPlayerInfo.Count(p=>p.PlayerState==EndofFate)>= WinNeedEndOfFateNum)
             {
                 NebulaAPI.CurrentGame.TriggerGameEnd(SpinnerWin, GameEndReason.Situation);
             }

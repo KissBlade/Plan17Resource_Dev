@@ -64,8 +64,14 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
         void OnOutfitChange(PlayerOutfitChangeEvent ev)
         {
             if (!CrawlerNoCamouflager) return;
+            if (ev.Player.PlayerId == MyPlayer.PlayerId)
+            {
+                return;
+            }
             if (ev.Outfit.Tag.Contains("camo", StringComparison.CurrentCultureIgnoreCase) || ev.Outfit.Tag.Contains("commscfeffect", StringComparison.CurrentCultureIgnoreCase))
-                PlayerModInfo.RpcRemoveOutfit.LocalInvoke((ev.Player.PlayerId,ev.Outfit.Tag));
+            {
+                PlayerModInfo.RpcRemoveOutfit.LocalInvoke((ev.Player.PlayerId, ev.Outfit.Tag));
+            }
         }
 
         void OnGuessPlayer(PlayerMurderedEvent ev)
