@@ -206,7 +206,7 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
             System.Collections.IEnumerator CoCloseOnResult()
             {
                 if (!MeetingHud.Instance.AsBoolFast()) yield break;
-                while (MeetingHud.Instance.state == MeetingHud.VoteStates.Discussion) yield return null;
+                while (MeetingHud.Instance.state == MeetingHud.MeetingStates.Discussion) yield return null;
                 if (SelectRoleScreen!=null)
                 {
                     var role = list[UnityEngine.Random.Range(0, list.Count)];
@@ -234,7 +234,7 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
             {
                 return;
             }    
-            if (MeetingHud.Instance.state==MeetingHud.VoteStates.Discussion)
+            if (MeetingHud.Instance.state==MeetingHud.MeetingStates.Discussion)
             {
                 if (SelectRoleScreen == null)
                 {

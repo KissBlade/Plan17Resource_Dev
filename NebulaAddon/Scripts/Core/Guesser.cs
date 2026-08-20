@@ -109,7 +109,7 @@ public static class GuesserSystem
                     if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
                     {
                         if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
-                        if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                        if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
                         if (!MeetingHudExtension.CanUseAbilityFor(p, true))
                         {
                             return;
@@ -199,7 +199,7 @@ public static class GuesserSystem
                     try
                     {
                         if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
-                        if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                        if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
                         if (!MeetingHudExtension.CanUseAbilityFor(p, true))
                         {
                             return;
@@ -312,7 +312,7 @@ public static class GuesserSystem
 
         foreach (var playerVoteArea in MeetingHud.Instance.playerStates)
         {
-            if (playerVoteArea.AmDead || playerVoteArea.TargetPlayerId == AmongUsLLImpl.LocalPlayer.PlayerId) continue;
+            if (playerVoteArea.AmDead || playerVoteArea.PlayerId == AmongUsLLImpl.LocalPlayer.PlayerId) continue;
 
             GameObject template = playerVoteArea.Buttons.transform.Find("CancelButton").gameObject;
             GameObject targetBox = UnityEngine.Object.Instantiate(template, playerVoteArea.transform);
@@ -325,16 +325,16 @@ public static class GuesserSystem
             button.OnClick.RemoveAllListeners();
 
 
-            var player = NebulaGameManager.Instance?.GetModPlayerInfo(playerVoteArea.TargetPlayerId);
+            var player = NebulaGameManager.Instance?.GetModPlayerInfo(playerVoteArea.PlayerId);
             button.OnClick.AddListener(() =>
             {
                 if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
-                if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
 
                 LastGuesserWindow = OpenGuessWindow(leftGuessPerMeeting, leftGuess, (r) =>
                 {
                     if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
-                    if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                    if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
 
                     if (player?.Role.Role == r)
                         AmongUsLLImpl.LocalPlayer.ModMeetingKill(player!.MyControl, true, PlayerState.Guessed, EventDetail.Guess);
@@ -382,7 +382,7 @@ public static class GuesserSystem
                     if (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
                     {
                         if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
-                        if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                        if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
                         if (!MeetingHudExtension.CanUseAbilityFor(p, true))
                         {
                             return;
@@ -446,7 +446,7 @@ public static class GuesserSystem
                     try
                     {
                         if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
-                        if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                        if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
                         if (!MeetingHudExtension.CanUseAbilityFor(p, true))
                         {
                             return;

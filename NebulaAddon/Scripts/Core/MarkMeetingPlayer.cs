@@ -81,7 +81,7 @@ public class InMeetingMarkPlayerSystemRegister
                         {
                             return;
                         }
-                        if (v.TargetPlayerId == local.PlayerId)
+                        if (v.PlayerId == local.PlayerId)
                         {
                             return;
                         }
@@ -115,7 +115,7 @@ public class InMeetingMarkPlayerSystemRegister
                 }
                 catch (Exception e)
                 {
-                    PDebug.Log($"Create Player {v.TargetPlayerId} Mark Error:{e}");
+                    PDebug.Log($"Create Player {v.PlayerId} Mark Error:{e}");
                 }
             });
 

@@ -102,7 +102,7 @@ public class Disposer : DefinedSingleAbilityRoleTemplate<Disposer.Ability>, HasC
             {
                 MeetingHud.Instance.playerStates.Do(p =>
                 {
-                    var player = GamePlayer.GetPlayer(p.TargetPlayerId);
+                    var player = GamePlayer.GetPlayer(p.PlayerId);
                     if (player?.IsDead??false)
                     {
                         p.Background.sprite = AmongUsLLImpl.ShipStatusInstance.CosmeticsCache.GetNameplate("11111111111111").Image;

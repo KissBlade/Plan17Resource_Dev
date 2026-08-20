@@ -79,6 +79,9 @@ public class Pollyanna : DefinedSingleAbilityRoleTemplate<Pollyanna.Ability>, Ha
             var sc = DynamicPalette.ShadowColors[d.PlayerId];
             DynamicPalette.ShadowColors[d.PlayerId] = DynamicPalette.ShadowColors[a.PlayerId];
             DynamicPalette.ShadowColors[a.PlayerId] = sc;
+            var vc = DynamicPalette.VisorColors[d.PlayerId];
+            DynamicPalette.VisorColors[d.PlayerId] = DynamicPalette.VisorColors[a.PlayerId];
+            DynamicPalette.VisorColors[a.PlayerId] = vc;
             if (DynamicPalette.ColorNameDic.TryGetValue(d.PlayerId, out var nameDicDead) && DynamicPalette.ColorNameDic.TryGetValue(a.PlayerId, out var nameDicAlive))
             {
                 DynamicPalette.ColorNameDic[d.PlayerId] = nameDicAlive;
@@ -97,16 +100,24 @@ public class Pollyanna : DefinedSingleAbilityRoleTemplate<Pollyanna.Ability>, Ha
             d.Unbox().DefaultOutfit = new(alivePlayerOutfit, "", -99, true);
             if (MeetingHud.Instance.AsBoolFast())
             {
-                var aliveArea = MeetingHud.Instance.playerStates.FirstOrDefault(area => area.TargetPlayerId == a.PlayerId);
-                var deadArea = MeetingHud.Instance.playerStates.FirstOrDefault(area => area.TargetPlayerId == d.PlayerId);
+                var aliveArea = MeetingHud.Instance.playerStates.FirstOrDefault(area => area.PlayerId == a.PlayerId);
+                var deadArea = MeetingHud.Instance.playerStates.FirstOrDefault(area => area.PlayerId == d.PlayerId);
                 aliveArea.SetCosmetics(d.VanillaPlayer.Data);
                 deadArea.SetCosmetics(a.VanillaPlayer.Data);
                 UnityEngine.Vector3 aliveAreaPos = aliveArea.transform.position, deadAreaPos = deadArea.transform.position;
                 aliveArea.transform.position = deadAreaPos;
                 deadArea.transform.position = aliveAreaPos;
                 bool AliveDidReportState = aliveArea.DidReport;
-                aliveArea.SetDead(deadArea.DidReport, false, false);
-                deadArea.SetDead(AliveDidReportState, true, false);
+                if (deadArea.DidReport)
+                {
+                    aliveArea.SetReporter();
+                }
+                else if (AliveDidReportState)
+                {
+                    deadArea.SetReporter();
+                }
+                aliveArea.SetDead(false);
+                deadArea.SetDead(true);
             }
             PDebug.Log("TranslatePhase");
             if (m.needTransport && !MeetingHud.Instance.AsBoolFast())
@@ -289,7 +300,7 @@ public class Pollyanna : DefinedSingleAbilityRoleTemplate<Pollyanna.Ability>, Ha
                     {
                         return;
                     }
-                    if (MeetingHud.Instance.state != MeetingHud.VoteStates.Voted && MeetingHud.Instance.state != MeetingHud.VoteStates.NotVoted)
+                    if (MeetingHud.Instance.state != MeetingHud.MeetingStates.Voted && MeetingHud.Instance.state != MeetingHud.MeetingStates.NotVoted)
                     {
                         return;
                     }

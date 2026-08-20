@@ -97,7 +97,7 @@ public class Violator : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSi
             window.SetWidget(widget);
             System.Collections.IEnumerator CoCloseOnResult()
             {
-                while (MeetingHud.Instance.state == MeetingHud.VoteStates.Discussion) yield return null;
+                while (MeetingHud.Instance.state == MeetingHud.MeetingStates.Discussion) yield return null;
                 if (SelectRoleScreen != null)
                 {
                     var r = list[UnityEngine.Random.Range(0, list.Count)];
@@ -223,7 +223,7 @@ public class Violator : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSi
             window.SetWidget(widget);
             System.Collections.IEnumerator CoCloseOnResult()
             {
-                while (MeetingHud.Instance.state != MeetingHud.VoteStates.Results) yield return null;
+                while (MeetingHud.Instance.state != MeetingHud.MeetingStates.Results) yield return null;
                 if (window != null)
                 {
                     int alives = NebulaGameManager.Instance.AllPlayerInfo.Count(p => !p.IsDead);

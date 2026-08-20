@@ -859,7 +859,7 @@ public class PatchManager
         {
             if (MeetingHud.Instance.AsBoolFast())
             {
-                while (MeetingHud.Instance.state != MeetingHud.VoteStates.Results) yield return null;
+                while (MeetingHud.Instance.state != MeetingHud.MeetingStates.Results) yield return null;
             }
             else
             {
@@ -7200,14 +7200,14 @@ public class PatchManager
             //投票が済んでない場合、なにもしない
             if (!__instance.playerStates.All((PlayerVoteArea ps) =>
             {
-                if (ps.TargetPlayerId == yesId || ps.TargetPlayerId == noId)
+                if (ps.PlayerId == yesId || ps.PlayerId == noId)
                 {
-                    if (GamePlayer.GetPlayer(ps.TargetPlayerId)!.IsDead)
+                    if (GamePlayer.GetPlayer(ps.PlayerId)!.IsDead)
                     {
                         return true;
                     }
                 }
-                return ps.AmDead || ps.DidVote || !MeetingHudExtension.HasVote(ps.TargetPlayerId);
+                return ps.AmDead || ps.DidVote || !MeetingHudExtension.HasVote(ps.PlayerId);
             }))
             {
                 return false;
@@ -7225,8 +7225,8 @@ public class PatchManager
 
                     foreach (var state in __instance.playerStates)
                     {
-                        if (!state.DidVote || state.VotedFor == 254) continue;
-                        voteForMap[state.TargetPlayerId] = NebulaGameManager.Instance?.GetPlayer(state.VotedFor);
+                        if (!state.DidVote || state.VotedForId == 254) continue;
+                        voteForMap[state.PlayerId] = NebulaGameManager.Instance?.GetPlayer(state.VotedForId);
                     }
 
                     foreach (var target in GameOperatorManager.Instance?.Run(new MeetingTieVoteHostEvent(voteForMap))?.ExtraVotes ?? [])
@@ -7303,14 +7303,14 @@ public class PatchManager
                 {
                     if (!state.DidVote) continue;
 
-                    if (!MeetingHudExtension.WeightMap.TryGetValue((byte)state.TargetPlayerId, out var vote)) vote = 1;
+                    if (!MeetingHudExtension.WeightMap.TryGetValue((byte)state.PlayerId, out var vote)) vote = 1;
 
                     for (int i = 0; i < vote; i++)
                     {
                         allStates.Add(new MeetingHud.VoterState
                         {
-                            VoterId = state.TargetPlayerId,
-                            VotedForId = state.VotedFor
+                            VoterId = state.PlayerId,
+                            VotedForId = state.VotedForId
                         });
                     }
                 }
@@ -7337,7 +7337,7 @@ public class PatchManager
         {
             if (isSpecialMeeting)
             {
-                if (AmongUsLLImpl.LocalPlayer.Data.IsDead && !__instance.amDead)
+                if (AmongUsLLImpl.LocalPlayer.Data.IsDead && !__instance.hasForegroundForDeadBeenSet)
                 {
                     __instance.SetForegroundForDead();
                 }
@@ -7346,9 +7346,9 @@ public class PatchManager
                     for (int i = 0; i < __instance.playerStates.Length; i++)
                     {
                         var state = __instance.playerStates[i];
-                        if (state.TargetPlayerId == yesId || state.TargetPlayerId == noId)
+                        if (state.PlayerId == yesId || state.PlayerId == noId)
                         {
-                            state.SetDead(false, false, false);
+                            state.SetDead(false);
                             state.SetEnabled();
                         }
                     }
@@ -7386,22 +7386,22 @@ public class PatchManager
             for (int i = 0; i < __instance.playerStates.Length; i++)
             {
                 PlayerVoteArea playerVoteArea = __instance.playerStates[i];
-                var player = NebulaGameManager.Instance?.GetPlayer(playerVoteArea.TargetPlayerId);
+                var player = NebulaGameManager.Instance?.GetPlayer(playerVoteArea.PlayerId);
                 if (player?.IsDead ?? true) continue;
 
-                bool didVote = playerVoteArea.VotedFor != 252 && playerVoteArea.VotedFor != 255 && playerVoteArea.VotedFor != 254;
-                if (!MeetingHudExtension.WeightMap.TryGetValue((byte)playerVoteArea.TargetPlayerId, out var vote)) vote = 1;
-                var ev = GameOperatorManager.Instance!.Run(new PlayerFixVoteHostEvent(player, didVote, NebulaGameManager.Instance?.GetPlayer(playerVoteArea.VotedFor), vote));
+                bool didVote = playerVoteArea.VotedForId != 252 && playerVoteArea.VotedForId != 255 && playerVoteArea.VotedForId != 254;
+                if (!MeetingHudExtension.WeightMap.TryGetValue((byte)playerVoteArea.PlayerId, out var vote)) vote = 1;
+                var ev = GameOperatorManager.Instance!.Run(new PlayerFixVoteHostEvent(player, didVote, NebulaGameManager.Instance?.GetPlayer(playerVoteArea.VotedForId), vote));
 
                 if (ev.DidVote)
                 {
                     dictionary.AddValueV2(ev.VoteTo?.PlayerId ?? PlayerVoteArea.SkippedVote, ev.Vote);
-                    playerVoteArea.VotedFor = ev.VoteTo?.PlayerId ?? PlayerVoteArea.SkippedVote;
+                    playerVoteArea.VotedForId = ev.VoteTo?.PlayerId ?? PlayerVoteArea.SkippedVote;
                     MeetingHudExtension.WeightMap[player.PlayerId] = ev.Vote;
                 }
                 else
                 {
-                    playerVoteArea.VotedFor = PlayerVoteArea.MissedVote;
+                    playerVoteArea.VotedForId = PlayerVoteArea.MissedVote;
                 }
             }
 
@@ -7418,7 +7418,7 @@ public class PatchManager
         public static bool startmeeting;
         public static void OnSpecialMeetingUpdate()
         {
-            if ((MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted || MeetingHud.Instance.state == MeetingHud.VoteStates.Voted) && !startmeeting)
+            if ((MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted || MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted) && !startmeeting)
             {
                 startmeeting = true;
                 NebulaManager.Instance.StartDelayAction(1f, () =>
@@ -7741,7 +7741,7 @@ public class PatchManager
                             var maskRenderer = UnityHelper.CreateObject<SpriteMask>("Mask", mask.transform, UnityEngine.Vector3.zero);
                             maskRenderer.sprite = votingHolderMaskSprite.GetSprite();
                             PDebug.Log("SetVoteAreaPos");
-                            PlayerVoteArea playerVoteArea = MeetingHud.Instance.playerStates.FirstOrDefault(p => p.TargetPlayerId == (isyes ? yesId : noId))!;
+                            PlayerVoteArea playerVoteArea = MeetingHud.Instance.playerStates.FirstOrDefault(p => p.PlayerId == (isyes ? yesId : noId))!;
                             if (playerVoteArea != null)
                             {
                                 //playerVoteArea.transform.localScale = new Vector2(0.85f, 0.85f);
@@ -7750,7 +7750,7 @@ public class PatchManager
                                 playerVoteArea.LevelNumberText.transform.parent.gameObject.SetActive(false);
                                 playerVoteArea.NameText.text = Language.Translate("options.diagnosis.meeting." + (isyes ? "yes" : "no"));
                                 playerVoteArea.ColorBlindName.text = "";//Language.Translate("options.diagnosis.meeting." + (isyes ? "yes" : "no"));
-                                playerVoteArea.SetDead(false, false, false);
+                                playerVoteArea.SetDead(false);
                                 playerVoteArea.gameObject.SetActive(true);
                                 playerVoteArea.gameObject.transform.localPosition = localPos + new Vector3(-0.22f, 0f, -0.9f);
                             }

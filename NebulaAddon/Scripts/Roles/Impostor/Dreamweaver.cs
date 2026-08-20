@@ -94,7 +94,7 @@ public class Dreamweaver : DefinedRoleTemplate, DefinedRole, HasCitation, IAssig
             System.Collections.IEnumerator CoCloseOnResult()
             {
                 if (!MeetingHud.Instance.AsBoolFast()) yield break;
-                while (MeetingHud.Instance.state == MeetingHud.VoteStates.Discussion) yield return null;
+                while (MeetingHud.Instance.state == MeetingHud.MeetingStates.Discussion) yield return null;
                 if (SelectRoleScreen != null)
                 {
                     var r = list[UnityEngine.Random.Range(0, list.Count)];

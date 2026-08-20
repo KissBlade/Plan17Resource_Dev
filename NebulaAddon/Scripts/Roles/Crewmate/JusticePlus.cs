@@ -742,7 +742,7 @@ public class JusticePlusMeetingHud : MonoBehaviour
                     photo.material = HatManager.Instance.PlayerMaterial;
                     PlayerMaterial.SetColors(player.PlayerId, photo.material);
                     PDebug.Log("SetVoteAreaPos");
-                    var playerState = meetingHud.playerStates.FirstOrDefault(p => p.TargetPlayerId == player.PlayerId);
+                    var playerState = meetingHud.playerStates.FirstOrDefault(p => p.PlayerId == player.PlayerId);
                     if (playerState != null)
                     {
                         playerState.gameObject.SetActive(true);
@@ -905,7 +905,7 @@ public class JusticePlus : DefinedSingleAbilityRoleTemplate<JusticePlus.Ability>
                 {
                     instance.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
                     {
-                        binder.gameObject.SetActive(!this.MyPlayer.IsDead && (MeetingHud.Instance.CurrentState == MeetingHud.VoteStates.NotVoted||MeetingHud.Instance.CurrentState==MeetingHud.VoteStates.Voted)&&!usedBalance);
+                        binder.gameObject.SetActive(!this.MyPlayer.IsDead && (MeetingHud.Instance.CurrentState == MeetingHud.MeetingStates.NotVoted||MeetingHud.Instance.CurrentState==MeetingHud.MeetingStates.Voted)&&!usedBalance);
                     }, new GameObjectLifespan(binder), 100);
                 }
                 SpriteRenderer leftRenderer = UnityHelper.CreateObject<SpriteRenderer>("JusticePlus-StartJustice", binder.transform, new Vector3(2.18f, 0.2f), null);
@@ -937,7 +937,7 @@ public class JusticePlus : DefinedSingleAbilityRoleTemplate<JusticePlus.Ability>
                 buttonManager?.RegisterMeetingAction(new(MeetingPlayerButtonManager.Icons.AsLoader(2),
                    p =>
                    {
-                       if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                       if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
                        if (MeetingHudExtension.CanInvokeSomeAction)
                        {
                            var selectplayers = buttonManager.AllStates.Where(p => p.IsSelected);
@@ -997,30 +997,30 @@ public class JusticePlus : DefinedSingleAbilityRoleTemplate<JusticePlus.Ability>
             return;
             if (ExileAllSmiliarVoteOption&&isMyJusticePlusMeeting)
             {
-                var justiceplayer=MeetingHud.Instance.playerStates.Where(p => justicePlayers.Any(player => p.TargetPlayerId == player.PlayerId));
+                var justiceplayer=MeetingHud.Instance.playerStates.Where(p => justicePlayers.Any(player => p.PlayerId == player.PlayerId));
                 List<PlayerVoteArea> simliarList = new();
-                int max = Mathf.Max(justicePlayers.Select(p => MeetingHud.Instance.playerStates.Count(v => v.VotedFor == p.PlayerId)).ToArray());
+                int max = Mathf.Max(justicePlayers.Select(p => MeetingHud.Instance.playerStates.Count(v => v.VotedForId == p.PlayerId)).ToArray());
                 if (max<ExileAllSmiliarNeedMaxVote)
                 {
                     return;
                 }
-                justiceplayer = justiceplayer.Where(p => MeetingHud.Instance.playerStates.Count(v => v.VotedFor == p.TargetPlayerId) >= max - ExileNeedDifferenceMaxVote);
-                var maxVoteAreas = MeetingHud.Instance.playerStates.Where(v => MeetingHud.Instance.playerStates.Count(area => area.VotedFor == v.TargetPlayerId) == max);
-                var maxVotePlayers = maxVoteAreas.Select(v=>GamePlayer.GetPlayer(v.TargetPlayerId)).ToList();
+                justiceplayer = justiceplayer.Where(p => MeetingHud.Instance.playerStates.Count(v => v.VotedForId == p.PlayerId) >= max - ExileNeedDifferenceMaxVote);
+                var maxVoteAreas = MeetingHud.Instance.playerStates.Where(v => MeetingHud.Instance.playerStates.Count(area => area.VotedForId == v.PlayerId) == max);
+                var maxVotePlayers = maxVoteAreas.Select(v=>GamePlayer.GetPlayer(v.PlayerId)).ToList();
                 foreach (var state in justiceplayer)
                 {
-                    int stateVotes = MeetingHud.Instance.playerStates.Count(v => v.VotedFor == state.TargetPlayerId);
+                    int stateVotes = MeetingHud.Instance.playerStates.Count(v => v.VotedForId == state.PlayerId);
                     if (stateVotes==max)
                     {
                         continue;
                     }
                     else if (ev.VoteTo==null||!maxVotePlayers.Contains(ev.VoteTo))
                     {
-                        ev.VoteTo = GamePlayer.GetPlayer(state.TargetPlayerId);
+                        ev.VoteTo = GamePlayer.GetPlayer(state.PlayerId);
                         ev.Vote = max;
                     }
                 }
-                if (justiceplayer.All(p => MeetingHud.Instance.playerStates.Count(v => v.VotedFor == p.TargetPlayerId) == max))
+                if (justiceplayer.All(p => MeetingHud.Instance.playerStates.Count(v => v.VotedForId == p.PlayerId) == max))
                 {
                     ev.VoteTo = null;
                 }

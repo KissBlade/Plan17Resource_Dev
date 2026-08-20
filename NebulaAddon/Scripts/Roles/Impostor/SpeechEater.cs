@@ -162,7 +162,7 @@ public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>
                 }
                 if (true)
                 {
-                    var playerStates = __instance!.playerStates!.Where((PlayerVoteArea x) => speechEaters.Any(p=>p.TryGetAbility<SpeechEater.Ability>(out var ability)&&ability.SelectPlayer!=null&&x.TargetPlayerId == ability.SelectPlayer.PlayerId))!;
+                    var playerStates = __instance!.playerStates!.Where((PlayerVoteArea x) => speechEaters.Any(p=>p.TryGetAbility<SpeechEater.Ability>(out var ability)&&ability.SelectPlayer!=null&&x.PlayerId == ability.SelectPlayer.PlayerId))!;
                     if (playerStates.Count()<=0)
                     {
                         return;
@@ -188,13 +188,13 @@ public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>
                     playerStates.Do(p=>p.Overlay.sprite = Overlay);
                     playerStates.Do(state =>
                     {
-                        var mySpeechEater = speechEaters.FirstOrDefault(p => p.TryGetAbility<SpeechEater.Ability>(out var ability) && ability.SelectPlayer != null && ability.SelectPlayer.PlayerId == state.TargetPlayerId);
+                        var mySpeechEater = speechEaters.FirstOrDefault(p => p.TryGetAbility<SpeechEater.Ability>(out var ability) && ability.SelectPlayer != null && ability.SelectPlayer.PlayerId == state.PlayerId);
                         if (mySpeechEater==null)
                         {
                             return;
                         }
                         var ability = mySpeechEater.Role.GetAbility<SpeechEater.Ability>();
-                        if (__instance.state != MeetingHud.VoteStates.Animating && !ability.swaped)
+                        if (__instance.state != MeetingHud.MeetingStates.Animating && !ability.swaped)
                         {
                             ability.swaped = true;
                             __instance.StartCoroutine(Effects.SwayX(state.transform, 0.75f, 0.25f).WrapToManaged());

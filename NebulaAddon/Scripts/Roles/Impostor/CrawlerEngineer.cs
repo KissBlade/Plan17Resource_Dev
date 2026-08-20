@@ -216,7 +216,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             window.SetWidget(widget);
             System.Collections.IEnumerator CoCloseOnResult()
             {
-                while (MeetingHud.Instance.state != MeetingHud.VoteStates.Results) yield return null;
+                while (MeetingHud.Instance.state != MeetingHud.MeetingStates.Results) yield return null;
                 window.CloseScreen();
             }
             window.StartCoroutine(CoCloseOnResult().WrapToIl2Cpp());
@@ -245,7 +245,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                         try
                         {
                             if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
-                            if (!(MeetingHud.Instance.state == MeetingHud.VoteStates.Voted || MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)) return;
+                            if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
                             AddMarkPlayerRpc.Invoke(new ValueTuple<byte, int>(p.PlayerId, r.Id));
                             if (LastWindow) LastWindow!.CloseScreen();
                             LastWindow = null!;

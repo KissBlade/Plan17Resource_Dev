@@ -52,7 +52,7 @@ public class Doomsayer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
 
             instance?.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
                 {
-                    binder.gameObject.SetActive(!this.MyPlayer.IsDead && MeetingHud.Instance.CurrentState == MeetingHud.VoteStates.NotVoted);
+                    binder.gameObject.SetActive(!this.MyPlayer.IsDead && MeetingHud.Instance.CurrentState == MeetingHud.MeetingStates.NotVoted);
                 }, new GameObjectLifespan(binder));
 
             TextMeshPro? countText = UnityEngine.Object.Instantiate<TextMeshPro>(MeetingHud.Instance.TitleText, binder.transform);

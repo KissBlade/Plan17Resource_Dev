@@ -60,7 +60,7 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
     {
         if (NebulaAPI.CurrentGame!=null&&GamePlayer.LocalPlayer!.Role.GetAbility<CriminalistWriter.Ability>()!=null&&!MeetingHudExtension.CanVote)
         {
-            if (!__result && __instance.AmDead && !AmongUsLLImpl.LocalPlayer.Data.IsDead && __instance.Parent != null && __instance.Parent.CurrentState != MeetingHud.VoteStates.Discussion)
+            if (!__result && __instance.AmDead && !AmongUsLLImpl.LocalPlayer.Data.IsDead && __instance.Parent != null && __instance.Parent.CurrentState != MeetingHud.MeetingStates.Discussion)
             {
                 __result = true;
             }
@@ -121,8 +121,8 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
                 highlight.enabled = false;
                 highlight.color = UnityEngine.Color.red;
                 highlight.transform.localPosition = new(-0.0155f, 0.0127f, -2.8f);
-                highlights[pva.TargetPlayerId] = highlight;
-                PDebug.Log("AddHightlight:" + pva.TargetPlayerId);
+                highlights[pva.PlayerId] = highlight;
+                PDebug.Log("AddHightlight:" + pva.PlayerId);
             }
             void UpdateHighlight(byte player,GamePlayer nPlayer)
             {
@@ -189,7 +189,7 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
                     {
                         return;
                     }
-                    binder.gameObject.SetActive(!this.MyPlayer.IsDead && MeetingHud.Instance.CurrentState == MeetingHud.VoteStates.NotVoted&& binder);
+                    binder.gameObject.SetActive(!this.MyPlayer.IsDead && MeetingHud.Instance.CurrentState == MeetingHud.MeetingStates.NotVoted&& binder);
                 }, lifespan, 100);
             int meetingCount = EveryMeetingSkillCount;
             SpriteRenderer leftRenderer = UnityHelper.CreateObject<SpriteRenderer>("Writer-UseSkill", binder.transform, new Vector3(2.1f, 0.15f), null);

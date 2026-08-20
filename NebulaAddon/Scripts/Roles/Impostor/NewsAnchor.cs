@@ -159,7 +159,7 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
             }
             System.Collections.IEnumerator CoWaitAnimGenerateHud()
             {
-                if (MeetingHud.Instance.state == MeetingHud.VoteStates.Animating)
+                if (MeetingHud.Instance.state == MeetingHud.MeetingStates.Animating)
                 {
                     yield return null;
                 }
@@ -286,7 +286,7 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
             pva.PlayerIcon.ToggleName(false);
             pva.NameText.text = "Co-Anchor";
             pva.LevelNumberText.transform.parent.gameObject.SetActive(false);
-            pva.SetDead(false,false, false);
+            pva.SetDead(false);
             if (fakeArea)
             {
                 UnityEngine.Object.Destroy(fakeArea);
@@ -351,7 +351,7 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
             {
                 instance.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
                 {
-                    binder.gameObject.SetActive(!GamePlayer.LocalPlayer.IsDead && (MeetingHud.Instance.CurrentState == MeetingHud.VoteStates.NotVoted || (MeetingHud.Instance.CurrentState == MeetingHud.VoteStates.Voted&&ability.leftGuess>0)));
+                    binder.gameObject.SetActive(!GamePlayer.LocalPlayer.IsDead && (MeetingHud.Instance.CurrentState == MeetingHud.MeetingStates.NotVoted || (MeetingHud.Instance.CurrentState == MeetingHud.MeetingStates.Voted&&ability.leftGuess>0)));
                 }, new GameObjectLifespan(binder), 100);
             }
             MeetingHud.Instance.ResetPlayerState();
@@ -388,7 +388,7 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                 {
                     List<GUIWidget> widgets = new List<GUIWidget>();
                     bool hasVote = false, hasGuess = false;
-                    if (MeetingHud.Instance.state == MeetingHud.VoteStates.NotVoted)
+                    if (MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)
                     {
                         hasVote = true;
                         widgets.Add(GUI.API.LocalizedButton(Virial.Media.GUIAlignment.Center, roleTitleAttr, "roles.newsanchor.tabs.vote", (button) => SetWidget(0), color: tab == 0 ? Virial.Color.Yellow : null));
@@ -404,11 +404,11 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                     {
                         inner = GUI.API.Arrange(Virial.Media.GUIAlignment.Center, NebulaGameManager.Instance.AllPlayerInfo.Select(p => GUI.API.RawButton(Virial.Media.GUIAlignment.Center, roleMaskedTittleAttr, p.Unbox().ColoredDefaultName, button =>
                         {
-                            if (MeetingHud.Instance.state != MeetingHud.VoteStates.NotVoted)
+                            if (MeetingHud.Instance.state != MeetingHud.MeetingStates.NotVoted)
                             {
                                 return;
                             }
-                            MeetingHud.Instance.state = MeetingHud.VoteStates.Voted;
+                            MeetingHud.Instance.state = MeetingHud.MeetingStates.Voted;
                             int vote = GameOperatorManager.Instance?.Run<PlayerVoteCastLocalEvent>(new PlayerVoteCastLocalEvent(Player.LocalPlayer, NebulaGameManager.Instance.GetPlayer(p.PlayerId), 1), false, true).Vote ?? 1;
                             MeetingHud.Instance.ModCastVote(AmongUsLLImpl.LocalPlayer.PlayerId, p.PlayerId, vote);
                             window.CloseScreen();
