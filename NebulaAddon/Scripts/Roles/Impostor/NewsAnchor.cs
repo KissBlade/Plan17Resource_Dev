@@ -1,4 +1,4 @@
-﻿using Nebula.Modules.Cosmetics;
+using Nebula.Modules.Cosmetics;
 using Nebula.Patches;
 using Plana.Core;
 using Plana.Roles.Crewmate;
@@ -134,13 +134,13 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
         {
             meetingnum++;
             leftMeetingGuess = EveryMeetingGuessNumOption;
-            if (!AmOwner)
-            {
-                return;
-            }
             if (CoAnchorPlayer != null)
             {
                 CoAnchorPlayer.RemoveOutfitByTag("CoAnchor");
+            }
+            if (!AmOwner)
+            {
+                return;
             }
             if (MyPlayer.IsAlive && leftSkill > 0 && !forceSkilled && meetingnum > ForceUseSkillMeetingNumOption)
             {
@@ -219,7 +219,6 @@ public class NewsAnchor : DefinedSingleAbilityRoleTemplate<NewsAnchor.Ability>, 
                 ev.Name = "Co-Anchor";
             }
         }
-        [Local]
         void OnMeetingEnd(MeetingEndEvent ev)
         {
             if (CoAnchorPlayer!=null)
