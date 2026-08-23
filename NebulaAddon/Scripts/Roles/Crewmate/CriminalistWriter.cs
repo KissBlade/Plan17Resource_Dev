@@ -38,7 +38,7 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
     public static void LoadPatch(Harmony harmony)
     {
         PDebug.Log("CriminalistWriter Patch");
-        harmony.Patch(typeof(PlayerVoteArea).GetMethod("canBeHighlighted"), null, new HarmonyMethod(typeof(CriminalistWriter).GetMethod("WriterCanBeHighlightedPatch")));
+        harmony.Patch(typeof(PlayerVoteArea).GetMethod(nameof(PlayerVoteArea.CanBeHighlighted)), null, new HarmonyMethod(typeof(CriminalistWriter).GetMethod("WriterCanBeHighlightedPatch")));
         harmony.Patch(typeof(MeetingHudExtension).GetMethod("CanVoteFor",new Type[] {typeof(byte)}), null, new HarmonyMethod(typeof(CriminalistWriter).GetMethod("WriterCanUseSkillFor")));
         PDebug.Log("Done");
     }
