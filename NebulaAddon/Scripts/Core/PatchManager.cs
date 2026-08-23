@@ -7332,7 +7332,7 @@ public class PatchManager
             }
             return false;
         }
-        [HarmonyPatch(typeof(MeetingHud), "UpdateButtons"), HarmonyPrefix]
+        /*[HarmonyPatch(typeof(MeetingHud), "UpdateButtons"), HarmonyPrefix]
         public static bool UpdateButtonBlock(MeetingHud __instance)
         {
             if (isSpecialMeeting)
@@ -7356,7 +7356,7 @@ public class PatchManager
                 return false;
             }
             return true;
-        }
+        }*/
         [HarmonyPatch(typeof(MeetingHudExtension), "CanVoteFor", typeof(byte)), HarmonyPostfix]
         public static void MeetingHudCanVoteFor(MeetingHud __instance, byte playerId, ref bool __result)
         {
