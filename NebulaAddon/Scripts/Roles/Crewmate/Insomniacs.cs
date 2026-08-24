@@ -157,7 +157,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
     {
     }
     bool DefinedModifier.IsMadmate => true;
-    bool DefinedAssignable.ShowOnHelpScreen
+    /*bool DefinedAssignable.ShowOnHelpScreen
     {
         get
         {
@@ -170,7 +170,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
         {
             return false;
         }
-    }
+    }*/
     IEnumerable<DefinedAssignable> DefinedAssignable.AchievementGroups => [Insomniacs.MyRole, Insomniacs.MyRole, MyRole];
     Citation? HasCitation.Citation { get { return PCitations.PlanaANDKC; } }
     static public InsomniacsModifier MyRole = new InsomniacsModifier();

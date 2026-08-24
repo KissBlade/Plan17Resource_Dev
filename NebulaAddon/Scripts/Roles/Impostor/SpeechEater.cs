@@ -4,6 +4,7 @@ using Plana.Roles.Modifier;
 
 namespace Plana.Roles.Impostor;
 
+[NebulaRPCHolder]
 public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>, DefinedRole, HasCitation, IAssignableDocument
 {
     Citation? HasCitation.Citation { get { return PCitations.PlanaANDKC; } }
@@ -66,22 +67,30 @@ public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>
         harmony.Patch(typeof(ChatController).GetMethod("UpdateChatMode"), null, new HarmonyMethod(typeof(SpeechEater.Ability).GetMethod("ChatUpdatePostfix")));
         PDebug.Log("Done");
     }
+    public static RemoteProcess<(GamePlayer owner, int leftskill, int leftguess)> UpdateSpeechEaterArguments = new("UpdateSEArgumentRPC", (m, _) =>
+    {
+        if (m.owner.TryGetAbility<Ability>(out var a))
+        {
+            a.leftskill = m.leftskill;
+            a.LeftGuess = m.leftguess;
+        }
+    });
     public class Ability : AbstractPlayerUsurpableAbility, IPlayerAbility, IBindPlayer, IGameOperator, ILifespan
     {
 
         private ModAbilityButton? vanishButton = null;
         static internal Virial.Media.Image vanishImage = NebulaAPI.AddonAsset.GetResource("Silent.png")!.AsImage(115f)!;
         int[] IPlayerAbility.AbilityArguments => [IsUsurped.AsInt(),leftskill,LeftGuess];
-        int leftskill;
+        public int leftskill;
         public Ability(GamePlayer player, bool isUsurped, int leftskill,int leftguess)
             : base(player, isUsurped)
         {
             try
             {
+                this.leftskill = leftskill;
+                LeftGuess = leftguess;
                 if (AmOwner)
                 {
-                    this.leftskill = leftskill;
-                    LeftGuess = leftguess;
                     if (MyPlayer.Modifiers.Any(m=>m is Infected.Instance))
                     {
                         LeftGuess = Infected.InfectedGuessNum;
@@ -93,16 +102,11 @@ public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>
                     GuessNoDead = true;
                     swaped = false;
                     ObjectTracker<GamePlayer> myTracker = ObjectTrackers.ForPlayer(this, null, base.MyPlayer, (GamePlayer p) => ObjectTrackers.StandardPredicate(p) && (LastSelect == null || (LastSelect != null && LastSelect.PlayerId != p.PlayerId)), null, Nebula.Roles.Impostor.Impostor.CanKillHidingPlayerOption, false);
-                    if (vanishImage == null)
-                    {
-                        PDebug.Log("image is null");
-                        return;
-                    }
-                    vanishButton = NebulaAPI.Modules.AbilityButton(this, false, false, 0, false).SetAsUsurpableButton(this);
+                    vanishButton = NebulaAPI.Modules.AbilityButton(this, false, false, 0, false);
                     vanishButton.BindKey(Virial.Compat.VirtualKeyInput.Ability);
                     (vanishButton as Virial.Components.ModAbilityButton).SetImage(vanishImage);
                     vanishButton.Availability = (ModAbilityButton button) => myTracker.CurrentTarget != null && this.MyPlayer.CanMove;
-                    vanishButton.Visibility = (ModAbilityButton button) => !this.MyPlayer.IsDead && leftskill > 0;
+                    vanishButton.Visibility = (ModAbilityButton button) => !this.MyPlayer.IsDead && this.leftskill > 0;
                     vanishButton.ShowUsesIcon(0, leftskill.ToString());
                     vanishButton.OnClick = (button) =>
                     {
@@ -117,9 +121,10 @@ public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>
                             new StaticAchievementToken("SpeechEater.common2");
                         }
                         SelectPlayer = player;
-                        leftskill -= 1;
+                        this.leftskill -= 1;
                         vanishButton.UpdateUsesIcon(leftskill.ToString());
                         button.StartCoolDown();
+                        UpdateSpeechEaterArguments.Invoke((MyPlayer, this.leftskill, this.LeftGuess));
                     };
                     vanishButton.SetAsUsurpableButton(this);
                     vanishButton.CoolDownTimer = NebulaAPI.Modules.Timer(this, EatCooldownOption).SetAsAbilityTimer().Start(null);
@@ -278,7 +283,7 @@ public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>
             PDebug.Log("GuessUIGenerated");
             if (!BlockMyGuesserOption)
             {
-                GuesserSystem.OnMeetingStart(LeftGuess, () => LeftGuess--, true);
+                GuesserSystem.OnMeetingStart(LeftGuess, () => UpdateSpeechEaterArguments.Invoke((MyPlayer, this.leftskill, this.LeftGuess-1)), true);
             }
         }
         private void OnMeetingEnd(MeetingEndEvent ev)

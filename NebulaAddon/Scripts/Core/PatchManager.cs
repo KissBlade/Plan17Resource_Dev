@@ -269,6 +269,7 @@ public class PatchManager
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
             harmony.Patch(typeof(ExileController).GetMethod("Begin"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ExileSnatcherPatch")) { priority = -100});
+            harmony.Patch(typeof(HelpScreen).GetMethod(nameof(HelpScreen.ShowAssignableScreen),AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("ShowAssignableScreen")));
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
@@ -527,7 +528,112 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
+    public static List<(IEnumerable<DefinedAssignable> roles,TextComponent label)> GetCustomAssignableLabel()
+    {
+        var madmateRoles = Nebula.Roles.Roles.AllRoles.Where(r => r.IsMadmate && r.ShowOnHelpScreen);
+        var madmateModifier = Nebula.Roles.Roles.AllModifiers.Where(m => m.IsMadmate && m.ShowOnHelpScreen);
+        List<(IEnumerable<DefinedAssignable> roles, TextComponent label)> list = [
+            (Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.ImpostorRole &&!r.IsMadmate&& (r as DefinedAssignable).ShowOnHelpScreen), NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.ImpostorColor, "role.category.impostor")),
+            (Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.NeutralRole &&!r.IsMadmate&& (r as DefinedAssignable).ShowOnHelpScreen), NebulaGUIWidgetEngine.API.TextComponent(new(1f, 0.7f, 0f), "role.category.neutral")),
+            (Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.CrewmateRole &&!r.IsMadmate&& (r as DefinedAssignable).ShowOnHelpScreen), NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.CrewmateColor, "role.category.crewmate")),
+            (Nebula.Roles.Roles.AllGhostRoles.Where(r => (r as DefinedAssignable).ShowOnHelpScreen), NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.Gray, "role.category.ghost")),
+            (Nebula.Roles.Roles.AllModifiers.Where(r => (r as DefinedAssignable).ShowOnHelpScreen), NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.White, "role.category.modifier")),
+            (madmateRoles, NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.ImpostorColor, "role.category.madmate")),
+            (madmateModifier, NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.ImpostorColor, "role.category.madmatemodifier"))
+            ];
+        return list;
+    }
+    public static bool ShowAssignableScreen(ref IMetaWidgetOld __result)
+    {
+        var assignables = GetCustomAssignableLabel();
+        (IEnumerable<PerkFunctionalDefinition> perks, TextComponent label)[] perks = [
+            (Nebula.Roles.Roles.AllPerks.Where(p => p.PerkCategory == PerkFunctionalDefinition.Category.Standard), NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.White, "game.metaAbility.perks.standard")),
+            (Nebula.Roles.Roles.AllPerks.Where(p => p.PerkCategory == PerkFunctionalDefinition.Category.NoncrewmateOnly), NebulaGUIWidgetEngine.API.TextComponent(Virial.Color.White, "game.metaAbility.perks.noncrewmateOnly")),
+            ];
 
+        MetaWidgetOld inner = new();
+
+        void AddContent(TextComponent label, Action routine)
+        {
+            if (inner.Count > 0) inner.Append(new MetaWidgetOld.VerticalMargin(0.2f));
+            
+            inner.Append(new MetaWidgetOld.WrappedWidget(new NoSGUIText(GUIAlignment.Left, NebulaGUIWidgetEngine.API.GetAttribute(Virial.Text.AttributeAsset.DocumentTitle), label)));
+            inner.Append(new MetaWidgetOld.VerticalMargin(0.1f));
+            routine.Invoke();
+        }
+
+        List<DefinedAssignable> listedAssignables = [];
+
+        foreach (var content in assignables)
+        {
+            AddContent(content.label, () =>
+            {
+                inner.Append(content.roles, (role) =>
+                {
+                    int myIndex = listedAssignables.Count;
+                    listedAssignables.Add(role);
+
+                    return new CombinedWidgetOld(new MetaWidgetOld.HorizonalMargin(0.12f), new MetaWidgetOld.Button(() =>
+                    {
+                        int currentIndex = myIndex;
+                        var window = HelpScreen.OpenAssignableHelp(listedAssignables[myIndex]);
+
+                        void ReopenWindow()
+                        {
+                            if (window != null) window.CloseScreen();
+                            window = HelpScreen.OpenAssignableHelp(listedAssignables[currentIndex]);
+                            if (window != null)
+                            {
+                                MetaScreen.SetUpNavButton(window, increment =>
+                                {
+                                    currentIndex = (listedAssignables.Count + currentIndex + (increment ? 1 : -1)) % listedAssignables.Count;
+                                    ReopenWindow();
+                                });
+                            }
+                        }
+                        ReopenWindow();
+                    }, HelpScreen.RoleTitleAttr)
+                    {
+                        RawText = role.DisplayColoredName,
+                        PostBuilder = (PassiveButton button, SpriteRenderer renderer, TMPro.TextMeshPro text) =>
+                        {
+                            renderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+                            button.OnMouseOver.AddListener(() =>
+                            {
+                                NebulaManager.Instance.SetHelpWidget(button, HelpScreen.GetAssignableOverlay(role));
+                            });
+                            button.OnMouseOut.AddListener(() => NebulaManager.Instance.HideHelpWidgetIf(button));
+                            text.transform.localPosition += new UnityEngine.Vector3(0.07f, 0f, 0f);
+                            button.transform.localPosition -= new UnityEngine.Vector3(0.15f, 0f, 0f);
+
+                            var roleIcon = role.GetRoleIcon()?.GetSprite();
+                            if (roleIcon)
+                            {
+                                var icon = UnityHelper.CreateObject<SpriteRenderer>("Icon", button.transform, new(-0.73f, 0f, -0.01f));
+                                icon.sprite = roleIcon;
+                                icon.material = RoleIcon.GetRoleIconMaterial(role, 0.8f);
+                                icon.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+                                icon.transform.localScale = new(0.275f, 0.275f, 1f);
+                            }
+                        },
+                        Alignment = IMetaWidgetOld.AlignmentOption.Center,
+                        TextHorizonotalExtraMargin = 0.15f,
+                    });
+                }, 4, -1, 0, 0.6f);
+            });
+        }
+
+        foreach (var content in perks)
+        {
+            AddContent(content.label, () =>
+            {
+                inner.Append(content.perks, (perk) => new MetaWidgetOld.WrappedWidget(perk.PerkDefinition.GetPerkImageWidget(true, overlay: () => perk.PerkDefinition.GetPerkWidget())), 8, -1, 0, 0.7f);
+            });
+        }
+
+        __result=new MetaWidgetOld.ScrollView(new(7.4f, HelpScreen.HelpHeight), inner) { Alignment = IMetaWidgetOld.AlignmentOption.Center };
+        return false;
+    }
     public static void ExileSnatcherPatch(ExileController __instance, [HarmonyArgument(0)] ref ExileController.InitProperties init)
     {
         if (MeetingHudExtension.IsObvious || (MeetingHudExtension.ExiledAllModCache?.Length ?? 0) > 1 || !SnatcherExileUseUsurpRole) return;
@@ -6603,6 +6709,12 @@ public class PatchManager
         {
             var instance = ExileController.Instance;
             instance.Text.UseRoleIcon();
+            if (GamePlayer.LocalPlayer.TryGetAbility<BadSheriff.Ability>(out var ab))
+            {
+                init.confirmImpostor = false;
+                instance.completeString = "......";
+                return;
+            }
             bool exiledJester = false;
             if (init.networkedPlayer != null)
             {

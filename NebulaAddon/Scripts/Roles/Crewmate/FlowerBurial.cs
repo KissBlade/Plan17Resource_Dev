@@ -3,7 +3,7 @@ namespace Plana.Roles.Crewmate;
 
 public class FlowerBurial : DefinedSingleAbilityRoleTemplate<FlowerBurial.Ability>, HasCitation, DefinedRole, DefinedSingleAssignable, DefinedCategorizedAssignable, DefinedAssignable, IRoleID, ISpawnable, RuntimeAssignableGenerator<RuntimeRole>, IGuessed, AssignableFilterHolder, IAssignableDocument
 {
-    private FlowerBurial() : base("flowerburial", new(123,177,234), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [flowersPlaceNum, PlaceCooldown, CheckCooldown,CheckDuration, FlowerRatio,NeutralCannotSeeRole,ImpostorCannotSeeRole])
+    private FlowerBurial() : base("flowerburial", new(123,177,234), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [flowersPlaceNum, PlaceCooldown, FlowerRatio,NeutralCannotSeeRole,ImpostorCannotSeeRole])
     {
         MetaAbility.RegisterCircle(new EffectCircleInfo("role.flowerburial.flowerRatio", () => FlowerRatio, () => null, base.RoleColor));
     }
@@ -12,8 +12,6 @@ public class FlowerBurial : DefinedSingleAbilityRoleTemplate<FlowerBurial.Abilit
     public override Ability CreateAbility(GamePlayer player, int[] arguments) => new Ability(player, arguments.GetAsBool(0));
     public static readonly IntegerConfiguration flowersPlaceNum = NebulaAPI.Configurations.Configuration("options.role.flowerburial.flowersPlaceNum", (1, 20), 3);
     public static readonly FloatConfiguration PlaceCooldown = NebulaAPI.Configurations.Configuration("options.role.flowerburial.placeCooldown", (0f, 60f, 2.5f), 5f, FloatConfigurationDecorator.Second);
-    public static readonly FloatConfiguration CheckCooldown = NebulaAPI.Configurations.Configuration("options.role.flowerburial.checkCooldown", (0f, 60f, 2.5f), 5f, FloatConfigurationDecorator.Second);
-    public static readonly FloatConfiguration CheckDuration = NebulaAPI.Configurations.Configuration("options.role.flowerburial.checkDuration", (0f, 60f, 2.5f), 5f, FloatConfigurationDecorator.Second);
     public static readonly FloatConfiguration FlowerRatio = NebulaAPI.Configurations.Configuration("options.role.flowerburial.flowerRatio", (0.25f, 20f, 0.25f), 4f, FloatConfigurationDecorator.Ratio);
     public static readonly BoolConfiguration NeutralCannotSeeRole = NebulaAPI.Configurations.Configuration("options.role.flowerburial.neutralCannotSeeRole", false);
     public static readonly BoolConfiguration ImpostorCannotSeeRole = NebulaAPI.Configurations.Configuration("options.role.flowerburial.impostorCannotSeeRole", false);

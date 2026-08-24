@@ -273,7 +273,7 @@ public class DreamweaverModifier : DefinedModifierTemplate, DefinedModifier, Def
     private DreamweaverModifier() : base("dreamweaverM", new Virial.Color(255,43,133), null,true,()=>false)
     {
     }
-    bool DefinedAssignable.ShowOnHelpScreen
+    /*bool DefinedAssignable.ShowOnHelpScreen
     {
         get
         {
@@ -286,7 +286,7 @@ public class DreamweaverModifier : DefinedModifierTemplate, DefinedModifier, Def
         {
             return false;
         }
-    }
+    }*/
     Citation? HasCitation.Citation { get { return PCitations.PlanaANDKC; } }
     static public DreamweaverModifier MyRole = new DreamweaverModifier();
     RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
