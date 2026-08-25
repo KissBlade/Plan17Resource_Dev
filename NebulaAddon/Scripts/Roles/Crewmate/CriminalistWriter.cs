@@ -32,7 +32,13 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
     static public CriminalistWriter MyRole = new CriminalistWriter();
     Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/CriminalistWriter.png")!.AsImage();
 
-
+    public static RemoteProcess<(GamePlayer, int)> UpdateCWArguments = new("UpdateCWArgumentsRPC", (m, _) =>
+    {
+        if (m.Item1.TryGetAbility<Ability>(out var a))
+        {
+            a.initialSkillCount = m.Item2;
+        }
+    });
     bool IAssignableDocument.HasTips => true;
 
     public static void LoadPatch(Harmony harmony)
@@ -94,7 +100,7 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
             ev.LightRange = LightRange;
         }
         GamePlayer? deadPlayer, alivePlayer;
-        int initialSkillCount;
+        public int initialSkillCount;
         FlexibleLifespan lifespan;
         Dictionary<byte, SpriteRenderer> highlights;
         [Local]
@@ -173,15 +179,6 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
             }
 
             var skipButton = MeetingHud.Instance.SkipVoteButton;
-            GameOperatorManager.Instance?.Subscribe<InvokeVoteAlternateEvent>(ev =>
-            {
-                if (ev.Player==MyPlayer)
-                {
-                    return;
-                }
-                UpdateHighlight(ev.Player.PlayerId, ev.Player);
-                VanillaAsset.PlaySelectSE();
-            },lifespan);
             GameObject binder = UnityHelper.CreateObject("WriterButton", MeetingHud.Instance.SkipVoteButton.transform.parent, MeetingHud.Instance.SkipVoteButton.transform.localPosition, null);
             GameOperatorManager.Instance?.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
                 {
@@ -191,6 +188,22 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
                     }
                     binder.gameObject.SetActive(!this.MyPlayer.IsDead && MeetingHud.Instance.CurrentState == MeetingHud.MeetingStates.NotVoted&& binder);
                 }, lifespan, 100);
+            GameOperatorManager.Instance?.Subscribe<InvokeVoteAlternateEvent>(ev =>
+            {
+                if (ev.Player == MyPlayer)
+                {
+                    return;
+                }
+                if (IsUsurped)
+                {
+                    MeetingHudExtension.CanVote = true;
+                    UnityEngine.Object.Destroy(binder);
+                    highlights.Do(entry => entry.Value.gameObject.SetActive(false));
+                    return;
+                }
+                UpdateHighlight(ev.Player.PlayerId, ev.Player);
+                VanillaAsset.PlaySelectSE();
+            }, lifespan);
             int meetingCount = EveryMeetingSkillCount;
             SpriteRenderer leftRenderer = UnityHelper.CreateObject<SpriteRenderer>("Writer-UseSkill", binder.transform, new Vector3(2.1f, 0.15f), null);
             leftRenderer.sprite = InSkillButton.GetSprite();
@@ -205,12 +218,20 @@ public class CriminalistWriter : DefinedSingleAbilityRoleTemplate<CriminalistWri
             });
             passiveButton.OnClick.AddListener(delegate
             {
+                if (IsUsurped)
+                {
+                    MeetingHudExtension.CanVote = true;
+                    UnityEngine.Object.Destroy(binder);
+                    highlights.Do(entry => entry.Value.gameObject.SetActive(false));
+                    return;
+                }
                 if (alivePlayer!=null&&deadPlayer!=null)
                 {
                     MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform, () =>
                     {
                         initialSkillCount--;
                         meetingCount--;
+                        UpdateCWArguments.Invoke((MyPlayer, initialSkillCount));
                         //useSkill;
                         if (deadPlayer.MyKiller != null && deadPlayer.MyKiller.PlayerId == alivePlayer.PlayerId)
                         {

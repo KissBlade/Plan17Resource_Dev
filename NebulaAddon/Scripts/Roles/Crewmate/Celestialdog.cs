@@ -23,11 +23,19 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
 
     static public Celestialdog MyRole = new Celestialdog();
     bool IAssignableDocument.HasTips => true;
+    public static RemoteProcess<(GamePlayer, int,bool)> UpdateCdogArgumentRPC = new("UpdateCdogArgumentRPC", (m, _) =>
+    {
+        if (m.Item1.Role is Celestialdog.Instance ins)
+        {
+            ins.leftKill = m.Item2;
+            ins.addedKill = m.Item3;
+        }
+    });
     public class Instance(GamePlayer player, int leftkill, bool addedkill) : RuntimeAssignableTemplate(player), RuntimeRole, RuntimeAssignable, ILifespan, IReleasable, IBindPlayer, IGameOperator
     {
         DefinedRole RuntimeRole.Role => MyRole;
         int[]? RuntimeAssignable.RoleArguments => [leftKill, addedKill.AsInt()];
-        bool addedKill = addedkill;
+        public bool addedKill = addedkill;
         static Virial.Media.Image skillImage = NebulaAPI.AddonAsset.GetResource("DogSkill.png")!.AsImage(115f)!;
         static Virial.Media.Image KillImage = NebulaAPI.AddonAsset.GetResource("DogKill.png")!.AsImage(100f)!;
         static Virial.Media.Image TeleportImage = NebulaAPI.AddonAsset.GetResource("DogTeleport.png")!.AsImage(115f)!;
@@ -43,7 +51,7 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
                 return skillButton.IsInEffect ? RoleTaskType.NoTask : RoleTaskType.CrewmateTask;
             }
         }
-        int leftKill = leftkill;
+        public int leftKill = leftkill;
         void AddKill()
         {
             if (killButton == null)
@@ -146,6 +154,7 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
                             {
                             addedKill = true;
                             leftKill = KillNumOption;
+                            UpdateCdogArgumentRPC.Invoke((MyPlayer, leftKill, addedKill));
                             AddKill();
                         }
 

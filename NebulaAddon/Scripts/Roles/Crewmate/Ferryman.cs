@@ -34,12 +34,20 @@ public class FerryMan : DefinedSingleAbilityRoleTemplate<FerryMan.Ability>, HasC
         List<byte> DeadPlayers = new List<byte>();
         void OnMeetingEnd(MeetingEndEvent ev)
         {
+            if (IsUsurped)
+            {
+                return;
+            }
             DeadPlayers = new List<byte>();
             PlayerControl.AllPlayerControls.GetFastEnumerator().Where(p => p.Data.IsDead).Do(pid => DeadPlayers.Add(pid.PlayerId));
         }
         [Local]
         void Update(GameHudUpdateEvent ev)
         {
+            if (IsUsurped)
+            {
+                return;
+            }
             if (CanSeeAllGhost)
             {
                 PlayerControl.AllPlayerControls.GetFastEnumerator().Where(p => p.Data.IsDead).Do(p =>
@@ -58,6 +66,10 @@ public class FerryMan : DefinedSingleAbilityRoleTemplate<FerryMan.Ability>, HasC
         [Local]
         private void OnPlayerMurdered(PlayerMurderedEvent ev)
         {
+            if (IsUsurped)
+            {
+                return;
+            }
             if (CanSeeDeadFlash)
             {
                 if (MeetingHud.Instance || ExileController.Instance)

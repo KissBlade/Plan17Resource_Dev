@@ -86,7 +86,7 @@ public class BadSheriff : DefinedSingleAbilityRoleTemplate<BadSheriff.Ability>, 
                     }
                 }
                 killButton.Availability = (button) => killTracker.CurrentTarget != null && MyPlayer.CanMove && !MyPlayer.WillDie && lockSprite == null;
-                killButton.Visibility = (button) => !MyPlayer.IsDead && NumOfShotsOption==0||leftShots > 0;
+                killButton.Visibility = (button) => !MyPlayer.IsDead && (NumOfShotsOption==0||leftShots > 0);
                 killButton.OnClick = (button) => {
                     var target = killTracker.CurrentTarget;
                     if (CanKill(target.RealPlayer))
@@ -142,6 +142,10 @@ public class BadSheriff : DefinedSingleAbilityRoleTemplate<BadSheriff.Ability>, 
         void OnKill(PlayerKillPlayerEvent ev)
         {
             if (ev.Dead.PlayerId==MyPlayer.PlayerId)
+            {
+                return;
+            }
+            if (ev.Dead.PlayerState==PlayerState.Cursed)
             {
                 return;
             }

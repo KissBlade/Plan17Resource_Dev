@@ -21,15 +21,22 @@ public class MarksMan : DefinedSingleAbilityRoleTemplate<MarksMan.Ability>, HasC
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.KillersSide;
     MultipleAssignmentType DefinedRole.MultipleAssignment => MultipleAssignmentType.AsUniqueKillAbility;
     public override Ability CreateAbility(GamePlayer player, int[] arguments) => new(player, arguments.GetAsBool(0),arguments.Get(1,0));
+    public static RemoteProcess<(GamePlayer, int)> UpdateMarksManBulletRPC = new("UpdateMMBulletRPC", (m, _) =>
+    {
+        if (m.Item1.TryGetAbility<Ability>(out var ab))
+        {
+            ab.bullet = m.Item2;
+        }
+    });
     public class Ability : AbstractPlayerUsurpableAbility, IPlayerAbility
     {
         public static Virial.Media.Image unloadBulletImage=NebulaAPI.AddonAsset.GetResource("marksUnloadBullet.png")!.AsImage(115f)!, loadBulletImage = NebulaAPI.AddonAsset.GetResource("marksLoadBullet.png.png")!.AsImage(115f)!;
         int[] IPlayerAbility.AbilityArguments => [IsUsurped.AsInt(),bullet];
         public Ability(GamePlayer player,bool isUsurped,int bullets) : base(player,isUsurped)
         {
+            bullet = bullets;
             if (AmOwner)
             {
-                bullet = bullets;
                 var myTracker = ObjectTrackers.ForPlayer(this, null, base.MyPlayer, ObjectTrackers.LocalKillablePredicate, Palette.ImpostorRed, Nebula.Roles.Impostor.Impostor.CanKillHidingPlayerOption, false);
                 killButton = NebulaAPI.Modules.AbilityButton(this, base.MyPlayer, true, false, VirtualKeyInput.Kill, null, KillCooldown.Cooldown, "kill", null, (ModAbilityButton _) => myTracker.CurrentTarget != null, (ModAbilityButton _) => !MyPlayer.IsDead, false).SetLabelType(ModAbilityButton.LabelType.Impostor);
                 killButton.OnClick = (button) =>
@@ -50,6 +57,7 @@ public class MarksMan : DefinedSingleAbilityRoleTemplate<MarksMan.Ability>, HasC
                     bullet = Mathn.Clamp(bullet, 0, MaxBullet);
                     killButton.UpdateUsesIcon($"{bullet}/{((int)MaxBullet)}");
                     NebulaAPI.CurrentGame?.KillButtonLikeHandler.StartCooldown();
+                    UpdateMarksManBulletRPC.Invoke((MyPlayer, bullet));
                 };
                 loadbulletButton = NebulaAPI.Modules.AbilityButton(this, base.MyPlayer, false, false, VirtualKeyInput.Ability, null, LoadButtetCooldown, "marksman.loadbullet",loadBulletImage, (ModAbilityButton _) =>
                 {
@@ -62,12 +70,13 @@ public class MarksMan : DefinedSingleAbilityRoleTemplate<MarksMan.Ability>, HasC
                     bullet = Mathn.Clamp(bullet, 0, MaxBullet);
                     killButton.UpdateUsesIcon($"{bullet}/{((int)MaxBullet)}");
                     killButton.CoolDownTimer.Start(UseButtetResetCooldown);
+                    UpdateMarksManBulletRPC.Invoke((MyPlayer, bullet));
                 };
                 NebulaAPI.CurrentGame?.KillButtonLikeHandler.Register(killButton.GetKillButtonLike());
             }
         }
         ModAbilityButton? killButton, unloadbulletButton, loadbulletButton;
         bool IPlayerAbility.HideKillButton => true;
-        int bullet;
+        public int bullet;
     }
 }

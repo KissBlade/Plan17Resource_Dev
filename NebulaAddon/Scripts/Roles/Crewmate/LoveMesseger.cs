@@ -293,6 +293,13 @@ public class HasLove : DefinedModifierTemplate, DefinedModifier, DefinedAssignab
         {
             return Language.Translate("role.lovemesseger.prefix").Color(MyRole.RoleColor.ToUnityColor())+lastRoleName;
         }
+        void OnCollactorCheckTeam(CollatorCheckTeamEvent ev)
+        {
+            if (ev.Target.PlayerId == MyPlayer.PlayerId)
+            {
+                ev.Team =NebulaTeams.CrewmateTeam;
+            }
+        }
     }
 }
 

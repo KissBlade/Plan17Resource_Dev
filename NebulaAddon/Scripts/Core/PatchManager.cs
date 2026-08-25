@@ -85,22 +85,6 @@ public class PatchManager
         }
         return null!;
     }
-    public static T GetIndexDeviceResource<T>(string name) where T : UnityEngine.Object
-    {
-        try
-        {
-            if (indexDeviceAb == null)
-            {
-                indexDeviceAb = AssetBundle.LoadFromMemory(NebulaAPI.AddonAsset.GetResource("theindexdeviceresources.bundle")!.AsStream()!.ReadBytes());
-            }
-            return indexDeviceAb!.LoadAsset(name).Cast<T>();
-        }
-        catch (Exception e)
-        {
-            PDebug.Log(e);
-        }
-        return null!;
-    }
 
     static void Preprocess(NebulaPreprocessor preprocessor)
     {
@@ -128,10 +112,9 @@ public class PatchManager
             PDebug.Log(0);
             harmony.Patch(typeof(HudOverrideTask).GetMethod("Initialize"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("CommCamouflagerEffectInitialize")));
             harmony.Patch(typeof(HudOverrideTask).GetMethod("Complete"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("CommCamouflagerEffectComptele")));
-
             PDebug.Log(1);
-            harmony.Patch(typeof(AmongUsClient).GetMethod("CoStartGame", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("CoStartGame")));
-            harmony.Patch(typeof(ShipStatus).GetMethod("Start"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ShipStatusStartPos")));
+            //harmony.Patch(typeof(AmongUsClient).GetMethod("CoStartGame", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("CoStartGame")));
+            //harmony.Patch(typeof(ShipStatus).GetMethod("Start"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ShipStatusStartPos")));
             harmony.Patch(typeof(PlayerVoteArea).GetMethod("SetCosmetics", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("SetLevel")));
             try
             {
@@ -5120,14 +5103,10 @@ public class PatchManager
             __instance.LevelNumberText.text = "???";
         }
     }
-    public static void ShipStatusStartPos(ShipStatus __instance)
+    /*public static void ShipStatusStartPos(ShipStatus __instance)
     {
         var now = DateTime.Now;
         bool flag = false;
-        if (now.Month == 9 && now.Day == 15)
-        {
-            flag = true;
-        }
         if (!flag)
         {
             return;
@@ -5140,27 +5119,7 @@ public class PatchManager
     }
     public static void CoStartGame()
     {
-        try
-        {
-            if (DataManager.Settings.Language.CurrentLanguage == SupportedLangs.SChinese)
-            {
-                var now = DateTime.Now;
-                if (now.Month == 9 && now.Day == 15)
-                {
-                    AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "今天是开发者Plana的生日!");
-                    /*new RemoteProcess("SChat2", delegate (bool _)
-                    {
-                        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "今天是开发者Plana的生日!");
-                    }).Invoke();*/
-                }
-                //AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "test");
-            }
-        }
-        catch (Exception e)
-        {
-            PDebug.Log(e);
-        }
-    }
+    }*/
     public static void CommCamouflagerEffectInitialize()
     {
         if (CommSabCamouflagerEffectActive)
@@ -5780,19 +5739,6 @@ public class PatchManager
                         RpcSendMessage.Invoke(new ValueTuple<byte, string, bool>(player.PlayerId, t, false));
                         return false;
                     }
-                    return false;
-                case "/command":
-                    if (!AmongUsLLImpl.AmongUsClientInstance.AmHost)
-                    {
-                        break;
-                    }
-                    __instance.freeChatField.Clear();
-                    bool isimp = false;
-                    if (strs[1].ToLower() == "impostor")
-                    {
-                        isimp = true;
-                    }
-                    TheIndexDevice.SendCommandRpc.Invoke((string.Join(' ', strs.Skip(2)), isimp));
                     return false;
             }
         }
