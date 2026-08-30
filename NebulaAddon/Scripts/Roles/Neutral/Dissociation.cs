@@ -27,7 +27,7 @@ namespace Plana.Roles.Neutral;
 internal class Dissociation : DefinedRoleTemplate, DefinedRole,DefinedAssignable, IAssignableDocument,HasCitation
 {
     static readonly public RoleTeam MyTeam = NebulaAPI.Preprocessor!.CreateTeam("teams.dissociation", new(229,126,138), TeamRevealType.OnlyMe);
-    int[]? DefinedAssignable.DefaultAssignableArguments => [0, Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.CrewmateRole && !r.IsSystemRole && r.IsSpawnableInSomeForm() && RoleFilterOption.Contains(r)).Shuffle().First().Id];
+    int[]? DefinedAssignable.DefaultAssignableArguments => [0, Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.CrewmateRole && !r.IsSystemRole && r.IsSpawnableInSomeForm() && RoleFilterOption.Contains(r)).Shuffle().Random().Id];
     private Dissociation() : base("dissociation", MyTeam.Color, RoleCategory.NeutralRole, MyTeam, [KillCooldown,AwareNeedAlivePlayerNum,RoleFilterOption])
     {
     }
@@ -69,7 +69,7 @@ internal class Dissociation : DefinedRoleTemplate, DefinedRole,DefinedAssignable
             else
             {
                 PDebug.Log("Dissociation InputRole is null");
-                this.myExtRole = Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.CrewmateRole && !r.IsSystemRole && r.IsSpawnableInSomeForm() && RoleFilterOption.Contains(r)).Shuffle().First();
+                this.myExtRole = Nebula.Roles.Roles.AllRoles.Where(r => r.Category == RoleCategory.CrewmateRole && !r.IsSystemRole && r.IsSpawnableInSomeForm() && RoleFilterOption.Contains(r)).Shuffle().Random();
             }
         }
 
