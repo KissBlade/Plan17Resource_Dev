@@ -49,11 +49,11 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
                 {
                     if (ev.Player != null && selectplayer != null && selectplayer.PlayerId == ev.Player.PlayerId)
                     {
-                        ev.Color = new Virial.Color?(MyRole.RoleColor);
+                        ev.Color = Aide.MyRole.RoleColor;
                     }
                     if (ev.Player != null && ev.Player.PlayerId == MyPlayer.PlayerId)
                     {
-                        ev.Color = new Virial.Color?(MyRole.RoleColor);
+                        ev.Color = Aide.MyRole.RoleColor;
                     }
                 }
             }
