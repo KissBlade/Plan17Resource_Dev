@@ -130,7 +130,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
                         var player = myTracker.CurrentTarget;
                         var targrtRoleCategory = player.Role.Role.Category;
                         selectplayer = player;
-                        if (MyPlayer.IsTrueCrewmate && targrtRoleCategory == RoleCategory.CrewmateRole)
+                        if (MyPlayer.IsTrueCrewmate && targrtRoleCategory == RoleCategory.CrewmateRole&& player.Role.Role!= Insomniacs.MyRole&& !player.Role.Role.IsMadmate)
                         {
                             var nextRole = player.Role.Role;
                             var nextArgs = player.Role.RoleArguments;
