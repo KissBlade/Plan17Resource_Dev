@@ -15,7 +15,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
     static private readonly IntegerConfiguration LearningNeedRoundOption = NebulaAPI.Configurations.Configuration("options.role.trainee.needround", (1, 8, 1), 1, () => LearningWayOption.GetValue() == 1 || LearningWayOption.GetValue() == 2);
     public static readonly SimpleRoleFilterConfiguration RoleFilterOption = new SimpleRoleFilterConfiguration("options.role.trainee.abilityFilter")
     {
-        RolePredicate = (DefinedRole r) => !r.IsSystemRole && r.IsSpawnableInSomeForm() && r != Madmate.MyRole&&r!=Aide.MyRole&&r!=MyRole&&r.Category==RoleCategory.CrewmateRole,
+        RolePredicate = (DefinedRole r) => !r.IsSystemRole && r.IsSpawnableInSomeForm() && !r.IsMadmate&&r!=Insomniacs.MyRole&&r!=Aide.MyRole&&r!=MyRole&&r.Category==RoleCategory.CrewmateRole,
         ScrollerTag = "badTraineeFilter",
         InvertOption = true,
         PreviewOnlySpawnableRoles = true
