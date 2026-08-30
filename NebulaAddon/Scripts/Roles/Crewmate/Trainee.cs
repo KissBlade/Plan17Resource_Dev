@@ -6,7 +6,7 @@ namespace Plana.Roles.Crewmate;
 
 public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAssignableDocument, HasCitation
 {
-    private Trainee() : base("trainee", new(225, 225, 123), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [LearningWayOption,LearningCoolDownOption, LearningNeedRoundOption, RoleFilterOption,LearnAliveCrewOption]) { }
+    private Trainee() : base("trainee", new(255, 225, 123), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [LearningWayOption,LearningCoolDownOption, LearningNeedRoundOption, RoleFilterOption,LearnAliveCrewOption]) { }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, Nebula.Roles.Roles.GetRole(arguments.Get(1, -1)), arguments.Skip(1).ToArray());
