@@ -4,6 +4,7 @@ using Nebula.Roles.Complex;
 using Nebula.Roles.Crewmate;
 using Nebula.Roles.Modifier;
 using Nebula.Roles.Neutral;
+using Plana.Roles.Crewmate;
 using Plana.Roles.Modifier;
 using Plana.Roles.Neutral;
 using System.ComponentModel;
@@ -232,7 +233,11 @@ public class Ouroboros : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
                             if (killerModifier.Modifier is ScarletLover||killerModifier.Modifier is Lover||killerModifier.Modifier is KnightedTarget||killerModifier.Modifier is PMini)
                             {
                                 continue;
-                            }    
+                            }
+                            if (killerModifier.Modifier is Trainee.Manager)
+                            {
+                                continue;
+                            }
                             ev.Murderer.RemoveModifier(killerModifier.Modifier);
                         }
                         foreach (var modifier in ev.Dead.Modifiers)

@@ -15,7 +15,7 @@ public class BadSheriff : DefinedSingleAbilityRoleTemplate<BadSheriff.Ability>, 
 
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
 
-    bool IAssignableDocument.HasTips => false;
+    bool IAssignableDocument.HasTips => true;
     bool IAssignableDocument.HasAbility => true;
     IEnumerable<AssignableDocumentImage> IAssignableDocument.GetDocumentImages()
     {
@@ -27,7 +27,7 @@ public class BadSheriff : DefinedSingleAbilityRoleTemplate<BadSheriff.Ability>, 
     {
         yield return new("%VENT%", CanKillHidingPlayerOption ? Language.Translate("role.badsheriff.ability.kill.vent") : "");
     }
-
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/BadSheriff.png")!.AsImage();
     public override Ability CreateAbility(GamePlayer player, int[] arguments) => new Ability(player, arguments.GetAsBool(0), arguments.Get(1, NumOfShotsOption));
     //AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
     static internal readonly IRelativeCooldownConfiguration KillCoolDownOption = NebulaAPI.Configurations.KillConfiguration("options.role.badsheriff.killCoolDown", CoolDownType.Relative, (10f, 60f, 2.5f), 25f, (-40f, 40f, 2.5f), +5f, (0.125f, 2f, 0.125f), 1.25f);
@@ -49,6 +49,7 @@ public class BadSheriff : DefinedSingleAbilityRoleTemplate<BadSheriff.Ability>, 
     public class Ability : AbstractPlayerUsurpableAbility, IPlayerAbility
     {
         private ModAbilityButtonImpl? killButton = null;
+        public static Image MeetingInfoIcon = NebulaAPI.AddonAsset.GetResource("badsheriff.MeetingInfo.png")!.AsImage(135f)!;
 
         static internal Image KillButtonSprite => Sheriff.buttonSprite;
         public int leftShots;
@@ -189,8 +190,9 @@ public class BadSheriff : DefinedSingleAbilityRoleTemplate<BadSheriff.Ability>, 
                 NebulaAPI.CurrentGame?.GetModule<MeetingOverlayHolder>()?.RegisterOverlay(NebulaAPI.GUI.VerticalHolder(GUIAlignment.Left, [
                     NebulaAPI.GUI.LocalizedText(GUIAlignment.Left,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayTitle),"role.badsheriff.message.header"),
                     NebulaAPI.GUI.RawText(GUIAlignment.Center,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayContent),sb.ToString())
-                    ]), FlowerBurial.Ability.MeetingInfoIcon, MyRole.RoleColor, false);
+                    ]), BadSheriff.Ability.MeetingInfoIcon, MyRole.RoleColor, false);
             }
+            killplayers.Clear();
         }
         void OnSheriffKill(SheriffCheckKillEvent ev)
         {
