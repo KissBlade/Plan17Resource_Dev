@@ -36,6 +36,10 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
         public DefinedRole? MyExtendedRole { get; set; }
         public RuntimeRole? ExtendedRoleInstance { get; set; }
         bool enableColorDecoration = true;
+        bool RuntimeRole.CheckGuessAbility(DefinedRole abilityRole)
+        {
+            return MyExtendedRole == null ? abilityRole == MyRole : abilityRole == MyExtendedRole;
+        }
         [Local]
         void DecorateTraineeTargetColor(PlayerDecorateNameEvent ev)
         {
@@ -258,6 +262,9 @@ public class Aide : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IRoleID
     {
 
     }
+
+    bool IGuessed.CanBeGuess => false;
+
     bool DefinedAssignable.ShowOnHelpScreen =>false;
 
     bool DefinedAssignable.ShowOnFreeplayScreen => false;
