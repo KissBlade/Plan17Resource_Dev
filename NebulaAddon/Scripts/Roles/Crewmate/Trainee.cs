@@ -1,14 +1,17 @@
+using Mono.Cecil;
 using Nebula.Roles.Complex;
 using Plana.Roles.Impostor;
 using Virial.Helpers;
 
 namespace Plana.Roles.Crewmate;
 
+[NebulaRPCHolder]
 public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAssignableDocument, HasCitation
 {
     private Trainee() : base("trainee", new(255, 225, 123), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [LearningWayOption,LearningCoolDownOption, LearningNeedRoundOption, RoleFilterOption,LearnAliveCrewOption]) { }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Trainee.png")!.AsImage();
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, Nebula.Roles.Roles.GetRole(arguments.Get(1, -1)), arguments.Skip(1).ToArray());
     static private readonly ValueConfiguration<int> LearningWayOption = NebulaAPI.Configurations.Configuration("options.role.trainee.learningway", ["options.role.trainee.learnafterSeconds", "options.role.trainee.learnafterRounds", "options.role.trainee.both"], 2);
     static private readonly FloatConfiguration LearningCoolDownOption = NebulaAPI.Configurations.Configuration("options.role.trainee.cooldown", (30f, 360f, 30f), 60f, FloatConfigurationDecorator.Second, () => LearningWayOption.GetValue() == 0 || LearningWayOption.GetValue() == 2);
@@ -40,12 +43,11 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
         {
             return MyExtendedRole == null ? abilityRole == MyRole : abilityRole == MyExtendedRole;
         }
-        [Local]
         void DecorateTraineeTargetColor(PlayerDecorateNameEvent ev)
         {
             try
             {
-                if (AmOwner&&enableColorDecoration==true)
+                if ((AmOwner||(selectplayer?.AmOwner??false))&&enableColorDecoration==true)
                 {
                     if (ev.Player != null && selectplayer != null && selectplayer.PlayerId == ev.Player.PlayerId)
                     {
@@ -85,7 +87,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
                     selectplayer = null;
                     ObjectTracker<GamePlayer> myTracker = ObjectTrackers.ForPlayer(this, null, base.MyPlayer, p => ObjectTrackers.StandardPredicate(p) && selectplayer == null, MyRole.RoleColor.ToUnityColor(), false, false);
                     skillButton = NebulaAPI.Modules.AbilityButton(this, false, false, 0, false).BindKey(Virial.Compat.VirtualKeyInput.Ability, null);
-                    //skillButton.SetImage(buttonImage);
+                    skillButton.SetImage(buttonImage);
                     (skillButton as ModAbilityButtonImpl).UseCoolDownSupport = false;
                     skillButton.Availability = (ModAbilityButton button) => myTracker.CurrentTarget != null && this.MyPlayer.CanMove && !lockSprite.AsBoolFast();
                     skillButton.Visibility = (ModAbilityButton button) => !this.MyPlayer.IsDead && !used;
@@ -129,35 +131,42 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
                         used = true;
                         var player = myTracker.CurrentTarget;
                         var targrtRoleCategory = player.Role.Role.Category;
-                        selectplayer = player;
-                        if (MyPlayer.IsTrueCrewmate && targrtRoleCategory == RoleCategory.CrewmateRole&& player.Role.Role!= Insomniacs.MyRole&& !player.Role.Role.IsMadmate)
+                        if (MyPlayer.IsTrueCrewmate&&targrtRoleCategory==RoleCategory.CrewmateRole&&!player.IsMadmate)
                         {
+                            ShareSelectPlayer(MyPlayer, player);
                             var nextRole = player.Role.Role;
                             var nextArgs = player.Role.RoleArguments;
-                            OnCreateRole(nextRole, nextArgs);
+                            OnCreateRole(MyPlayer,nextRole, nextArgs);
                             player.AddModifier(Manager.MyRole, null);
                             MyPlayer.AddModifier(AideModifier.MyRole, null);
                         }
                         else
                         {
-                            var roles = NebulaAPI.CurrentGame.GetAllPlayers().Except([player]).Select(p => p.Role.Role).ToList();
+                            var roles = NebulaAPI.CurrentGame.GetAllPlayers().Except([player,MyPlayer]).Select(p => p.Role.Role).ToList();
                             if (LearnAliveCrewOption)
                             {
-                                roles = NebulaAPI.CurrentGame.GetAllPlayers().Where(p => !p.IsDead).Except([player]).Select(p => p.Role.Role).ToList();
+                                roles = NebulaAPI.CurrentGame.GetAllPlayers().Where(p => !p.IsDead).Except([player,MyPlayer]).Select(p => p.Role.Role).ToList();
                             }
-                            var crewRoles = roles.Where(r => RoleFilterOption.Contains(r) && r != player.Role.Role).ToArray();
-                            if (crewRoles.Length != 0)
+                            List<DefinedRole> crewRoles = roles;
+                            if (!MyPlayer.IsTrueCrewmate)
                             {
-                                var nextRole = crewRoles.Length > 0 ? crewRoles[UnityEngine.Random.Range(0, crewRoles.Length)] : null;
+                                crewRoles = roles.Where(r => RoleFilterOption.Contains(r) && r != player.Role.Role).ToList();
+                            }
+                            if (crewRoles.Count != 0)
+                            {
+                                ShareSelectPlayer(MyPlayer,player);
+                                var nextRole = crewRoles.Count > 0 ? crewRoles[UnityEngine.Random.Range(0, crewRoles.Count)] : null;
                                 var nextArgs = player.Role.RoleArguments;
-                                OnCreateRole(nextRole, nextArgs);
+                                OnCreateRole(MyPlayer,nextRole, nextArgs);
+                                player.AddModifier(Manager.MyRole, null);
+                                MyPlayer.AddModifier(AideModifier.MyRole, null);
                             }
                             else
                             {
                                 var nextRole = Aide.MyRole;
                                 var nextArgs = player.Role.RoleArguments;
                                 enableColorDecoration = false;
-                                OnCreateRole(nextRole, nextArgs);
+                                OnCreateRole(MyPlayer,nextRole, nextArgs);
                             }
                         }
                     };
@@ -169,22 +178,42 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
             }
         }
         [NebulaRPC]
-        void OnCreateRole(DefinedRole role, int[] arguments)
+        public static void ShareSelectPlayer(GamePlayer myPlayer,GamePlayer targetPlayer)
         {
-            MyExtendedRole = role;
-            if (role==null)
+            Trainee.Instance instance = null;
+            instance = GameOperatorManager.Instance.AllOperators.FirstOrDefault(o => o is Trainee.Instance ins && ins.MyPlayer == myPlayer) as Trainee.Instance;
+            if (instance == null)
             {
-                if (ExtendedRoleInstance!=null)
+                PDebug.Log("Not Found Trainee Instance");
+                return;
+            }
+            instance.selectplayer = targetPlayer;
+        }
+        [NebulaRPC]
+        public static void OnCreateRole(GamePlayer myPlayer, DefinedRole role, int[] arguments)
+        {
+            Trainee.Instance instance = null;
+            instance = GameOperatorManager.Instance.AllOperators.FirstOrDefault(o => o is Trainee.Instance ins && ins.MyPlayer == myPlayer) as Trainee.Instance;
+            if (instance==null)
+            {
+                PDebug.Log("Not Found Trainee Instance");
+                return;
+            }
+            instance.MyExtendedRole = role;
+            if (role == null)
+            {
+                if (instance.ExtendedRoleInstance != null)
                 {
-                    ExtendedRoleInstance.Release();
-                    ExtendedRoleInstance = null;
+                    instance.ExtendedRoleInstance.Release();
+                    instance.ExtendedRoleInstance = null;
                 }
                 return;
             }
-            ExtendedRoleInstance = MyExtendedRole.CreateInstance(MyPlayer,arguments ?? role.DefaultAssignableArguments?? []);
-            ExtendedRoleInstance.OnActivated();
-            ExtendedRoleInstance.Register(this);
-            GameOperatorManager.Instance.RegisterOnReleased(() => ExtendedRoleInstance.Release(), this);
+            instance.ExtendedRoleInstance = instance.MyExtendedRole.CreateInstance(instance.MyPlayer, arguments ?? role.DefaultAssignableArguments ?? []);
+            instance.ExtendedRoleInstance.OnActivated();
+            instance.ExtendedRoleInstance.Register(instance);
+            GameOperatorManager.Instance.RegisterOnReleased(() => instance.ExtendedRoleInstance.Release(), instance);
+
         }
         int[]? RuntimeAssignable.RoleArguments => [MyExtendedRole!=null?MyExtendedRole.Id:-1,..ExtendedRoleInstance?.RoleArguments??[]];
         public Instance(GamePlayer player, DefinedRole? role, int[] arguments) : base(player)
@@ -201,8 +230,8 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
     public class Manager : DefinedModifierTemplate, DefinedModifier, DefinedAssignable, IRoleID, RuntimeAssignableGenerator<RuntimeModifier>, HasCitation, IAssignableDocument
     {
         bool DefinedAssignable.ShowOnHelpScreen => false;
-
         bool DefinedAssignable.ShowOnFreeplayScreen => false;
+        Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Manager.png")!.AsImage();
         private Manager() : base("manager", new(255, 225, 123), null, true, () => false)
         {
 
@@ -233,7 +262,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
     public class AideModifier : DefinedModifierTemplate, DefinedModifier, DefinedAssignable, IRoleID, RuntimeAssignableGenerator<RuntimeModifier>, HasCitation, IAssignableDocument
     {
         bool DefinedAssignable.ShowOnHelpScreen => false;
-
+        Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Aide.png")!.AsImage();
         bool DefinedAssignable.ShowOnFreeplayScreen => false;
         private AideModifier() : base("aidemodifier", new(255, 225, 123), null, true, () => false)
         {
@@ -264,7 +293,7 @@ public class Aide : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IRoleID
     }
 
     bool IGuessed.CanBeGuess => false;
-
+   Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Aide.png")!.AsImage(); 
     bool DefinedAssignable.ShowOnHelpScreen =>false;
 
     bool DefinedAssignable.ShowOnFreeplayScreen => false;
