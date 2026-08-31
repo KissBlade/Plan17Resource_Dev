@@ -11,10 +11,10 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
     public override Ability CreateAbility(GamePlayer player, int[] arguments) => new Ability(player, arguments.GetAsBool(0),arguments.Get(1,0));
     private static FloatConfiguration MarkCoolDownOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.markedCooldown", new ValueTuple<float, float, float>(0f, 30f, 2.5f), 7.5f, FloatConfigurationDecorator.Second, null, null);
-    private static FloatConfiguration MarkDurationOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.markedDuration", new ValueTuple<float, float, float>(1f, 10f, 0.5f), 2f, FloatConfigurationDecorator.Second, null, null);
+    private static FloatConfiguration MarkDurationOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.markedDuration", new ValueTuple<float, float, float>(1f, 10f, 0.5f), 1f, FloatConfigurationDecorator.Second, null, null);
     private static IntegerConfiguration NeedMarkPlayerOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.needMarkedPlayer", (3, 10, 1), 5, null, null);
-    static private readonly ValueConfiguration<int> RolesRelustOf = NebulaAPI.Configurations.Configuration("options.role.sommelier.resultOf", ["options.role.sommelier.resultOf.in", "options.role.sommelier.resultOf.out", "options.role.sommelier.resultOf.both"], 0);
-    static IntegerConfiguration UseSkillNum = NebulaAPI.Configurations.Configuration("options.role.sommelier.useskillnum", (0, 30), 2);
+    static private readonly ValueConfiguration<int> RolesRelustOf = NebulaAPI.Configurations.Configuration("options.role.sommelier.resultOf", ["options.role.sommelier.resultOf.in", "options.role.sommelier.resultOf.out", "options.role.sommelier.resultOf.both"], 2);
+    static IntegerConfiguration UseSkillNum = NebulaAPI.Configurations.Configuration("options.role.sommelier.useskillnum", (0, 30), 3);
 
     static public Sommelier MyRole = new Sommelier();
     bool IAssignableDocument.HasTips => true;

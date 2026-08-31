@@ -68,7 +68,7 @@ public class PatchManager
     }
 
     static Harmony? harmony;
-    static AssetBundle? ab, indexDeviceAb;
+    static AssetBundle? ab;
     public static AudioClip GetSound(string name)
     {
         try

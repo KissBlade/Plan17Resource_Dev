@@ -1,0 +1,8 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/NebulaAddon/.vs
+/NebulaAddon/bin/Debug/net6.0
+/NebulaAddon/obj/Debug/net6.0
+/.gitignore
