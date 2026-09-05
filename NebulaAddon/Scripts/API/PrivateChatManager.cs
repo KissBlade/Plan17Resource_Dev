@@ -189,6 +189,7 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
             try
             {
                 setChannel:;
+                if (channels.Count <= 0) return;
                 if (channels.All(c => !c.CanUseChannel))
                 {
                     PDebug.Log("No Can use Channel");
@@ -230,6 +231,7 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
             try
             {
                 setChannel:;
+                if (channels.Count <= 0) return;
                 if (channels.All(c => !c.CanUseChannel))
                 {
                     PDebug.Log("No Can use Channel");
