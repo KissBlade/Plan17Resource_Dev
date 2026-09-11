@@ -21,19 +21,18 @@ public interface IPrivateChatManager
     public void Register(Color color, Color textfieldColor, string chatid, Func<string> localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string>? onSendMessage = null);
     public void RegisterPublicChannel(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, bool donotSendMessage = false, Action<string>? onSendMessage = null);
     public void SetPredicate(string chatId, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool>? canReceive = null);
-    public void SetForcesPredicate(string chatId, int forcesPriority, Func<bool> forcesPredicate);
 }
 
 [NebulaPreprocess(PreprocessPhase.PostFixStructure)]
 public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGameOperator
 {
-    public static PrivateChatManager? Instance { get; private set; }
-    public ChatChannel? CurrentChat => currentChat;
+    internal static PrivateChatManager? Instance { get; private set; }
+
+    public ChatChannel? CurrentChat { get; private set; }
     
     public IEnumerable<ChatChannel> AllChannels => channels;
 
-    private List<ChatChannel> forcesChannels = [];
-    private ChatChannel? currentChat;
+    public bool isForces;
     public int currentIndex;
     private List<ChatChannel> channels = [];
     
@@ -41,6 +40,11 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
     {
         PDebug.Log("PrivateChatManager Initialized");
 
+        if (Instance != null)
+        {
+            channels.Clear();
+        }
+        
         Instance = this;
         Register(Color.Green, Color.White, "public", Language.Translate("chat.public"), NebulaAPI.CurrentGame, () => (MeetingHud.Instance && !ExileController.Instance) || AmongUsLLImpl.LobbyInstance || NebulaGameManager.Instance.CanBeSpectator || PatchManager.HasFreeChat, (s, p) => true);
         this.RegisterPermanently();
@@ -71,13 +75,6 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
         channels.Add(new ChatChannel(true, donotSendMessage, localizedname, chatid, onSendMessage, lifespan, useChannelPredicate, color, textfieldColor));
     }
 
-    public void SetForcesPredicate(string chatId, int forcesPriority, Func<bool> forcesPredicate)
-    {
-        var targetChannel = channels.FirstOrDefault(c => c.Id == chatId);
-        targetChannel?.ForcesPriority = forcesPriority;
-        targetChannel?.forcesPredicate = forcesPredicate;
-    }
-
     public void SetPredicate(string chatId, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool>? predicate = null)
     {
         var targetChannel = channels.FirstOrDefault(c => c.Id == chatId);
@@ -103,22 +100,11 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
         ChangeChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText, channels.FirstOrDefault(c => c.Id is "public"));
         currentIndex = 0;
     }
+    
     void OnUpdate(GameHudUpdateEvent ev)
     {
         if (channels.Any(c => c.CanUseChannel))
         {
-            var forcesChannels = channels.Where(c => c.forcesPredicate?.Invoke() ?? false);
-            this.forcesChannels.RemoveAll(c => !c.forcesPredicate?.Invoke() ?? true);
-
-            if (forcesChannels.Any())
-            {
-                this.forcesChannels.AddRange(forcesChannels);
-                ChatChannel channel = forcesChannels.MaxBy(c => c.ForcesPriority);
-                
-                if (currentChat == channel) return;
-                currentChat = channel;
-            }
-
             if (!AmongUsLLImpl.HudManagerBridge.Chat.isActiveAndEnabled)
             {
                 AmongUsLLImpl.HudManagerBridge.Chat.SetVisible(true);
@@ -173,17 +159,40 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
     {
         RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText);
     }
+
+    public void SetForces(string? id)
+    {
+        var channel = channels.FirstOrDefault(c => c.Id == id);
+        SetForces(channel);
+    }
+    
+    public void SetForces(ChatChannel? channel)
+    {
+        if (channel == null)
+        {
+            isForces = false;
+            return;
+        }
+        if (!channels.Contains(channel) || channel.Lifespan.IsDeadObject) return;
+        
+        CurrentChat = channel;
+        isForces = true;
+        ChangeChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText, channel);
+    }
     
     void RemoveDeadObject()
     {
         channels.RemoveAll(c => c.Lifespan.IsDeadObject);
-        forcesChannels.RemoveAll(c => c.Lifespan.IsDeadObject);
+        if (isForces && (CurrentChat == null || !channels.Contains(CurrentChat)))
+        {
+            SetForces(channel: null);
+        }
     }
     
     public void RefreshChannel(ChatController c, TextMeshPro? chatTeamText)
     {
         RemoveDeadObject();
-        if (currentChat == null || !currentChat.CanUseChannel || currentChat.Lifespan.IsDeadObject)
+        if (CurrentChat == null || !CurrentChat.CanUseChannel || CurrentChat.Lifespan.IsDeadObject)
         {
             ChatChannel? currentChannel = null;
             try
@@ -210,12 +219,12 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
             {
                 PDebug.Log(e);
             }
-            currentChat = currentChannel;
+            CurrentChat = currentChannel;
         }
 
-        chatTeamText?.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat?.LocalizedName.Color(currentChat.Color.ToUnityColor()));
+        chatTeamText?.text = Language.Translate("chat.current").Replace("%CHAT%", CurrentChat?.LocalizedName.Color(CurrentChat.Color.ToUnityColor()));
 
-        var color = currentChat!.TextFieldColor.ToUnityColor();
+        var color = CurrentChat!.TextFieldColor.ToUnityColor();
         c.freeChatField.background.color = color;
         c.quickChatField.background.color = color;
         c.freeChatField.textArea.outputText.color = UnityEngine.Color.black;
@@ -225,7 +234,6 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
     {
         RemoveDeadObject();
         
-        if (forcesChannels.Any()) return;
         if (nextChannel == null)
         {
             try
@@ -237,17 +245,27 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
                     PDebug.Log("No Can use Channel");
                     return;
                 }
-                currentIndex++;
-                if (currentIndex >= channels.Count)
+
+                if (!isForces)
                 {
-                    currentIndex = 0;
+                    currentIndex++;
+                    if (currentIndex >= channels.Count)
+                    {
+                        currentIndex = 0;
+                    }
                 }
+                else
+                {
+                    if (CurrentChat != null)
+                        currentIndex = channels.IndexOf(CurrentChat);
+                }
+
                 var currentChannel = channels[currentIndex];
                 if (!currentChannel.CanUseChannel)
                 {
                     goto setChannel;
                 }
-                currentChat = currentChannel;
+                CurrentChat = currentChannel;
             }
             catch (Exception e)
             {
@@ -256,15 +274,15 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
         }
         else
         {
-            currentChat = nextChannel;
+            CurrentChat = nextChannel;
         }
         
-        if (currentChat == null) return;
+        if (CurrentChat == null) return;
         if (chatTeamText != null)
         {
-            chatTeamText.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat.LocalizedName.Color(currentChat.Color));
+            chatTeamText.text = Language.Translate("chat.current").Replace("%CHAT%", CurrentChat.LocalizedName.Color(CurrentChat.Color));
         }
-        var color = currentChat.TextFieldColor.ToUnityColor();
+        var color = CurrentChat.TextFieldColor.ToUnityColor();
         c.freeChatField.background.color = color;
         c.quickChatField.background.color = color;
         c.freeChatField.textArea.outputText.color = UnityEngine.Color.black;
@@ -279,10 +297,7 @@ public class ChatChannel
     public Color TextFieldColor { get; private set; }
     public string LocalizedName
     {
-        get
-        {
-            return showLocalizedName();
-        }
+        get => showLocalizedName();
         set
         {
             showLocalizedName = () => value;
@@ -297,6 +312,14 @@ public class ChatChannel
     {
         return canReceive(sender, player);
     }
+    
+    internal Func<bool>? forcesPredicate;
+    internal Func<bool> useChannelPredicate;
+    internal Action<string>? SendMessageAction;
+    public bool donotSendMessage;
+    public bool isPublicChannel;
+    internal Func<GamePlayer, GamePlayer, bool> canReceive;
+    internal Func<string> showLocalizedName;
     
     public ChatChannel(string localizedName, string id, Func<GamePlayer, GamePlayer, bool> canHear, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor, Action<string>? onSendMessage = null)
     {
@@ -327,6 +350,7 @@ public class ChatChannel
     public ChatChannel(bool isPublic, bool donotSendMessage, string localizedName, string id, Action<string> onSendMessage, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor)
     {
         Id = id;
+        
         this.donotSendMessage = donotSendMessage;
         showLocalizedName = () => localizedName;
         this.Lifespan = lifespan;
@@ -336,14 +360,6 @@ public class ChatChannel
         SendMessageAction = onSendMessage;
         this.useChannelPredicate = useChannelPredicate;
     }
-
-    internal Func<bool>? forcesPredicate = null;
-    internal Func<bool> useChannelPredicate;
-    internal Action<string>? SendMessageAction;
-    public bool donotSendMessage;
-    public bool isPublicChannel = false;
-    internal Func<GamePlayer, GamePlayer, bool> canReceive;
-    internal Func<string> showLocalizedName;
 }
 
 [HarmonyPatch]
@@ -604,7 +620,7 @@ public class PrivateChatPatches
         {
             if (PatchManager.ScarletPrivateMeetingChat)
             {
-                PDebug.Log("register scarlet lover chat");
+                PDebug.Log("Register scarlet lover chat");
                 PrivateChatManager.Instance?.Register(Scarlet.MyRole.RoleColor, Scarlet.MyRole.RoleColor, "Scarlet", () => (Language.Translate("chat.scarlettext") + ("(" + __instance.MyScarlet.MyPlayer.ColoredName + ")").Color(Scarlet.MyRole.UnityColor)),
                     __instance, () => MeetingHud.Instance, (p1, p2) => __instance.IsMyScarlet(p2));
             }
