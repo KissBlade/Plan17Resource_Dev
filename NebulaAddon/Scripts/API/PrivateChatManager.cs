@@ -292,7 +292,6 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
 public class ChatChannel
 {
     public string Id { get; private set; }
-    public int ForcesPriority { get; internal set; }
     public Color Color { get; private set; }
     public Color TextFieldColor { get; private set; }
     public string LocalizedName
@@ -313,7 +312,6 @@ public class ChatChannel
         return canReceive(sender, player);
     }
     
-    internal Func<bool>? forcesPredicate;
     internal Func<bool> useChannelPredicate;
     internal Action<string>? SendMessageAction;
     public bool donotSendMessage;
