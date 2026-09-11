@@ -1,6 +1,3 @@
-using Mono.Cecil;
-using Nebula.Roles.Complex;
-using Plana.Roles.Impostor;
 using Virial.Helpers;
 using Color = Virial.Color;
 
@@ -149,7 +146,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
                             
                             if (!MyPlayer.IsTrueCrewmate)
                             {
-                                crewRoles.RemoveAll(r => RoleFilterOption.Contains(r) && r != player.Role.Role);
+                                crewRoles.RemoveAll(r => !RoleFilterOption.Contains(r) || r == player.Role.Role);
                             }
                             
                             if (crewRoles.Count <= 0)
