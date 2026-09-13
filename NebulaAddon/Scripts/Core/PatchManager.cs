@@ -49,6 +49,7 @@ using Virial.Events.Game.Minimap;
 using Virial.Game;
 using Virial.Helpers;
 using Virial.Runtime;
+using static Il2CppSystem.Globalization.CultureInfo;
 using BindingFlags = System.Reflection.BindingFlags;
 using Color = Virial.Color;
 using DirectoryInfo = System.IO.DirectoryInfo;
@@ -523,13 +524,21 @@ public class PatchManager
             }
             File.AppendAllText(blackListPath, pc.FriendCode + Environment.NewLine);
         }
+        public static void WritePlayer(string code)
+        {
+            if (!File.Exists(blackListPath))
+            {
+                File.Create(blackListPath);
+            }
+            File.AppendAllText(blackListPath, code + Environment.NewLine);
+        }
         public static void WriteList(List<string> list)
         {
             var sb = new StringBuilder();
             list.Do(s => sb.Append(s).Append(Environment.NewLine));
             File.WriteAllText(blackListPath, sb.ToString());
         }
-        public static void RemovePlayer(PlayerControl pc)
+        public static void RemovePlayer(string code)
         {
             if (!File.Exists(blackListPath))
             {
@@ -537,9 +546,9 @@ public class PatchManager
                 return;
             }
             var list = ReadBlacklist();
-            if (!list.Remove(pc.FriendCode))
+            if (!list.Remove(code))
             {
-                PDebug.Log("Not Found " + pc.name + " In BlackListData");
+                PDebug.Log("Not Found " + code + " In BlackListData");
             }
             else
             {
@@ -1044,6 +1053,30 @@ public class PatchManager
 
     public static void OnLobbyStart()
     {
+        if (AmongUsLLImpl.AmongUsClientInstance.AmHost)
+        {
+            NebulaManager.Instance.StartDelayAction(5f, () =>
+            {
+                float time = 5f;
+                GameOperatorManager.Instance.Subscribe<UpdateEvent>(ev =>
+                {
+                    time -= Time.deltaTime;
+                    if (time <= 0f)
+                    {
+                        time = 5f;
+                        return;
+                    }
+                    foreach (var p in PlayerControl.AllPlayerControls)
+                    {
+                        var list = BlackListReadWriter.ReadBlacklist();
+                        if (list.Contains(p.FriendCode))
+                        {
+                            AmongUsLLImpl.AmongUsClientInstance.KickPlayer(p.Data.ClientId, true);
+                        }
+                    }
+                }, NebulaAPI.CurrentGame);
+            });
+        }
         var now = DateTime.Now;
         if ((now.Month == 5 && now.Day >= 24) || (now.Month == 6 && now.Day <= 7))
         {
