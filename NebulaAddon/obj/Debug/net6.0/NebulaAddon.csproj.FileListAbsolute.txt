@@ -181,3 +181,12 @@ C:/SteamLibrary/steamapps/common/Among Us/A 星云3406/Addons/NebulaAddonDevelop
 /mnt/d/Github/Plan17Resource_Dev/NebulaAddon/obj/Debug/net6.0/NebulaAddon.dll
 /mnt/d/Github/Plan17Resource_Dev/NebulaAddon/obj/Debug/net6.0/refint/NebulaAddon.dll
 /mnt/d/Github/Plan17Resource_Dev/NebulaAddon/obj/Debug/net6.0/NebulaAddon.pdb
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.csproj.AssemblyReference.cache
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.AssemblyInfoInputs.cache
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.AssemblyInfo.cs
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.csproj.CoreCompileInputs.cache
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.sourcelink.json
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.dll
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\refint\NebulaAddon.dll
+C:\Users\admin\source\repos\Plan17Resource_Dev\NebulaAddon\obj\Debug\net6.0\NebulaAddon.pdb

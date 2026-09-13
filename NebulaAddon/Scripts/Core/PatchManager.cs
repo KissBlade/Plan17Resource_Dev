@@ -68,7 +68,7 @@ public class PatchManager
     }
 
     static Harmony? harmony;
-    static AssetBundle? ab;
+    static AssetBundle? ab, indexDeviceAb;
     public static AudioClip GetSound(string name)
     {
         try
@@ -511,6 +511,62 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
+    public class BlackListReadWriter
+    {
+        static string blackListPath => Application.persistentDataPath + "/p17hostblacklist.dat";
+        public static void WritePlayer(PlayerControl pc)
+        {
+            if (!File.Exists(blackListPath))
+            {
+                File.Create(blackListPath);
+            }
+            File.AppendAllText(blackListPath, pc.FriendCode + Environment.NewLine);
+        }
+        public static void WriteList(List<string> list)
+        {
+            var sb = new StringBuilder();
+            list.Do(s => sb.Append(s).Append(Environment.NewLine));
+            File.WriteAllText(blackListPath, sb.ToString());
+        }
+        public static void RemovePlayer(PlayerControl pc)
+        {
+            if (!File.Exists(blackListPath))
+            {
+                PDebug.Log("Not Found BlackListData");
+                return;
+            }
+            var list = ReadBlacklist();
+            if (!list.Remove(pc.FriendCode))
+            {
+                PDebug.Log("Not Found " + pc.name + " In BlackListData");
+            }
+            else
+            {
+                WriteList(list);
+            }
+        }
+        public static List<string> ReadBlacklist()
+        {
+            return File.ReadAllLines(blackListPath).ToList();
+        }
+    }
+    [HarmonyPatch]
+    public class BlackListSupportPatch
+    {
+        [HarmonyPatch(typeof(AmongUsClient),nameof(AmongUsClient.OnPlayerJoined)),HarmonyPostfix]
+        public static void OnPlayerJoined(ClientData data)
+        {
+            if (!AmongUsLLImpl.AmongUsClientInstance.AmHost)
+            {
+                return;
+            }
+            var list = BlackListReadWriter.ReadBlacklist();
+            if (list.Contains(data.FriendCode))
+            {
+                AmongUsLLImpl.AmongUsClientInstance.KickPlayer(data.Id);
+            }
+        }
+    }
     public static List<(IEnumerable<DefinedAssignable> roles,TextComponent label)> GetCustomAssignableLabel()
     {
         var madmateRoles = Nebula.Roles.Roles.AllRoles.Where(r => r.IsMadmate && r.ShowOnHelpScreen);

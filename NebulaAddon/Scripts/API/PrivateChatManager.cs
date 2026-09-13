@@ -42,7 +42,7 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
 
         if (Instance != null)
         {
-            channels.Clear();
+            Instance.channels.Clear();
         }
         
         Instance = this;
