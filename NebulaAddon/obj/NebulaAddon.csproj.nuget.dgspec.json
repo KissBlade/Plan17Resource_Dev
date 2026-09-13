@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\admin\\source\\repos\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj": {}
+    "E:\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj": {}
   },
   "projects": {
-    "C:\\Users\\admin\\source\\repos\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj": {
+    "E:\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\admin\\source\\repos\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj",
+        "projectUniqueName": "E:\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj",
         "projectName": "NebulaAddon",
-        "projectPath": "C:\\Users\\admin\\source\\repos\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj",
-        "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\admin\\source\\repos\\Plan17Resource_Dev\\NebulaAddon\\obj\\",
+        "projectPath": "E:\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj",
+        "packagesPath": "C:\\Users\\hp\\.nuget\\packages\\",
+        "outputPath": "E:\\Plan17Resource_Dev\\NebulaAddon\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "E:\\VS3\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\hp\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -41,7 +45,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.300"
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net6.0": {
@@ -71,7 +75,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401\\RuntimeIdentifierGraph.json"
         }
       }
     }
