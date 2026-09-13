@@ -1,4 +1,4 @@
-﻿using Nebula.Roles.Complex;
+using Nebula.Roles.Complex;
 using Virial.Helpers;
 using Virial.Runtime;
 using static Plana.Roles.Impostor.OutlawLeader;
@@ -56,7 +56,6 @@ internal class OutlawTeam : DefinedRoleTemplate, DefinedRole, IAssignableDocumen
 
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
 
-
     static public OutlawTeam MyRole = new();
 
     public static bool IsOutlaw(GamePlayer player) => player.Role is OutlawLeader.IOutlawTeam;
@@ -97,7 +96,6 @@ internal class OutlawLeader : DefinedRoleTemplate, DefinedRole, IAssignableDocum
 
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, (byte)arguments.Get(0, player.PlayerId));
 
-
     static public OutlawLeader MyRole = new();
 
     public interface IOutlawTeam
@@ -137,12 +135,12 @@ internal class OutlawLeader : DefinedRoleTemplate, DefinedRole, IAssignableDocum
 
         void RuntimeAssignable.OnInactivated()
         {
-            var players = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => !p.IsDead && IsSameTeam(p) && p.Role.Role != MyRole).ToList();
+            var players = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => !p.IsDead && IsSameTeam(p) && p.Role.Role != MyRole).ToArray();
             if (players == null) return;
-            var random = players[System.Random.Shared.Next(players.Count)];
+            var random = players[System.Random.Shared.Next(players.Length)];
             OutlawTeam.RpcSetCanKill.Invoke(random);
 
-            if (MyPlayer.Modifiers.Any(r => r is GuesserModifier))
+            if (MyPlayer.Modifiers.Any(r => r.Modifier is GuesserModifier))
                 random.AddModifier(GuesserModifier.MyRole);
         }
 
@@ -156,7 +154,7 @@ internal class OutlawLeader : DefinedRoleTemplate, DefinedRole, IAssignableDocum
                 if (ev.RelatedTeam == NebulaTeams.ImpostorTeam)
                 {
                     var players = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => !p.IsDead && IsSameTeam(p) && p.Role.Role != MyRole).ToList();
-                    players.Do(p => ev.AddPlayer(p));
+                    players.Do(ev.AddPlayer);
                 } 
             }
         }
@@ -226,7 +224,7 @@ internal class Assistant : DefinedRoleTemplate, DefinedRole, IAssignableDocument
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
     bool ISpawnable.IsSpawnable => (OutlawTeam.MyRole as ISpawnable).IsSpawnable;
 
-    RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, arguments.GetAsBool(0), arguments.Get(1, 0));
+    RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, arguments.GetAsBool(0, false), arguments.Get(1, 0));
 
     RoleCategory DefinedCategorizedAssignable.Category
     {
@@ -374,7 +372,7 @@ internal class Assistant : DefinedRoleTemplate, DefinedRole, IAssignableDocument
 
             if (ev.Player.PlayerId == myLeaderCache?.PlayerId && CanKill) 
             {
-                if (ev.Player.Modifiers.Any(r => r is GuesserModifier))
+                if (ev.Player.Modifiers.Any(r => r.Modifier is GuesserModifier))
                     MyPlayer.AddModifier(GuesserModifier.MyRole);
             }
         }
@@ -426,7 +424,7 @@ internal class Dunner : DefinedRoleTemplate, DefinedRole, IAssignableDocument, H
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
     bool ISpawnable.IsSpawnable => (OutlawTeam.MyRole as ISpawnable).IsSpawnable;
 
-    RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, arguments.GetAsBool(0), arguments.Get(1, 0));
+    RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, arguments.GetAsBool(0, false), arguments.Get(1, 0));
 
     RoleCategory DefinedCategorizedAssignable.Category
     {
@@ -475,6 +473,7 @@ internal class Dunner : DefinedRoleTemplate, DefinedRole, IAssignableDocument, H
         bool RuntimeRole.IgnoreBlackout => true;
         IEnumerable<IPlayerAbility?> RuntimeAssignable.MyAbilities => [sabotageAbility];
         CanSabotageAbility sabotageAbility;
+        
         public int LeaderId { get; private set; } = leaderId;
         private GamePlayer? myLeaderCache = null;
         public OutlawLeader.Instance? MyLeader => (this as IOutlawTeam).GetMyLeader(ref myLeaderCache);
@@ -519,17 +518,7 @@ internal class Dunner : DefinedRoleTemplate, DefinedRole, IAssignableDocument, H
                         }
                         if (cleanButton.CoolDownTimer?.CurrentTime < 5f)
                         {
-                            ModAbilityButton cleanButton2 = cleanButton;
-                            if (cleanButton2 == null)
-                            {
-                                return;
-                            }
-                            IVisualTimer coolDownTimer = cleanButton2.CoolDownTimer;
-                            if (coolDownTimer == null)
-                            {
-                                return;
-                            }
-                            coolDownTimer.Start(new float?(5f));
+                            cleanButton.CoolDownTimer.Start(5f);
                         }
                     }
                 }, this, 100);
@@ -547,7 +536,7 @@ internal class Dunner : DefinedRoleTemplate, DefinedRole, IAssignableDocument, H
 
             if (ev.Player.PlayerId == myLeaderCache?.PlayerId && CanKill)
             {
-                if (ev.Player.Modifiers.Any(r => r is GuesserModifier))
+                if (ev.Player.Modifiers.Any(r => r.Modifier is GuesserModifier))
                     MyPlayer.AddModifier(GuesserModifier.MyRole);
             }
         }

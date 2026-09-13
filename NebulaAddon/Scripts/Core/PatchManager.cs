@@ -2532,7 +2532,7 @@ public class PatchManager
     {
         if (__instance.MyPlayer.AmOwner)
         {
-            PrivateChatPatchs.SidekickOnActivated(__instance);
+            PrivateChatPatches.SidekickOnActivated(__instance);
             GameOperatorManager.Instance?.Subscribe<TaskPhaseRestartEvent>(ev =>
             {
                 if (__instance.MyPlayer.IsDead)
@@ -2554,7 +2554,7 @@ public class PatchManager
     {
         if (__instance.MyPlayer.AmOwner)
         {
-            PrivateChatPatchs.SidekickMOnActivated(__instance);
+            PrivateChatPatches.SidekickMOnActivated(__instance);
             GameOperatorManager.Instance?.Subscribe<TaskPhaseRestartEvent>(ev =>
             {
                 if (__instance.MyPlayer.IsDead)

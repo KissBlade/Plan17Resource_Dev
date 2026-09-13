@@ -1,4 +1,4 @@
-﻿using Nebula.Game.Statistics;
+using Nebula.Game.Statistics;
 using Nebula.Roles.Complex;
 using Nebula.Roles.Modifier;
 using Nebula.VoiceChat;
@@ -283,7 +283,7 @@ public class Fantast : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
                 }, this);
                 if (PatchManager.FantastMeetingChat)
                 {
-                    PrivateChatManager.Instance.Register(MyRole.RoleColor, MyRole.RoleColor, "Fantast" + FantastTeamId, Language.Translate("chat.fantasttext"),this,() => MeetingHud.Instance, (p1, p2) => Fantast.IsFantastTeam(p1, FantastTeamId, true) && Fantast.IsFantastTeam(p2, FantastTeamId, true));
+                    PrivateChatManager.Instance?.Register(MyRole.RoleColor, MyRole.RoleColor, "Fantast" + FantastTeamId, Language.Translate("chat.fantasttext"),this,() => MeetingHud.Instance, (p1, p2) => Fantast.IsFantastTeam(p1, FantastTeamId, true) && Fantast.IsFantastTeam(p2, FantastTeamId, true));
                 }
             }
 
@@ -564,7 +564,7 @@ public class Fancy : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignableD
                 }
                 if (PatchManager.FantastMeetingChat)
                 {
-                    PrivateChatManager.Instance.Register(MyRole.RoleColor, MyRole.RoleColor, "Fantast" + FantastTeamId, Language.Translate("chat.fantasttext"), this,() => MeetingHud.Instance, (p1, p2) => Fantast.IsFantastTeam(p1, FantastTeamId, true) && Fantast.IsFantastTeam(p2, FantastTeamId, true));
+                    PrivateChatManager.Instance?.Register(MyRole.RoleColor, MyRole.RoleColor, "Fantast" + FantastTeamId, Language.Translate("chat.fantasttext"), this,() => MeetingHud.Instance, (p1, p2) => Fantast.IsFantastTeam(p1, FantastTeamId, true) && Fantast.IsFantastTeam(p2, FantastTeamId, true));
                 }
             }
             FantastizedAbility = MyFantastized?.GetAbilityOnRole(MyPlayer, AbilityAssignmentStatus.CanLoadToKillNeutral, StoredFantastizedArgument)?.Register(this);

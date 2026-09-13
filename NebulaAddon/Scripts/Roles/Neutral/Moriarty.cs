@@ -1,4 +1,4 @@
-﻿using Il2CppSystem.Net.NetworkInformation;
+using Il2CppSystem.Net.NetworkInformation;
 using Nebula.Roles.Impostor;
 using Nebula.VoiceChat;
 using Plana.Core;
@@ -295,7 +295,7 @@ public class Moriarty : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSi
                 }
                 if (PatchManager.MoriartyMeetingChat)
                 {
-                    PrivateChatManager.Instance.Register(MyRole.RoleColor, MyRole.RoleColor, "Moriarty", Language.Translate("chat.moriartytext"), this,() => MeetingHud.Instance, (p1, p2) => IsSameTeam(p1)&&IsSameTeam(p2));
+                    PrivateChatManager.Instance?.Register(MyRole.RoleColor, MyRole.RoleColor, "Moriarty", Language.Translate("chat.moriartytext"), this,() => MeetingHud.Instance, (p1, p2) => IsSameTeam(p1)&&IsSameTeam(p2));
                 }
             }
             MoriartizedAbility = MyMoriartized?.GetAbilityOnRole(MyPlayer,AbilityAssignmentStatus.CanLoadToMadmate,StoredMoriartizedArgument)?.Register(this);
@@ -503,7 +503,7 @@ public class Moran : DefinedSingleAbilityRoleTemplate<Moran.Ability>, HasCitatio
                 };
                 if (PatchManager.MoriartyMeetingChat)
                 {
-                    PrivateChatManager.Instance.Register(MyRole.RoleColor, MyRole.RoleColor, "Moriarty", Language.Translate("chat.moriartytext"), this,() => MeetingHud.Instance, (p1, p2) => Moriarty.Instance.IsSameTeam(p1) && Moriarty.Instance.IsSameTeam(p2));
+                    PrivateChatManager.Instance?.Register(MyRole.RoleColor, MyRole.RoleColor, "Moriarty", Language.Translate("chat.moriartytext"), this,() => MeetingHud.Instance, (p1, p2) => Moriarty.Instance.IsSameTeam(p1) && Moriarty.Instance.IsSameTeam(p2));
                 }
                 NebulaAPI.CurrentGame?.KillButtonLikeHandler.Register(killButton.GetKillButtonLike());
             }
@@ -854,7 +854,7 @@ public class MoranModifier : DefinedModifierTemplate, HasCitation, DefinedModifi
                 };
                 if (PatchManager.MoriartyMeetingChat)
                 {
-                    PrivateChatManager.Instance.Register(MyRole.RoleColor, MyRole.RoleColor, "Moriarty", Language.Translate("chat.moriartytext"), this,() => MeetingHud.Instance, (p1, p2) => Moriarty.Instance.IsSameTeam(p1) && Moriarty.Instance.IsSameTeam(p2));
+                    PrivateChatManager.Instance?.Register(MyRole.RoleColor, MyRole.RoleColor, "Moriarty", Language.Translate("chat.moriartytext"), this,() => MeetingHud.Instance, (p1, p2) => Moriarty.Instance.IsSameTeam(p1) && Moriarty.Instance.IsSameTeam(p2));
                 }
                 NebulaAPI.CurrentGame?.KillButtonLikeHandler.Register(killButton.GetKillButtonLike());
             }

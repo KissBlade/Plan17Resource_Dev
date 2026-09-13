@@ -1,4 +1,4 @@
-﻿using Epic.OnlineServices.Presence;
+using Epic.OnlineServices.Presence;
 using Nebula.Game.Statistics;
 using Nebula.Roles.Complex;
 using Nebula.Roles.Crewmate;
@@ -234,7 +234,7 @@ public class Ouroboros : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
                             {
                                 continue;
                             }
-                            if (killerModifier.Modifier is Trainee.Manager)
+                            if (killerModifier.Modifier is Manager)
                             {
                                 continue;
                             }

@@ -17,24 +17,34 @@ public interface IPrivateChatManager
         get;
     }
     public void Register(ChatChannel channel);
-    public void Register(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string> onSendMessage = null);
-    public void Register(Color color, Color textfieldColor, string chatid, Func<string> localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string> onSendMessage = null);
-    public void RegisterPublicChannel(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, bool donotSendMessage = false, Action<string> onSendMessage = null);
-    public void SetPredicate(string chatid, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive = null);
+    public void Register(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string>? onSendMessage = null);
+    public void Register(Color color, Color textfieldColor, string chatid, Func<string> localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string>? onSendMessage = null);
+    public void RegisterPublicChannel(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, bool donotSendMessage = false, Action<string>? onSendMessage = null);
+    public void SetPredicate(string chatId, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool>? canReceive = null);
 }
+
 [NebulaPreprocess(PreprocessPhase.PostFixStructure)]
 public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGameOperator
 {
-    internal static PrivateChatManager Instance { get; private set; }
+    internal static PrivateChatManager? Instance { get; private set; }
+
+    public ChatChannel? CurrentChat { get; private set; }
+    
     public IEnumerable<ChatChannel> AllChannels => channels;
-    public PrivateChatManager()
+
+    public bool isForces;
+    public int currentIndex;
+    private List<ChatChannel> channels = [];
+    
+    private PrivateChatManager()
     {
         PDebug.Log("PrivateChatManager Initialized");
+
         if (Instance != null)
         {
-            Instance.channels.Clear();
-            Instance.channels = null;
+            channels.Clear();
         }
+        
         Instance = this;
         Register(Color.Green, Color.White, "public", Language.Translate("chat.public"), NebulaAPI.CurrentGame, () => (MeetingHud.Instance && !ExileController.Instance) || AmongUsLLImpl.LobbyInstance || NebulaGameManager.Instance.CanBeSpectator || PatchManager.HasFreeChat, (s, p) => true);
         this.RegisterPermanently();
@@ -42,7 +52,7 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
     static void Preprocess(NebulaPreprocessor preprocessor)
     {
         preprocessor.DIManager.RegisterModule<Game>(() => new PrivateChatManager());
-        Harmony.CreateAndPatchAll(typeof(PrivateChatPatchs));
+        Harmony.CreateAndPatchAll(typeof(PrivateChatPatches));
     }
     public void Register(ChatChannel channel)
     {
@@ -50,26 +60,27 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
         channels.Add(channel);
         PDebug.Log("register " + channel.Id + " channel Count:" + channels.Count());
     }
-    public void Register(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string> onSendMessage = null)
+    public void Register(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string>? onSendMessage = null)
     {
         channels.Add(new ChatChannel(localizedname, chatid, canReceive, lifespan, useChannelPredicate, color, textfieldColor));
         PDebug.Log("register " + chatid + " channel Count:" + channels.Count());
     }
-    public void Register(Color color, Color textfieldColor, string chatid, Func<string> localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string> onSendMessage = null)
+    public void Register(Color color, Color textfieldColor, string chatid, Func<string> localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> canReceive, Action<string>? onSendMessage = null)
     {
         channels.Add(new ChatChannel(localizedname, chatid, canReceive, lifespan, useChannelPredicate, color, textfieldColor));
         PDebug.Log("register " + chatid + " channel Count:" + channels.Count());
     }
-    public void RegisterPublicChannel(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, bool donotSendMessage = false, Action<string> onSendMessage = null)
+    public void RegisterPublicChannel(Color color, Color textfieldColor, string chatid, string localizedname, ILifespan lifespan, Func<bool> useChannelPredicate, bool donotSendMessage = false, Action<string>? onSendMessage = null)
     {
         channels.Add(new ChatChannel(true, donotSendMessage, localizedname, chatid, onSendMessage, lifespan, useChannelPredicate, color, textfieldColor));
     }
-    public void SetPredicate(string chatid, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool> predicate = null)
+
+    public void SetPredicate(string chatId, Func<bool> useChannelPredicate, Func<GamePlayer, GamePlayer, bool>? predicate = null)
     {
-        var targetChannel = channels.FirstOrDefault(c => c.Id == chatid);
+        var targetChannel = channels.FirstOrDefault(c => c.Id == chatId);
         if (targetChannel == null)
         {
-            PDebug.Log("Not found id is " + chatid.ToString() + " channel");
+            PDebug.Log("Not found id is " + chatId.ToString() + " channel");
             return;
         }
 
@@ -81,14 +92,15 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
     }
     void OnMeetingStart(MeetingPreStartEvent ev)
     {
-        ChangeChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText, channels.FirstOrDefault(c => c.Id is "public"));
+        ChangeChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText, channels.FirstOrDefault(c => c.Id is "public"));
     }
     void OnGameEnd(GameEndEvent ev)
     {
         channels.RemoveAll(p => p.Id is not "public");
-        ChangeChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText, channels.FirstOrDefault(c => c.Id is "public"));
+        ChangeChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText, channels.FirstOrDefault(c => c.Id is "public"));
         currentIndex = 0;
     }
+    
     void OnUpdate(GameHudUpdateEvent ev)
     {
         if (channels.Any(c => c.CanUseChannel))
@@ -119,46 +131,74 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
                 }
                 if (PatchManager.ImpostorMeetingChat && !PatchManager.ImpostorCannotSeeOther && ev.Role.Role.Category == RoleCategory.ImpostorRole)
                 {
-                    Instance.Register(NebulaTeams.ImpostorTeam.Color, new(0.7f, 0.2f, 0.2f), "Impostor", Language.Translate("chat.impostortext"), ev.Role, () => MeetingHud.Instance && GamePlayer.LocalPlayer.IsImpostor && NebulaGameManager.Instance.AllPlayerInfo.Any(p => p.IsImpostor && p.TryGetAbility<CrawlerEngineer.Ability>(out var ab)), (p1, p2) => (p1.IsImpostor && p2.IsImpostor));
+                    Instance?.Register(NebulaTeams.ImpostorTeam.Color, new(0.7f, 0.2f, 0.2f), "Impostor", Language.Translate("chat.impostortext"), ev.Role, () => MeetingHud.Instance && GamePlayer.LocalPlayer.IsImpostor && NebulaGameManager.Instance.AllPlayerInfo.Any(p => p.IsImpostor && p.TryGetAbility<CrawlerEngineer.Ability>(out var ab)), (p1, p2) => (p1.IsImpostor && p2.IsImpostor));
                 }
             }
             catch (Exception e)
             {
                 PDebug.Log(e);
             }
-        refreshChannel:;
-            RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText);
+            refreshChannel:;
+            RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText);
         }
     }
+    
     void OnSetModifier(PlayerModifierSetEvent ev)
     {
-        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText);
+        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText);
     }
     void OnRemoveModifier(PlayerModifierRemoveEvent ev)
     {
-        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText);
+        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText);
     }
     void OnExile(ExileSceneStartEvent ev)
     {
-        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText);
+        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText);
     }
     void OnRestartTaskPhase(TaskPhaseRestartEvent ev)
     {
-        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatchs.chatTeamText);
+        RefreshChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText);
     }
+
+    public void SetForces(string? id)
+    {
+        var channel = channels.FirstOrDefault(c => c.Id == id);
+        SetForces(channel);
+    }
+    
+    public void SetForces(ChatChannel? channel)
+    {
+        if (channel == null)
+        {
+            isForces = false;
+            return;
+        }
+        if (!channels.Contains(channel) || channel.Lifespan.IsDeadObject) return;
+        
+        CurrentChat = channel;
+        isForces = true;
+        ChangeChannel(AmongUsLLImpl.HudManagerBridge.Chat, PrivateChatPatches.chatTeamText, channel);
+    }
+    
     void RemoveDeadObject()
     {
         channels.RemoveAll(c => c.Lifespan.IsDeadObject);
+        if (isForces && (CurrentChat == null || !channels.Contains(CurrentChat)))
+        {
+            SetForces(channel: null);
+        }
     }
+    
     public void RefreshChannel(ChatController c, TextMeshPro? chatTeamText)
     {
         RemoveDeadObject();
-        if (currentChat == null || !currentChat.CanUseChannel || currentChat.Lifespan.IsDeadObject)
+        if (CurrentChat == null || !CurrentChat.CanUseChannel || CurrentChat.Lifespan.IsDeadObject)
         {
             ChatChannel? currentChannel = null;
             try
             {
-            setChannel:;
+                setChannel:;
+                if (channels.Count <= 0) return;
                 if (channels.All(c => !c.CanUseChannel))
                 {
                     PDebug.Log("No Can use Channel");
@@ -170,7 +210,7 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
                     currentIndex = 0;
                 }
                 currentChannel = channels[currentIndex];
-                if (currentChannel == null || !currentChannel.CanUseChannel)
+                if (!currentChannel.CanUseChannel)
                 {
                     goto setChannel;
                 }
@@ -179,40 +219,53 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
             {
                 PDebug.Log(e);
             }
-            currentChat = currentChannel;
+            CurrentChat = currentChannel;
         }
 
-        chatTeamText?.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat?.LocalizedName.Color(currentChat.Color.ToUnityColor()));
+        chatTeamText?.text = Language.Translate("chat.current").Replace("%CHAT%", CurrentChat?.LocalizedName.Color(CurrentChat.Color.ToUnityColor()));
 
-        var color = currentChat!.TextFieldColor.ToUnityColor();
+        var color = CurrentChat!.TextFieldColor.ToUnityColor();
         c.freeChatField.background.color = color;
         c.quickChatField.background.color = color;
         c.freeChatField.textArea.outputText.color = UnityEngine.Color.black;
     }
-    public void ChangeChannel(ChatController c, TextMeshPro chatTeamText, ChatChannel? nextchannel = null)
+    
+    public void ChangeChannel(ChatController c, TextMeshPro chatTeamText, ChatChannel? nextChannel = null)
     {
         RemoveDeadObject();
-        if (nextchannel == null)
+        
+        if (nextChannel == null)
         {
             try
             {
-            setChannel:;
+                setChannel:;
+                if (channels.Count <= 0) return;
                 if (channels.All(c => !c.CanUseChannel))
                 {
                     PDebug.Log("No Can use Channel");
                     return;
                 }
-                currentIndex++;
-                if (currentIndex >= channels.Count)
+
+                if (!isForces)
                 {
-                    currentIndex = 0;
+                    currentIndex++;
+                    if (currentIndex >= channels.Count)
+                    {
+                        currentIndex = 0;
+                    }
                 }
+                else
+                {
+                    if (CurrentChat != null)
+                        currentIndex = channels.IndexOf(CurrentChat);
+                }
+
                 var currentChannel = channels[currentIndex];
-                if (currentChannel == null || !currentChannel.CanUseChannel)
+                if (!currentChannel.CanUseChannel)
                 {
                     goto setChannel;
                 }
-                currentChat = currentChannel;
+                CurrentChat = currentChannel;
             }
             catch (Exception e)
             {
@@ -221,21 +274,21 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
         }
         else
         {
-            currentChat = nextchannel;
+            CurrentChat = nextChannel;
         }
+        
+        if (CurrentChat == null) return;
         if (chatTeamText != null)
         {
-            chatTeamText.text = Language.Translate("chat.current").Replace("%CHAT%", currentChat.LocalizedName.Color(currentChat.Color.ToUnityColor()));
+            chatTeamText.text = Language.Translate("chat.current").Replace("%CHAT%", CurrentChat.LocalizedName.Color(CurrentChat.Color));
         }
-        var color = currentChat.TextFieldColor.ToUnityColor();
+        var color = CurrentChat.TextFieldColor.ToUnityColor();
         c.freeChatField.background.color = color;
         c.quickChatField.background.color = color;
         c.freeChatField.textArea.outputText.color = UnityEngine.Color.black;
     }
-    public ChatChannel currentChat;
-    public int currentIndex;
-    private List<ChatChannel> channels = new();
 }
+
 public class ChatChannel
 {
     public string Id { get; private set; }
@@ -243,17 +296,14 @@ public class ChatChannel
     public Color TextFieldColor { get; private set; }
     public string LocalizedName
     {
-        get
-        {
-            return showLocalizedName();
-        }
+        get => showLocalizedName();
         set
         {
             showLocalizedName = () => value;
         }
     }
 
-    public ILifespan Lifespan => lifespan;
+    public ILifespan Lifespan { get; }
 
     public bool CanUseChannel => useChannelPredicate();
 
@@ -261,53 +311,58 @@ public class ChatChannel
     {
         return canReceive(sender, player);
     }
-    public ChatChannel(string localizedName, string id, Func<GamePlayer, GamePlayer, bool> canHear, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor, Action<string> onSendMessage = null)
+    
+    internal Func<bool> useChannelPredicate;
+    internal Action<string>? SendMessageAction;
+    public bool donotSendMessage;
+    public bool isPublicChannel;
+    internal Func<GamePlayer, GamePlayer, bool> canReceive;
+    internal Func<string> showLocalizedName;
+    
+    public ChatChannel(string localizedName, string id, Func<GamePlayer, GamePlayer, bool> canHear, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor, Action<string>? onSendMessage = null)
     {
         Id = id;
-        //LocalizedName = localizedName;
+
         showLocalizedName = () => localizedName;
         canReceive = canHear;
-        this.lifespan = lifespan;
+        this.Lifespan = lifespan;
         Color = color;
         TextFieldColor = fieldColor;
         SendMessageAction = onSendMessage;
         this.useChannelPredicate = useChannelPredicate;
     }
-    public ChatChannel(Func<string> localizedName, string id, Func<GamePlayer, GamePlayer, bool> canHear, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor, Action<string> onSendMessage = null)
+    
+    public ChatChannel(Func<string> localizedName, string id, Func<GamePlayer, GamePlayer, bool> canHear, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor, Action<string>? onSendMessage = null)
     {
         Id = id;
-        //LocalizedName = localizedName;
+
         showLocalizedName = localizedName;
         canReceive = canHear;
-        this.lifespan = lifespan;
+        this.Lifespan = lifespan;
         Color = color;
         TextFieldColor = fieldColor;
         SendMessageAction = onSendMessage;
         this.useChannelPredicate = useChannelPredicate;
     }
-    public ChatChannel(bool ispublic, bool donotSendMessage, string localizedName, string id, Action<string> onSendMessage, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor)
+    
+    public ChatChannel(bool isPublic, bool donotSendMessage, string localizedName, string id, Action<string> onSendMessage, ILifespan lifespan, Func<bool> useChannelPredicate, Color color, Color fieldColor)
     {
         Id = id;
+        
         this.donotSendMessage = donotSendMessage;
         showLocalizedName = () => localizedName;
-        this.lifespan = lifespan;
+        this.Lifespan = lifespan;
         Color = color;
         TextFieldColor = fieldColor;
-        isPublicChannel = ispublic;
+        isPublicChannel = isPublic;
         SendMessageAction = onSendMessage;
         this.useChannelPredicate = useChannelPredicate;
     }
-    internal Func<bool> useChannelPredicate;
-    internal Action<string> SendMessageAction;
-    public bool donotSendMessage;
-    public bool isPublicChannel = false;
-    internal Func<GamePlayer, GamePlayer, bool> canReceive;
-    private ILifespan lifespan;
-    internal Func<string> showLocalizedName;
 }
+
 [HarmonyPatch]
 [NebulaRPCHolder]
-public class PrivateChatPatchs
+public class PrivateChatPatches
 {
     static RemoteProcess<(byte sender, int receivePlayer, string namepostfix, string text)> RpcSendPrivateChat = new("SendPrivateChatRpc",
 (message, _) =>
@@ -357,7 +412,7 @@ public class PrivateChatPatchs
                 countText.transform.localPosition = new Vector3(-0.14f, 0.49f);
                 countText.color = Palette.White;
                 countText.rectTransform.sizeDelta = new(6f, 0.4496f);
-                countText.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat == null ? "" : PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(PrivateChatManager.Instance.currentChat.Color.ToUnityColor()));
+                countText.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.CurrentChat == null ? "" : PrivateChatManager.Instance.CurrentChat?.LocalizedName.Color(PrivateChatManager.Instance.CurrentChat.Color));
                 chatTeamText = countText;
             }
             chatTeamText.GetIfNotNull()?.gameObject.SetActive(true);
@@ -366,13 +421,13 @@ public class PrivateChatPatchs
             {
                 PrivateChatManager.Instance?.ChangeChannel(__instance, chatTeamText);
             }
-            if (PrivateChatManager.Instance?.currentChat?.Id is not "public")
+            if (PrivateChatManager.Instance?.CurrentChat?.Id is not "public")
             {
-                var c = PrivateChatManager.Instance?.currentChat?.Color.ToUnityColor();
-                var c2 = PrivateChatManager.Instance?.currentChat?.TextFieldColor.ToUnityColor();
+                var c = PrivateChatManager.Instance?.CurrentChat?.Color.ToUnityColor();
+                var c2 = PrivateChatManager.Instance?.CurrentChat?.TextFieldColor.ToUnityColor();
                 __instance.freeChatField.background.color = c2 ?? UnityEngine.Color.white;
                 __instance.quickChatField.background.color = c2 ?? UnityEngine.Color.white;
-                chatTeamText.GetIfNotNull()?.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.currentChat?.LocalizedName.Color(c ?? Color.White));
+                chatTeamText.GetIfNotNull()?.text = Language.Translate("chat.current").Replace("%CHAT%", PrivateChatManager.Instance?.CurrentChat?.LocalizedName.Color(c ?? Color.White));
             }
         }
         catch (Exception ex)
@@ -389,8 +444,10 @@ public class PrivateChatPatchs
         {
             return true;
         }
-        var chatmanager = PrivateChatManager.Instance;
-        var currentChannel = chatmanager.currentChat;
+        var chatManager = PrivateChatManager.Instance;
+        if (chatManager == null) return true;
+        
+        var currentChannel = chatManager.CurrentChat;
         if (currentChannel != null && currentChannel.Id is not "public")
         {
             if (string.IsNullOrEmpty(text))
@@ -400,13 +457,13 @@ public class PrivateChatPatchs
             if (!currentChannel.CanUseChannel)
             {
                 PDebug.Log("Cannot Use " + currentChannel.Id + " Channel,RefreshChannel");
-                chatmanager.RefreshChannel(__instance, chatTeamText);
+                chatManager.RefreshChannel(__instance, chatTeamText);
                 return false;
             }
             if (currentChannel.Lifespan.IsDeadObject)
             {
                 PDebug.Log(currentChannel.Id + " Channel Lifespan Is DeadObject,RefreshChannel");
-                chatmanager.RefreshChannel(__instance, chatTeamText);
+                chatManager.RefreshChannel(__instance, chatTeamText);
                 return false;
             }
             __instance.freeChatField.Clear();
@@ -423,12 +480,14 @@ public class PrivateChatPatchs
                     bitReceivePlayers |= (1 << (int)p.PlayerId);
                 }
             }
+            if (currentChannel == null) return false;
             currentChannel.SendMessageAction?.Invoke(text);
+            
             if (currentChannel.donotSendMessage)
             {
                 return false;
             }
-            RpcSendPrivateChat.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, bitReceivePlayers, $"[{currentChannel.LocalizedName}]".Color(currentChannel.Color.ToUnityColor()), text));
+            RpcSendPrivateChat.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, bitReceivePlayers, $"[{currentChannel.LocalizedName}]".Color(currentChannel.Color), text));
             return false;
         }
         return true;
@@ -444,7 +503,7 @@ public class PrivateChatPatchs
         {
             if (PatchManager.JackalMeetingChat)
             {
-                PrivateChatManager.Instance.Register(Jackal.MyRole.RoleColor, Jackal.MyRole.RoleColor, "Jackal" + __instance.JackalTeamId, Language.Translate("chat.jackaltext"),
+                PrivateChatManager.Instance?.Register(Jackal.MyRole.RoleColor, Jackal.MyRole.RoleColor, "Jackal" + __instance.JackalTeamId, Language.Translate("chat.jackaltext"),
                     __instance, () => MeetingHud.Instance, (p1, p2) => Jackal.IsJackalTeam(p1, __instance.JackalTeamId) && Jackal.IsJackalTeam(p2, __instance.JackalTeamId));
             }
         }
@@ -464,7 +523,7 @@ public class PrivateChatPatchs
         {
             if (PatchManager.JackalMeetingChat)
             {
-                PrivateChatManager.Instance.Register(Jackal.MyRole.RoleColor, Jackal.MyRole.RoleColor, "Jackal" + __instance.JackalTeamId, Language.Translate("chat.jackaltext"),
+                PrivateChatManager.Instance?.Register(Jackal.MyRole.RoleColor, Jackal.MyRole.RoleColor, "Jackal" + __instance.JackalTeamId, Language.Translate("chat.jackaltext"),
                     __instance, () => MeetingHud.Instance, (p1, p2) => Jackal.IsJackalTeam(p1, __instance.JackalTeamId) && Jackal.IsJackalTeam(p2, __instance.JackalTeamId));
             }
         }
@@ -484,7 +543,7 @@ public class PrivateChatPatchs
         {
             if (PatchManager.JackalMeetingChat)
             {
-                PrivateChatManager.Instance.Register(Jackal.MyRole.RoleColor, Jackal.MyRole.RoleColor, "Jackal" + __instance.JackalTeamId, Language.Translate("chat.jackaltext"),
+                PrivateChatManager.Instance?.Register(Jackal.MyRole.RoleColor, Jackal.MyRole.RoleColor, "Jackal" + __instance.JackalTeamId, Language.Translate("chat.jackaltext"),
                     __instance, () => MeetingHud.Instance, (p1, p2) => Jackal.IsJackalTeam(p1, __instance.JackalTeamId) && Jackal.IsJackalTeam(p2, __instance.JackalTeamId));
             }
         }
@@ -507,7 +566,7 @@ public class PrivateChatPatchs
                 PDebug.Log("register lover chat");
                 int loverCount = __instance.MyPlayer.GetModifiers<Lover.Instance>()?.Count() ?? 0;
                 var color = Lover.Colors[loverCount - 1];
-                PrivateChatManager.Instance.Register(color, color, "Lovers" + __instance.LoversId, () => (Language.Translate("chat.lovertext") + ("(" + __instance.MyLover.Get().PlayerName + ")").Color(Lover.Colors[loverCount - 1])),
+                PrivateChatManager.Instance?.Register(color, color, "Lovers" + __instance.LoversId, () => (Language.Translate("chat.lovertext") + ("(" + __instance.MyLover.Get().PlayerName + ")").Color(Lover.Colors[loverCount - 1])),
                     __instance, () =>
                     {
                         if (MeetingHud.Instance.AsBoolFast() && PatchManager.LoverMeetingChat)
@@ -528,7 +587,7 @@ public class PrivateChatPatchs
         }
     }
     [HarmonyPatch(typeof(Scarlet.Instance), "OnAddLover"), HarmonyPostfix]
-    public static void ScaletOnAddLover(RuntimeVentRoleTemplate __instance, GamePlayer player, bool isFavorite)
+    public static void ScarletOnAddLover(RuntimeVentRoleTemplate __instance, GamePlayer player, bool isFavorite)
     {
         if (!__instance.AmOwner)
         {
@@ -539,7 +598,7 @@ public class PrivateChatPatchs
             if (PatchManager.ScarletPrivateMeetingChat)
             {
                 PDebug.Log("register scarlet lover chat");
-                PrivateChatManager.Instance.Register(Scarlet.MyRole.RoleColor, Scarlet.MyRole.RoleColor, "Scarlet", () => (Language.Translate("chat.scarlettext") + ("(" + player.ColoredName + ")").Color(Scarlet.MyRole.UnityColor)),
+                PrivateChatManager.Instance?.Register(Scarlet.MyRole.RoleColor, Scarlet.MyRole.RoleColor, "Scarlet", () => (Language.Translate("chat.scarlettext") + ("(" + player.ColoredName + ")").Color(Scarlet.MyRole.UnityColor)),
                     __instance, () => MeetingHud.Instance, (p1, p2) => player == p2);
             }
         }
@@ -559,8 +618,8 @@ public class PrivateChatPatchs
         {
             if (PatchManager.ScarletPrivateMeetingChat)
             {
-                PDebug.Log("register scarlet lover chat");
-                PrivateChatManager.Instance.Register(Scarlet.MyRole.RoleColor, Scarlet.MyRole.RoleColor, "Scarlet", () => (Language.Translate("chat.scarlettext") + ("(" + __instance.MyScarlet.MyPlayer.ColoredName + ")").Color(Scarlet.MyRole.UnityColor)),
+                PDebug.Log("Register scarlet lover chat");
+                PrivateChatManager.Instance?.Register(Scarlet.MyRole.RoleColor, Scarlet.MyRole.RoleColor, "Scarlet", () => (Language.Translate("chat.scarlettext") + ("(" + __instance.MyScarlet.MyPlayer.ColoredName + ")").Color(Scarlet.MyRole.UnityColor)),
                     __instance, () => MeetingHud.Instance, (p1, p2) => __instance.IsMyScarlet(p2));
             }
         }

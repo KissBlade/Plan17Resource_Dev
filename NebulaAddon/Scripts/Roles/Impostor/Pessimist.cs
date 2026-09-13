@@ -1,4 +1,4 @@
-﻿using Il2CppSystem.Text.Json;
+using Il2CppSystem.Text.Json;
 using NAudio.CoreAudioApi;
 using Nebula.Roles.Complex;
 using Plana.Core;
@@ -50,10 +50,11 @@ public class Pessimist : DefinedRoleTemplate, DefinedRole, HasCitation, IAssigna
         {
             return NebulaGameManager.Instance!.AllPlayerInfo.Any(p => p.IsImpostor && p.MyKiller == MyPlayer);
         }
+        
         [OnlyMyPlayer]
         void OnKillPlayer(PlayerKillPlayerEvent ev)
         {
-            if (ev.Dead.IsImpostor&&MyExtendedRole==null&&ExtendedRoleInstance==null)
+            if (ev.Dead.IsImpostor && MyExtendedRole==null&&ExtendedRoleInstance==null)
             {
                 if (ev.Dead.Role.Role==MyRole)
                 {
@@ -162,13 +163,12 @@ public class Pessimist : DefinedRoleTemplate, DefinedRole, HasCitation, IAssigna
             }
         }
         bool CurrentGuessWrong;
-        string? RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort,bool canSeeAllInfo)
+        void RuntimeAssignable.DecorateNameConstantly(ref string name, bool canAllSeeInfo, bool inEndScene)
         {
-            if ((AmOwner || (NebulaGameManager.Instance?.CanSeeAllInfo??false)) && MyExtendedRole!=null)
+            if ((AmOwner || canAllSeeInfo) && MyExtendedRole!=null)
             {
-                return lastRoleName += " (" + MyExtendedRole.DisplayColoredName +")";
+                name += " (" + MyExtendedRole.DisplayColoredName +")";
             }
-            return null;
         }
 
         void RuntimeAssignable.OnActivated()
