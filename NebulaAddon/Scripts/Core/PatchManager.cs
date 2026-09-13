@@ -264,6 +264,7 @@ public class PatchManager
             harmony.PatchAll(typeof(BlockStampsPatch));
             harmony.PatchAll(typeof(LoggerPatchs));
             harmony.PatchAll(typeof(ChatLogSystemPatch));
+            harmony.PatchAll(typeof(BlackListSupportPatch));
             SpeechEater.LoadPatch(harmony);
             Plana.Roles.Complex.Splicer.LoadPatch(harmony);
             Scrambler.LoadPatch(harmony);
@@ -563,7 +564,7 @@ public class PatchManager
             var list = BlackListReadWriter.ReadBlacklist();
             if (list.Contains(data.FriendCode))
             {
-                AmongUsLLImpl.AmongUsClientInstance.KickPlayer(data.Id);
+                AmongUsLLImpl.AmongUsClientInstance.KickPlayer(data.Id,true);
             }
         }
     }
