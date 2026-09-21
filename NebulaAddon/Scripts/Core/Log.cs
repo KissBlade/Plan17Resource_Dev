@@ -6,11 +6,26 @@ using UnityEngine;
 
 namespace Plana.Core;
 
+[NebulaRPCHolder]
 public class PDebug
 {
     static PDebug()
     {
         ClearLog();
+    }
+    [NebulaRPC]
+    public static void RpcLog(string message, bool onlyhost = false)
+    {
+        if (onlyhost&&!AmongUsLLImpl.AmongUsClientInstance.AmHost)
+        {
+            return;
+        }
+        string m = $"{DateTime.Now:[yyyy/MM/dd HH:mm:ss]} " + message.ToString() + Environment.NewLine;
+        if (Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/LOG"))
+        {
+            File.AppendAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/LOG/log.txt", m);
+        }
+        File.AppendAllText(new DirectoryInfo(Application.dataPath).Parent + "/MoreRolesLog.txt", m);
     }
     public static void Log(object message)
     {

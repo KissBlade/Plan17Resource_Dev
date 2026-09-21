@@ -2,6 +2,7 @@ global using Plana.Core;
 global using Plana.Core.API;
 using Amongus.GameModes.HideAndSeek;
 using AmongUs.Data;
+using AmongUs.Data.Player;
 using AmongUs.GameOptions;
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
@@ -255,6 +256,8 @@ public class PatchManager
             harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
             harmony.Patch(typeof(ExileController).GetMethod("Begin"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ExileSnatcherPatch")) { priority = -100});
             harmony.Patch(typeof(HelpScreen).GetMethod(nameof(HelpScreen.ShowAssignableScreen),AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("ShowAssignableScreen")));
+            harmony.Patch(typeof(AmongUsClient).GetMethod(nameof(AmongUsClient.ExitGame)), new HarmonyMethod(typeof(PatchManager).GetMethod("OnExitGame"), Priority.VeryLow));
+            harmony.Patch(typeof(PlayerBanData).GetMethod("get_IsBanned"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("IsSpBanned"), Priority.VeryLow));
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
             OptionPatchs.StartPatch(harmony);
             harmony.PatchAll(typeof(DarkThemePatchs));
@@ -619,7 +622,7 @@ public class PatchManager
                 if (list.Contains(friendCode))
                 {
                     var client= GetClient(playerControl);
-                    SetSendKickPlayer.Invoke((senderPlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
+                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,senderPlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((client.Id, false));
@@ -1114,9 +1117,36 @@ public class PatchManager
         }
         return __exception;
     }
-
+    public static void IsSpBanned(PlayerBanData __instance, ref bool __result)
+    {
+        if (File.Exists(Application.persistentDataPath + "/sp"))
+        {
+            __result = __instance.BanMinutesLeft > 0;
+        }
+    }
+    public static void OnExitGame(AmongUsClient __instance,DisconnectReasons reason)
+    {
+        if (!AmongUsLLImpl.LobbyInstance.AsBoolFast() && __instance.NetworkMode == NetworkModes.OnlineGame && GeneralConfigurations.CurrentGameMode == Virial.Game.GameModes.Standard)
+        {
+            if (AmongUsLLImpl.AmongUsClientInstance.AmHost||AmongUsLLImpl.LocalPlayer.Data.IsDead || IntroCutscene.Instance.AsBoolFast())
+            {
+                return;
+            }
+            PDebug.RpcLog("Player " + AmongUsLLImpl.LocalPlayer.name + " Exit Game,FriendCode:" + EOSManager.Instance.FriendCode,true);
+            DataManager.Player.Ban.PreviousGameStartDate = AmongUsDateTime.UtcNow;
+            DataManager.Player.Ban.BanPoints = 3;
+            if (!File.Exists(Application.persistentDataPath + "/sp"))
+            {
+                File.Create(Application.persistentDataPath + "/sp");
+            }
+        }
+    }
     public static void OnLobbyStart()
     {
+        if (File.Exists(Application.persistentDataPath + "/sp"))
+        {
+            File.Delete(Application.persistentDataPath + "/sp");
+        }
         if (AmongUsLLImpl.AmongUsClientInstance.AmHost)
         {
             NebulaManager.Instance.StartDelayAction(5f, () =>
@@ -5370,12 +5400,13 @@ public class PatchManager
         return list.Any(c => code == c.Friendcode);
     }
     static Dictionary<PlayerControl, int> killGuardPlayers = new Dictionary<PlayerControl, int>();
-    static RemoteProcess<(byte, string)> SetSendKickPlayer = new RemoteProcess<(byte, string)>("SetSendKickPlayerRPC", (message, _) =>
+    static RemoteProcess<(byte,byte, string)> SetSendKickPlayer = new RemoteProcess<(byte,byte, string)>("SetSendKickPlayerRPC", (message, _) =>
     {
         SendKickPlayer = PlayerControl.AllPlayerControls.GetFastEnumerator()!.FirstOrDefault(p => p.PlayerId == message.Item1)!;
-        if (SendKickPlayer.AmOwner)
+        var targetplayer= PlayerControl.AllPlayerControls.GetFastEnumerator()!.FirstOrDefault(p => p.PlayerId == message.Item2)!;
+        if (targetplayer?.AmOwner??false)
         {
-            SendKickreason = message.Item2;
+            SendKickreason = message.Item3;
         }
     });
     static RemoteProcess<(int clientid, bool isban)> KickPlayer = new RemoteProcess<(int clientid, bool isban)>("KickPlayerRPC", (message, _) =>
@@ -5740,7 +5771,7 @@ public class PatchManager
                     var targetplayer = targetplayerC.Data;
                     if (targetplayer == null) break;
                     string str = strs.Length >= 3 ? string.Join(Environment.NewLine, strs.Skip(2)) : string.Empty;
-                    SetSendKickPlayer.Invoke((targetplayer.PlayerId, Language.Translate("chatcommand.kick.reason").Replace("%REASON%", str)));
+                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,targetplayer.PlayerId, Language.Translate("chatcommand.kick.reason").Replace("%REASON%", str)));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((targetplayer.ClientId, false));
@@ -5757,7 +5788,7 @@ public class PatchManager
                     var target = targetC.Data;
                     if (target == null) break;
                     string stri = strs.Length >= 3 ? string.Join(Environment.NewLine, strs.Skip(2)) : "";
-                    SetSendKickPlayer.Invoke((target.PlayerId, Language.Translate("chatcommand.ban.reason").Replace("%REASON%", stri)));
+                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,target.PlayerId, Language.Translate("chatcommand.ban.reason").Replace("%REASON%", stri)));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((target.ClientId, true));
@@ -5895,7 +5926,7 @@ public class PatchManager
                                 if (GetClient(p).FriendCode == targetCode)
                                 {
                                     var client = GetClient(p);
-                                    SetSendKickPlayer.Invoke((p.PlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
+                                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,p.PlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
                                     NebulaManager.Instance.StartDelayAction(1f, () =>
                                     {
                                         KickPlayer.Invoke((client.Id, false)); 
