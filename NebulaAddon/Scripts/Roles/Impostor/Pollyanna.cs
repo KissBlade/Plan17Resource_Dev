@@ -304,7 +304,7 @@ public class Pollyanna : DefinedSingleAbilityRoleTemplate<Pollyanna.Ability>, Ha
                     {
                         return;
                     }
-                    if (!MeetingHudExtension.CanUseAbilityFor(p, true))
+                    if (!MeetingHudExtension.CanUseAbilityForLocal(p, true))
                     {
                         return;
                     }

@@ -50,6 +50,7 @@ using Virial.Game;
 using Virial.Helpers;
 using Virial.Runtime;
 using static Il2CppSystem.Globalization.CultureInfo;
+using static UnityEngine.GraphicsBuffer;
 using BindingFlags = System.Reflection.BindingFlags;
 using Color = Virial.Color;
 using DirectoryInfo = System.IO.DirectoryInfo;
@@ -513,6 +514,18 @@ public class PatchManager
     public static int usebubblenum;
     static List<byte> votedPlayerId = new List<byte>();
     public static GameObject EnterCodeSelectServer;
+    private static PlayerControl? FindPlayerById(byte playerId)
+    {
+        try
+        {
+            return PlayerControl.AllPlayerControls.ToArray()
+                .FirstOrDefault(player => player && player.PlayerId == playerId);
+        }
+        catch
+        {
+            return null;
+        }
+    }
     public class BlackListReadWriter
     {
         static string blackListPath => Application.persistentDataPath + "/p17hostblacklist.dat";
@@ -563,18 +576,69 @@ public class PatchManager
     [HarmonyPatch]
     public class BlackListSupportPatch
     {
-        [HarmonyPatch(typeof(AmongUsClient),nameof(AmongUsClient.OnPlayerJoined)),HarmonyPostfix]
-        public static void OnPlayerJoined(ClientData data)
+        public static void SendFriendCode(PlayerControl myPlayer)
         {
-            if (!AmongUsLLImpl.AmongUsClientInstance.AmHost)
+            try
             {
-                return;
+                if (AmongUsLLImpl.AmongUsClientInstance.AmHost) return;
+                if (myPlayer == null)
+                {
+                    return;
+                }
+                var myFriendCode = EOSManager.Instance.FriendCode;
+                if (myFriendCode != null)
+                {
+                    ReceiveFriendCode(myPlayer.PlayerId, myFriendCode);
+                }
+                else
+                {
+                    PDebug.Log("Fail to Find Friendcode");
+                    return;
+                }
             }
-            var list = BlackListReadWriter.ReadBlacklist();
-            if (list.Contains(data.FriendCode))
+            catch(Exception e)
             {
-                AmongUsLLImpl.AmongUsClientInstance.KickPlayer(data.Id,true);
+                PDebug.Log("SendFriendCode Error: " + e.Message);
             }
+        }
+        [NebulaRPC]
+        public static void ReceiveFriendCode(byte senderPlayerId, string friendCode)
+        {
+            try
+            {
+                if (!AmongUsLLImpl.AmongUsClientInstance.AmHost || string.IsNullOrWhiteSpace(friendCode))
+                {
+                    return;
+                }
+                var playerControl = FindPlayerById(senderPlayerId);
+                if (playerControl == null)
+                {
+                    return;
+                }
+                var list = BlackListReadWriter.ReadBlacklist();
+                if (list.Contains(friendCode))
+                {
+                    var client= GetClient(playerControl);
+                    SetSendKickPlayer.Invoke((senderPlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
+                    NebulaManager.Instance.StartDelayAction(1f, () =>
+                    {
+                        KickPlayer.Invoke((client.Id, false));
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                PDebug.Log("ReceiveFriendCode Error: " + e.Message);
+            }
+        }
+        [HarmonyPatch(typeof(PlayerControl), nameof(PlayerControl.Start)), HarmonyPostfix]
+        public static void OnPlayerJoined(PlayerControl __instance)
+        {
+            if (__instance == null || !__instance.AmOwner) return;
+            NebulaManager.Instance.StartDelayAction(2f, () =>
+            {
+                SendFriendCode(__instance);
+            });
         }
     }
     public static List<(IEnumerable<DefinedAssignable> roles,TextComponent label)> GetCustomAssignableLabel()
@@ -5676,7 +5740,7 @@ public class PatchManager
                     var targetplayer = targetplayerC.Data;
                     if (targetplayer == null) break;
                     string str = strs.Length >= 3 ? string.Join(Environment.NewLine, strs.Skip(2)) : string.Empty;
-                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, str));
+                    SetSendKickPlayer.Invoke((targetplayer.PlayerId, Language.Translate("chatcommand.kick.reason").Replace("%REASON%", str)));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((targetplayer.ClientId, false));
@@ -5693,7 +5757,7 @@ public class PatchManager
                     var target = targetC.Data;
                     if (target == null) break;
                     string stri = strs.Length >= 3 ? string.Join(Environment.NewLine, strs.Skip(2)) : "";
-                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, stri));
+                    SetSendKickPlayer.Invoke((target.PlayerId, Language.Translate("chatcommand.ban.reason").Replace("%REASON%", stri)));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((target.ClientId, true));
@@ -5801,6 +5865,85 @@ public class PatchManager
                         }
                         RpcSendChat.Invoke((p.PlayerId, messagename, string.Join(" ", strs.Skip(1))));
                         return false;
+                    }
+                    break;
+                case "/abl":
+                case "/addblacklist":
+                    {
+                        if (strs.Length < 2) break;
+                        else
+                        {
+                            if (!AmongUsLLImpl.AmongUsClientInstance.AmHost)
+                            {
+                                break;
+                            }
+                            string targetCode = strs[1];
+                            var blacklist = BlackListReadWriter.ReadBlacklist();
+                            if(targetCode == AmongUsLLImpl.LocalPlayer.FriendCode)
+                            {
+                                AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, Language.Translate("chatcommand.blackmaillist.self"));
+                                break;
+                            }
+                            if (blacklist.Contains(targetCode))
+                            {
+                                AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, Language.Translate("chatcommand.blackmaillist.already"));
+                                break;
+                            }
+                            BlackListReadWriter.WritePlayer(targetCode);
+                            foreach(var p in PlayerControl.AllPlayerControls)
+                            {
+                                if (GetClient(p).FriendCode == targetCode)
+                                {
+                                    var client = GetClient(p);
+                                    SetSendKickPlayer.Invoke((p.PlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
+                                    NebulaManager.Instance.StartDelayAction(1f, () =>
+                                    {
+                                        KickPlayer.Invoke((client.Id, false)); 
+                                    });
+                                }
+                            }
+                            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, Language.Translate("chatcommand.blackmaillist.add").Replace("%CODE%", targetCode));
+                        }
+                    }
+                    break;
+                case "/rbl":
+                case"/removeblacklist":
+                    {
+                        if (strs.Length < 2) break;
+                        else
+                        {
+                            if (!AmongUsLLImpl.AmongUsClientInstance.AmHost)
+                            {
+                                break;
+                            }
+                            string targetCode = strs[1];
+                            BlackListReadWriter.RemovePlayer(targetCode);
+                            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, Language.Translate("chatcommand.blackmaillist.remove").Replace("%CODE%", targetCode));
+                        }
+                    }
+                    break;
+                case "/cbl":
+                case "/checkblacklist":  
+                    {
+                        var blacklist = BlackListReadWriter.ReadBlacklist();
+                        if (!AmongUsLLImpl.AmongUsClientInstance.AmHost)
+                        {
+                            break;
+                        }
+                        if (blacklist.Count!=0)
+                        {
+                            var sb = new StringBuilder();
+                            sb.Append(Language.Translate("chatcommand.blackmaillist.list") + "\n");
+                            foreach(var code in blacklist)
+                            {
+                                sb.Append(code + "\n");
+                            }
+                            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, sb.ToString());
+                        }
+                        else
+                        {
+                            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, Language.Translate("chatcommand.blackmaillist.empty"));
+                        }
                     }
                     break;
                 case "/warning":
@@ -8711,7 +8854,7 @@ public class PatchManager
     static System.Collections.IEnumerator LoadInfo()
     {
         var savePath = Application.persistentDataPath + "/p17.dat";
-        string url = "https://qx.hxjamongusxe.top/servers/sponser.json";
+        string url = "https://qx.plan17.top/servers/sponser.json";
         UnityWebRequest request = UnityWebRequest.Get(url);
         request.timeout = 10;
         request.SetRequestHeader("User-Agent", "Nebula-Plan17-GET");
@@ -8798,7 +8941,7 @@ public class PatchManager
         public List<SponserInfo> contributor;
     }
     static SponserInfoList sponserInfoList;
-    private const string _serverUrl = "https://mp.hxjamongusxe.top/api";
+    private const string _serverUrl = "https://mp.plan17.top/api";
     public static IEnumerator UploadAudioClip(string filePath, string suffix = "")
     {
         PDebug.Log("CoUploadAudioClip");
