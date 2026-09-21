@@ -169,7 +169,7 @@
           "WasmDisassembler": "2022.1.0.0",
           "__Generated": "0.0.0.0",
           "Nebula": "1.0.0.0",
-          "NebulaAPI": "8.0.0.0"
+          "NebulaAPI": "10.0.0.0"
         },
         "runtime": {
           "NebulaAddon.dll": {}
@@ -1459,15 +1459,23 @@
         "runtime": {
           "Nebula.dll": {
             "assemblyVersion": "1.0.0.0",
-            "fileVersion": "108.1619.0.0"
+            "fileVersion": "109.1634.0.0"
           }
         }
       },
-      "NebulaAPI/8.0.0.0": {
+      "NebulaAPI/10.0.0.0": {
         "runtime": {
           "NebulaAPI.dll": {
-            "assemblyVersion": "8.0.0.0",
-            "fileVersion": "8.0.0.0"
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.0.0"
+          }
+        }
+      },
+      "Unity.LevelPlay/0.0.0.0": {
+        "runtime": {
+          "Unity.LevelPlay.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
           }
         }
       }
@@ -2284,7 +2292,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "NebulaAPI/8.0.0.0": {
+    "NebulaAPI/10.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Unity.LevelPlay/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

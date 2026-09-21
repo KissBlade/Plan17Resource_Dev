@@ -106,7 +106,7 @@ public class Pessimist : DefinedRoleTemplate, DefinedRole, HasCitation, IAssigna
                             {
                                 if (AmongUsLLImpl.LocalPlayer.Data.IsDead) return;
                                 if (!(MeetingHud.Instance.state == MeetingHud.MeetingStates.Voted || MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted)) return;
-                                if (!MeetingHudExtension.CanUseAbilityFor(p, true))
+                                if (!MeetingHudExtension.CanUseAbilityForLocal(p, true))
                                 {
                                     return;
                                 }

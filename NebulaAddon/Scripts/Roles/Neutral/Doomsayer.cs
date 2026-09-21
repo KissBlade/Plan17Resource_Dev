@@ -1,5 +1,6 @@
 using Nebula.Roles.Complex;
 using Plana.Core;
+using Plana.Roles.Crewmate;
 
 namespace Plana.Roles.Neutral;
 
@@ -38,6 +39,7 @@ public class Doomsayer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
     public class Instance : RuntimeAssignableTemplate, RuntimeRole
     {
         public static GameEnd DoomsayerTeamWin = NebulaAPI.Preprocessor!.CreateEnd("doomsayer", MyRole.RoleColor);
+        public static Image MeetingInfoIcon = NebulaAPI.AddonAsset.GetResource("doomsayer.MeetingInfo.png")!.AsImage(135f)!;
         DefinedRole RuntimeRole.Role => MyRole;
 
         public Instance(GamePlayer player) : base(player)
@@ -269,11 +271,17 @@ public class Doomsayer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
                                 playerRole = player.Role.Role;
                             }
                             resultList.Insert(UnityEngine.Random.Range(0, list.Count), playerRole);
-                            var text = Language.Translate("role.doomsayer.oracletext").Replace("%NAME%", oracleTarget.PlayerName).Replace("%ROLE%", string.Join(",", resultList.Select(r => r.DisplayName)));
-                            PatchManager.RpcSendSkillMessage.Invoke((MyPlayer, text));
                             useskilltargets.Add(oracleTarget.PlayerId);
-                            oracleTarget = null;
-                        }
+                            foreach (var p in useskilltargets)
+                            {
+                                    var sb = new System.Text.StringBuilder().Append(Language.Translate("role.doomsayer.oracletext").Replace("%NAME%", oracleTarget.PlayerName).Replace("%ROLE%", string.Join(",", resultList.Select(r => r.DisplayColoredName))));
+                                    NebulaAPI.CurrentGame?.GetModule<MeetingOverlayHolder>()?.RegisterOverlay(NebulaAPI.GUI.VerticalHolder(GUIAlignment.Left, [
+                                    NebulaAPI.GUI.LocalizedText(GUIAlignment.Left,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayTitle),"role.doomsayer.message.header"),
+                                    NebulaAPI.GUI.RawText(GUIAlignment.Center,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayContent),sb.ToString())
+                                    ]), Doomsayer.Instance.MeetingInfoIcon, MyRole.RoleColor, false);
+                                }
+                                useskilltargets.Clear();
+                          }
                     }, this);
                 }
             }
