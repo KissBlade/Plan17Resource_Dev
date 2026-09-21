@@ -215,13 +215,13 @@ internal class Dissociation : DefinedRoleTemplate, DefinedRole,DefinedAssignable
         bool ShouldShowAnnotatedRole => NebulaGameManager.Instance?.CanSeeAllInfo ?? false;
 
         string RuntimeAssignable.DisplayName =>
-            ShouldShowDissociationRole ? (MyRole as DefinedRole).DisplayName+"("+myExtRole.DisplayName+")" :
-            ShouldShowAnnotatedRole ? myExtRole.DisplayName + "(" + (MyRole as DefinedRole).DisplayName + ")" :
-            myExtRole.DisplayName;
+            ShouldShowDissociationRole ? (MyRole as DefinedRole).DisplayName+"("+ ExtRoleInstance.DisplayName +")" :
+            ShouldShowAnnotatedRole ? ExtRoleInstance.DisplayName + "(" + (MyRole as DefinedRole).DisplayName + ")" :
+            ExtRoleInstance.DisplayName;
         string RuntimeAssignable.DisplayColoredName =>
-            ShouldShowDissociationRole ? (MyRole as DefinedRole).DisplayColoredName + "(" + myExtRole.DisplayColoredName + ")" :
-            ShouldShowAnnotatedRole ? myExtRole.DisplayColoredName + "(" + (MyRole as DefinedRole).DisplayColoredName + ")" :
-            myExtRole.DisplayColoredName;
+            ShouldShowDissociationRole ? (MyRole as DefinedRole).DisplayColoredName + "(" + ExtRoleInstance.DisplayColoredName + ")" :
+            ShouldShowAnnotatedRole ? ExtRoleInstance.DisplayColoredName + "(" + (MyRole as DefinedRole).DisplayColoredName + ")" :
+            ExtRoleInstance.DisplayColoredName;
 
         IEnumerable<DefinedAssignable> RuntimeAssignable.AssignableOnHelp => ShouldShowDissociationRole ? [MyRole,myExtRole] : [myExtRole];
         IEnumerable<IPlayerAbility> RuntimeAssignable.MyAbilities => ExtRoleInstance == null ? Array.Empty<IPlayerAbility>() : ExtRoleInstance.MyAbilities!;
