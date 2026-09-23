@@ -48,7 +48,7 @@ public class Violator : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSi
         }
         void OnCheckGameEnd(EndCriteriaMetEvent ev)
         {
-            if (ev.EndReason==GameEndReason.Sabotage)
+            if (ev.OriginalEndReason==GameEndReason.Sabotage||ev.OverwrittenEndReason==GameEndReason.Sabotage)
             {
                 ev.TryOverwriteEnd(PatchManager.NobodyAliveEnd, GameEndReason.Sabotage, 1 << MyPlayer.PlayerId);
             }

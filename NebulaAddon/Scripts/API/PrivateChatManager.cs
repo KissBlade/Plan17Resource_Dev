@@ -39,12 +39,10 @@ public class PrivateChatManager : AbstractModule<Game>, IPrivateChatManager, IGa
     private PrivateChatManager()
     {
         PDebug.Log("PrivateChatManager Initialized");
-
         if (Instance != null)
         {
             Instance.channels.Clear();
         }
-        
         Instance = this;
         Register(Color.Green, Color.White, "public", Language.Translate("chat.public"), NebulaAPI.CurrentGame, () => (MeetingHud.Instance && !ExileController.Instance) || AmongUsLLImpl.LobbyInstance || NebulaGameManager.Instance.CanBeSpectator || PatchManager.HasFreeChat, (s, p) => true);
         this.RegisterPermanently();
