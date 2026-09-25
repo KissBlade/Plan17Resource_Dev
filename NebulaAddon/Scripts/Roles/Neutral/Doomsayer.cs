@@ -272,15 +272,14 @@ public class Doomsayer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
                             }
                             resultList.Insert(UnityEngine.Random.Range(0, list.Count), playerRole);
                             useskilltargets.Add(oracleTarget.PlayerId);
-                            foreach (var p in useskilltargets)
-                            {
-                                    var sb = new System.Text.StringBuilder().Append(Language.Translate("role.doomsayer.oracletext").Replace("%NAME%", oracleTarget.PlayerName).Replace("%ROLE%", string.Join(",", resultList.Select(r => r.DisplayColoredName))));
-                                    NebulaAPI.CurrentGame?.GetModule<MeetingOverlayHolder>()?.RegisterOverlay(NebulaAPI.GUI.VerticalHolder(GUIAlignment.Left, [
-                                    NebulaAPI.GUI.LocalizedText(GUIAlignment.Left,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayTitle),"role.doomsayer.message.header"),
+                            var sb = new System.Text.StringBuilder().Append(Language.Translate("role.doomsayer.oracletext").Replace("%NAME%", oracleTarget.PlayerName).Replace("%ROLE%", string.Join(",", resultList.Select(r => r.DisplayColoredName))));
+                            NebulaAPI.CurrentGame?.GetModule<MeetingOverlayHolder>()?.RegisterOverlay(NebulaAPI.GUI.VerticalHolder(GUIAlignment.Left, [
+                            NebulaAPI.GUI.LocalizedText(GUIAlignment.Left,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayTitle),"role.doomsayer.message.header"),
                                     NebulaAPI.GUI.RawText(GUIAlignment.Center,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayContent),sb.ToString())
-                                    ]), Doomsayer.Instance.MeetingInfoIcon, MyRole.RoleColor, false);
-                                }
-                                useskilltargets.Clear();
+                            ]), Doomsayer.Instance.MeetingInfoIcon, MyRole.RoleColor, false);
+                            useskilltargets.Clear();
+                            oracleTarget = null;
+                            playericon = null;
                           }
                     }, this);
                 }
