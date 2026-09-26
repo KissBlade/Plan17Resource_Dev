@@ -235,7 +235,6 @@ public class Manager : DefinedModifierTemplate, DefinedModifier, DefinedAssignab
         [Local]
         void OnDecoratePlayerName(PlayerDecorateNameEvent ev)
         {
-            PDebug.Log($"Decorate: MyPlayer={MyPlayer?.PlayerId}(AmOwner={MyPlayer?.AmOwner}), aide={aide?.PlayerId}(AmOwner={aide?.AmOwner}), ev.Player={ev.Player?.PlayerId}");
             if (aide == null||ev.Player == null) return;
             if (MyPlayer.AmOwner)
             {
