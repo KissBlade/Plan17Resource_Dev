@@ -118,7 +118,7 @@ public class Skinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
                             {
                                 if (r.completedDanceLooked.Contains(p) 
                                 || (r.activeDanceLooked.Contains(p) && p.IsDead)
-                                || (ev.OverwrittenWinners.Test(p.MyKiller) && p.PlayerState == PlayerState.Frenzied))
+                                || ((ev.OriginalWinners.Test(p.MyKiller)||ev.OverwrittenWinners.Test(p.MyKiller)) && p.PlayerState == PlayerState.Frenzied))
                                 {
                                     return true;
                                 }
@@ -204,13 +204,6 @@ public class Skinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
                 }
             }
         }
-        // 修改: [Local] -> [OnlyHost]
-        // 原因: EndCriteriaMetEvent 只在 host 端触发. 如果用 [Local], 移除狗附加的 RPC
-        //       要从斯金纳客户端 -> host 经过一次网络往返, host 在收到 RPC 之前就可能
-        //       已经完成终局判定, 导致换了阵营的玩家仍被当成斯金纳阵营.
-        //       改为 [OnlyHost] 后, host 在 PlayerRoleSetEvent 触发时同步移除/添加附加,
-        //       紧接着的 EndCriteriaMetEvent 看到的就是正确状态.
-        //       RemoveModifier/AddModifier 本身会 RPC 同步到其它客户端, 视觉显示不受影响.
         [OnlyHost]
         private void OnSetRole(PlayerRoleSetEvent ev)
         {
@@ -294,9 +287,6 @@ public class Skinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
         public Instance(GamePlayer player) : base(player)
         {
         }
-        // 修改: [Local, OnlyMyPlayer] -> [OnlyHost, OnlyMyPlayer]
-        // 原因同 OnSetRole: 避免斯金纳死亡时, 移除狗附加的 RPC 还没到 host,
-        //       host 就已经做出错误的终局判定. 移到 host 端同步执行.
         [OnlyHost, OnlyMyPlayer]
         void OnDead(PlayerDieOrDisconnectEvent ev)
         {
