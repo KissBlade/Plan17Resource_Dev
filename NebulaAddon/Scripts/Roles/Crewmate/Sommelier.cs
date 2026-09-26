@@ -153,7 +153,7 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
                 array[0] = ProgressGUI.OneLineText([Language.Translate("role.sommelier.gui.left")]);
                 array[1] = ProgressGUI.Holder(from p in Player.AllOrderedPlayers
                                               where p != base.MyPlayer && !markedPlayers.Contains(p)
-                                              select ProgressGUI.OneLineText(["-" + p.ColoredName + (p.IsDead ? ("(" + Language.Translate("role.sommelier.gui.left.dead") + ")").Color(UnityEngine.Color.gray) : "")])).Move(new Virial.Compat.Vector2(0.04f, 0f));
+                                              select ProgressGUI.OneLineText(["-" + p.ColoredName + (p.IsAlive ? ("(" + Language.Translate("role.sommelier.gui.left.dead") + ")").Color(UnityEngine.Color.gray) : "")])).Move(new Virial.Compat.Vector2(0.04f, 0f));
                 return ProgressGUI.Holder(array);
             }
         }

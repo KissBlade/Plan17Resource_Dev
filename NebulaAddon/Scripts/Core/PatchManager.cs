@@ -276,6 +276,7 @@ public class PatchManager
             Crow.LoadPatch(harmony);
             NinjaFix.LoadPatch(harmony);
             CriminalistWriter.LoadPatch(harmony);
+            Lapicide.LoadPatch(harmony);
             Disposer.LoadPatch(harmony);
             Pollyanna.LoadPatch(harmony);
             NewsAnchor.LoadPatch(harmony);
@@ -1128,7 +1129,7 @@ public class PatchManager
     {
         if (!AmongUsLLImpl.LobbyInstance.AsBoolFast() && __instance.NetworkMode == NetworkModes.OnlineGame && GeneralConfigurations.CurrentGameMode == Virial.Game.GameModes.Standard)
         {
-            if (AmongUsLLImpl.AmongUsClientInstance.AmHost||AmongUsLLImpl.LocalPlayer.Data.IsDead || IntroCutscene.Instance.AsBoolFast())
+            if (AmongUsLLImpl.AmongUsClientInstance.AmHost||AmongUsLLImpl.LocalPlayer.Data.IsDead || IntroCutscene.Instance.AsBoolFast()||reason == DisconnectReasons.Custom)
             {
                 return;
             }

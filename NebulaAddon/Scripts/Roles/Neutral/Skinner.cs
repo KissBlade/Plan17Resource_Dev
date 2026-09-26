@@ -39,11 +39,11 @@ public class Skinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
             {
                 return;
             }
-            if (ev.OriginalEndReason==GameEndReason.Task||ev.OriginalEndReason==GameEndReason.Sabotage||ev.OverwrittenEndReason==GameEndReason.Task||ev.OverwrittenEndReason==GameEndReason.Sabotage)
+            if (ev.OriginalEndReason == GameEndReason.Task||ev.OriginalEndReason == GameEndReason.Sabotage)
             {
                 return;
             }
-            if (NebulaGameManager.Instance!.AllPlayerInfo.Any(p=>p.TryGetModifier<SkinnerDog.Instance>(out var d)&&(ev.OriginalWinners.Test(p)||ev.OverwrittenWinners.Test(p))))
+            if (NebulaGameManager.Instance!.AllPlayerInfo.Any(p=>p.TryGetModifier<SkinnerDog.Instance>(out var d)&&(ev.OverwrittenWinners.Test(p)||ev.OverwrittenGameEnd==NebulaGameEnd.SpectreWin&&(ev.OverwrittenWinners.Test(p)||ev.OriginalWinners.Test(p)))))
             {
                 try
                 {
@@ -118,7 +118,7 @@ public class Skinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
                             {
                                 if (r.completedDanceLooked.Contains(p) 
                                 || (r.activeDanceLooked.Contains(p) && p.IsDead)
-                                || ((ev.OriginalWinners.Test(p.MyKiller)||ev.OverwrittenWinners.Test(p.MyKiller)) && p.PlayerState == PlayerState.Frenzied))
+                                || (ev.OverwrittenWinners.Test(p.MyKiller) && p.PlayerState == PlayerState.Frenzied))
                                 {
                                     return true;
                                 }

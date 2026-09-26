@@ -19,7 +19,7 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
     static FloatConfiguration DrawCooldownAddratio = NebulaAPI.Configurations.Configuration("options.role.spinner.drawcooldownaddratio", (0f, 60f, 2.5f), 2.5f, FloatConfigurationDecorator.Second);
     static IntegerConfiguration WinNeedEndOfFateNum = NebulaAPI.Configurations.Configuration("options.role.spinner.winneedendoffatenum", (1, 24), 4);
     static public Spinner MyRole = new();
-    //bool IAssignableDocument.HasTips => true;
+    bool IAssignableDocument.HasTips => true;
 
     [NebulaRPCHolder]
     public class Instance : RuntimeAssignableTemplate, RuntimeRole
