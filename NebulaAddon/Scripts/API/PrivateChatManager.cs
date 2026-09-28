@@ -375,9 +375,10 @@ public class PrivateChatPatches
     if (mask.Test(GamePlayer.LocalPlayer) || AmongUsLLImpl.LocalPlayer.PlayerId == sender.PlayerId || NebulaGameManager.Instance.CanSeeAllInfo)
     {
         var name = sender.name;
-        sender.SetName(name + message.namepostfix);
+        sender.SetName(sender.name+ message.namepostfix);
         AmongUsLLImpl.HudManagerBridge.Chat.AddChat(sender, message.text);
         sender.SetName(name);
+        sender?.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
     }
 });
     public static TextMeshPro? chatTeamText;

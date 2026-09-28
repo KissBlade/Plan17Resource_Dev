@@ -15,6 +15,14 @@ public static class APICompat
     static public Virial.Compat.Vector2 ToNebulaVector(this UnityEngine.Vector2 v) => new Virial.Compat.Vector2(v.x, v.y);
     static public Virial.Compat.Vector3 ToNebulaVector(this UnityEngine.Vector3 v) => new Virial.Compat.Vector3(v.x, v.y,v.z);
     static public GamePlayer ToNebulaPlayer(this PlayerControl player) => GamePlayer.GetPlayer(player.PlayerId);
+    static public void SendCustomNameChat(this PlayerControl player,string name,string chat)
+    {
+        var n = player.name;
+        player.SetName(name);
+        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(player, chat);
+        player.SetName(n);
+        player?.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
+    }
     public static IEnumerable<(byte playerId, List<DefinedModifier> role)> GetPlayersModifier(this IRoleTable table)
     {
         var grouped = (table as RoleTable).modifiers

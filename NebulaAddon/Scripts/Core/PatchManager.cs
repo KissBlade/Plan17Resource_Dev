@@ -2369,6 +2369,7 @@ public class PatchManager
                     targetPlayer?.SetName("System".Color(Palette.CrewmateBlue));
                     AmongUsLLImpl.HudManagerBridge.Chat.AddChat(targetPlayer, Language.Translate("options.general.meetingdeadNotice").Replace("%DEAD%", ev.Player.PlayerName));
                     targetPlayer?.SetName(originName);
+                    targetPlayer?.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
                 }
             }, __instance);
             GameOperatorManager.Instance.Subscribe<EndCriteriaMetEvent>(ev =>
@@ -3040,6 +3041,7 @@ public class PatchManager
                     (matched ? Language.Translate("role.collator.ui.matched").Color(UnityEngine.Color.green) : Language.Translate("role.collator.ui.unmatched").Color(UnityEngine.Color.red)).Bold();
                 AmongUsLLImpl.HudManagerBridge.Chat.AddChat(mp, message);
                 mp.SetName(name);
+                mp?.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
                 Collator.Ability.ShareResult.Invoke(new ValueTuple<Player, Player, Player, bool>(__instance.MyPlayer, player1.Item1, player2.Item1, matched));
             }
             catch (Exception e)
@@ -3142,6 +3144,7 @@ public class PatchManager
                     mp.SetName(name);
                     AmongUsLLImpl.HudManagerBridge.Chat.AddChat(mp, rawText);
                     mp.SetName(mpname);
+                    mp?.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
                     new StaticAchievementToken("psychic.common1");
                     new StaticAchievementToken("psychic.common2." + tag);
                 }
@@ -6246,6 +6249,7 @@ public class PatchManager
             p2.SetName(messagename);
             AmongUsLLImpl.HudManagerBridge.Chat.AddChat(p2, message.message, false);
             p2.SetName(p2name);
+            p2.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
         }
         return;
     }
@@ -6253,6 +6257,7 @@ public class PatchManager
     p.SetName(messagename);
     AmongUsLLImpl.HudManagerBridge.Chat.AddChat(p, message.message, false);
     p.SetName(senderName);
+    p?.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
 });
     static RemoteProcess<ValueTuple<byte, string, bool>> RpcSendMessage = new("SendMessageChat",
 (ValueTuple<byte, string, bool> message, bool _) =>
