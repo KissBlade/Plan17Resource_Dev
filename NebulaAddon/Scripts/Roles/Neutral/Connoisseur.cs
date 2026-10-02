@@ -9,7 +9,7 @@ namespace Plana.Roles.Neutral;
 public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignableDocument
 {
     public static Team RoleTeam = new Team("teams.connoisseur", new Virial.Color(111,61,177), TeamRevealType.OnlyMe);
-    private Connoisseur() : base("connoisseur", RoleTeam.Color, RoleCategory.NeutralRole, RoleTeam, [GoalNum,CanSelectImpBeGoal,CanSelectNeuBeGoal,CanSelectCrewBeGoal,ImpurityNum,CanSelectImpBeImpurity,CanSelectNeuBeImpurity,CanSelectCrewBeImpurity,KillNumOption,KillCooldown])
+    private Connoisseur() : base("connoisseur", RoleTeam.Color, RoleCategory.NeutralRole, RoleTeam, [GoalNum,CanSelectImpBeGoal,CanSelectNeuBeGoal,CanSelectCrewBeGoal,CanSelectMadmateBeGoal,ImpurityNum,CanSelectImpBeImpurity,CanSelectNeuBeImpurity,CanSelectCrewBeImpurity,KillNumOption,KillCooldown])
     {
     }
     Citation? HasCitation.Citation => PCitations.PlanaANDKCANDXiaoming;
@@ -19,6 +19,7 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
     public static readonly BoolConfiguration CanSelectImpBeGoal = NebulaAPI.Configurations.Configuration("options.role.conniosseur.canSelectImpBeGoal", false);
     public static readonly BoolConfiguration CanSelectNeuBeGoal = NebulaAPI.Configurations.Configuration("options.role.conniosseur.canSelectNeuBeGoal", false);
     public static readonly BoolConfiguration CanSelectCrewBeGoal = NebulaAPI.Configurations.Configuration("options.role.conniosseur.canSelectCrewBeGoal", true);
+    public static readonly BoolConfiguration CanSelectMadmateBeGoal = NebulaAPI.Configurations.Configuration("options.role.conniosseur.canSelectMadmateBeGoal",false);
     public static readonly IntegerConfiguration ImpurityNum = NebulaAPI.Configurations.Configuration("options.role.conniosseur.ImpuritylNum", (0, 10), 2);
     public static readonly BoolConfiguration CanSelectImpBeImpurity = NebulaAPI.Configurations.Configuration("options.role.conniosseur.canSelectImpBeImpurity", true);
     public static readonly BoolConfiguration CanSelectNeuBeImpurity= NebulaAPI.Configurations.Configuration("options.role.conniosseur.canSelectNeuBeImpurity", true);
@@ -61,7 +62,7 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
             if (ConnoisseurGoal.IsMyGoal(MyPlayer,ev.Player)&&ev.Player.PlayerState!=PlayerStates.Exiled)
             {
                 var allplayers = NebulaAPI.CurrentGame?.GetAllPlayers().Where(p => p != MyPlayer && MyPlayer.CanKill(p) && !p.IsDead && !p.IsDisconnected && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
-                var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.Role.Role.Category == RoleCategory.NeutralRole)).ToList();
+                var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.Role.Role.Category == RoleCategory.NeutralRole)|| (CanSelectMadmateBeGoal && p.IsMadmate)).ToList();
                 goalCanSelectplayers.Random().AddModifier(ConnoisseurGoal.MyRole, [MyPlayer.PlayerId]);
             }
         }

@@ -7,8 +7,8 @@ public class Lapicide : DefinedSingleAbilityRoleTemplate<Lapicide.Ability>, HasC
     private Lapicide() : base("lapicide", new(110, 132, 109), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [MeetingSkillCount, EveryMeetingSkillCount]) { }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
-    static IntegerConfiguration MeetingSkillCount = NebulaAPI.Configurations.Configuration("options.lapicide.meetingskillcount", (5, 15,1), 6);
-    static IntegerConfiguration EveryMeetingSkillCount = NebulaAPI.Configurations.Configuration("options.lapicide.everymeetingskillcount", (2, 6,1),2);
+    static IntegerConfiguration MeetingSkillCount = NebulaAPI.Configurations.Configuration("options.role.lapicide.meetingskillcount", (5, 15,1), 6);
+    static IntegerConfiguration EveryMeetingSkillCount = NebulaAPI.Configurations.Configuration("options.role.lapicide.everymeetingskillcount", (2, 6,1),2);
     public override Ability CreateAbility(GamePlayer player, int[] arguments) => new Ability(player, arguments.GetAsBool(0), arguments.Get(1, MeetingSkillCount));
     static public Lapicide MyRole = new Lapicide();
     bool IAssignableDocument.HasTips => true;
