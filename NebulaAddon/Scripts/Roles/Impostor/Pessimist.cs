@@ -167,16 +167,12 @@ public class Pessimist : DefinedRoleTemplate, DefinedRole, HasCitation, IAssigna
         {
             if ((AmOwner || canSeeAllInfo) && MyExtendedRole != null)
             {
-                if (isShort)
-                {
-                    return $"{lastRoleName} ({MyExtendedRole.GetRoleIconTagSmall()}{MyExtendedRole.DisplayColoredShort})";
-                }
-
-                return lastRoleName + $" ({MyExtendedRole.DisplayColoredName})";
+                var suffix = isShort ? $"{MyExtendedRole.GetRoleIconTagSmall()}{MyExtendedRole.DisplayColoredShort}" : MyExtendedRole.DisplayColoredName;
+                return $"{lastRoleName} ({suffix})";
             }
-
             return lastRoleName;
         }
+
 
         void RuntimeAssignable.OnActivated()
         {
