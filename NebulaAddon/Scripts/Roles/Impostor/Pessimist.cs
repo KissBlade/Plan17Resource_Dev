@@ -163,12 +163,19 @@ public class Pessimist : DefinedRoleTemplate, DefinedRole, HasCitation, IAssigna
             }
         }
         bool CurrentGuessWrong;
-        void RuntimeAssignable.DecorateNameConstantly(ref string name, bool canAllSeeInfo, bool inEndScene)
+        string? RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort, bool canSeeAllInfo)
         {
-            if ((AmOwner || canAllSeeInfo) && MyExtendedRole!=null)
+            if ((AmOwner || canSeeAllInfo) && MyExtendedRole != null)
             {
-                name += " (" + MyExtendedRole.DisplayColoredName +")";
+                if (isShort)
+                {
+                    return $"{lastRoleName} ({MyExtendedRole.GetRoleIconTagSmall()}{MyExtendedRole.DisplayColoredShort})";
+                }
+
+                return lastRoleName + $" ({MyExtendedRole.DisplayColoredName})";
             }
+
+            return lastRoleName;
         }
 
         void RuntimeAssignable.OnActivated()
