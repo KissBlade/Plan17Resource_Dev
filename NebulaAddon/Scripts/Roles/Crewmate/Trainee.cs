@@ -144,7 +144,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
                         {
                             var players = GamePlayer.AllPlayers
                                 .Where(p => p.Role.Role.Category == RoleCategory.CrewmateRole &&
-                                            p.Role.Role != Insomniacs.MyRole).Except([player, MyPlayer]).ToList();
+                                            p.Role.Role != Insomniacs.MyRole&&!p.IsMadmate).Except([player, MyPlayer]).ToList();
                             
                             if (LearnAliveCrewOption)
                             {
