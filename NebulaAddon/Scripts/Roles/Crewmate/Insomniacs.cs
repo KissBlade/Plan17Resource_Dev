@@ -1,6 +1,7 @@
-﻿using Plana.Core;
+using Plana.Core;
 using Plana.Roles.Impostor;
 using Plana.Roles.Neutral;
+using Virial.Helpers;
 
 namespace Plana.Roles.Crewmate;
 
@@ -157,20 +158,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
     {
     }
     bool DefinedModifier.IsMadmate => true;
-    /*bool DefinedAssignable.ShowOnHelpScreen
-    {
-        get
-        {
-            return false;
-        }
-    }
-    bool DefinedAssignable.ShowOnFreeplayScreen
-    {
-        get
-        {
-            return false;
-        }
-    }*/
+
     IEnumerable<DefinedAssignable> DefinedAssignable.AchievementGroups => [Insomniacs.MyRole, Insomniacs.MyRole, MyRole];
     Citation? HasCitation.Citation { get { return PCitations.PlanaANDKC; } }
     static public InsomniacsModifier MyRole = new InsomniacsModifier();
@@ -354,10 +342,13 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
                 }
             }
         }
+
         string RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort, bool canSeeAllInfo)
         {
-            return Language.Translate("role.insomniacs.prefix").Color(MyRole.RoleColor.ToUnityColor()) + lastRoleName;
+            return isShort ? this.GetRoleIconTagSmall() + lastRoleName : Language.Translate("role.insomniacs.prefix").Color(MyRole.Color) + lastRoleName;
         }
+
+
         void OnSheriffKill(SheriffCheckKillEvent ev)
         {
             if (ev.Player.IsModMadmate())

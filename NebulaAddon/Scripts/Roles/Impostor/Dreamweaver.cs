@@ -1,4 +1,4 @@
-﻿using Plana.Core;
+using Plana.Core;
 using Nebula.Roles.Assignment;
 using Nebula.Roles.Impostor;
 using Plana.Roles.Modifier;
@@ -270,25 +270,13 @@ public class Dreamweaver : DefinedRoleTemplate, DefinedRole, HasCitation, IAssig
 }
 public class DreamweaverModifier : DefinedModifierTemplate, DefinedModifier, DefinedAssignable, IRoleID, RuntimeAssignableGenerator<RuntimeModifier>, HasCitation
 {
-    private DreamweaverModifier() : base("dreamweaverM", new Virial.Color(255,43,133), null,true,()=>false)
+    private DreamweaverModifier() : base("dreamweaverM", new Virial.Color(255, 43, 133), null, true, () => false)
     {
     }
-    /*bool DefinedAssignable.ShowOnHelpScreen
-    {
-        get
-        {
-            return false;
-        }
-    }
-    bool DefinedAssignable.ShowOnFreeplayScreen
-    {
-        get
-        {
-            return false;
-        }
-    }*/
+
     Citation? HasCitation.Citation { get { return PCitations.PlanaANDKC; } }
-    static public DreamweaverModifier MyRole = new DreamweaverModifier();
+    static public DreamweaverModifier MyRole = new();
+    Image? DefinedAssignable.IconImage => Dreamweaver.MyRole.GetRoleIcon();
     RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
     public class Instance : RuntimeAssignableTemplate, RuntimeModifier
     {
@@ -335,7 +323,7 @@ public class DreamweaverModifier : DefinedModifierTemplate, DefinedModifier, Def
         void OnRemoveModifier(PlayerModifierRemoveEvent ev)
         {
             var p = tracking.FirstOrDefault(r => r.MyPlayer.PlayerId == ev.Player.PlayerId);
-            if (p != null&&ev.Modifier is InsomniacsModifier.Instance)
+            if (p != null && ev.Modifier is InsomniacsModifier.Instance)
             {
                 p.Release();
                 tracking.Remove(p);
@@ -344,7 +332,7 @@ public class DreamweaverModifier : DefinedModifierTemplate, DefinedModifier, Def
         [Local]
         private void DecorateNameColor(PlayerDecorateNameEvent ev)
         {
-            if (!ev.Player.AmOwner && (ev.Player.Role is Insomniacs.Instance||ev.Player.TryGetModifier<InsomniacsModifier.Instance>(out var m)))
+            if (!ev.Player.AmOwner && (ev.Player.Role is Insomniacs.Instance || ev.Player.TryGetModifier<InsomniacsModifier.Instance>(out var m)))
             {
                 ev.Color = new(216, 164, 246);
             }
@@ -372,7 +360,7 @@ public class DreamweaverModifier : DefinedModifierTemplate, DefinedModifier, Def
         {
             if (AmOwner)
             {
-                List<GamePlayer> list = NebulaGameManager.Instance.AllPlayerInfo.Where((GamePlayer p) => !p.IsDead && (p.Role is Insomniacs.Instance || p.Modifiers.Any(m => m is InsomniacsModifier.Instance))).ToList();
+                List<GamePlayer> list = NebulaGameManager.Instance.AllPlayerInfo.Where(p => !p.IsDead && (p.Role is Insomniacs.Instance || p.Modifiers.Any(m => m is InsomniacsModifier.Instance))).ToList();
                 if (list.Count == 0)
                 {
                     return;
@@ -383,10 +371,10 @@ public class DreamweaverModifier : DefinedModifierTemplate, DefinedModifier, Def
                 }
             }
         }
-        string RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort,bool canSeeAllInfo)
+
+        string RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort, bool canSeeAllInfo)
         {
-             return Language.Translate("role.dreamweaver.prefix").Color(MyRole.RoleColor.ToUnityColor()) + lastRoleName;
+            return isShort ? this.GetRoleIconTagSmall() + lastRoleName : Language.Translate("role.dreamweaver.prefix").Color(MyRole.Color) + lastRoleName;
         }
     }
 }
-

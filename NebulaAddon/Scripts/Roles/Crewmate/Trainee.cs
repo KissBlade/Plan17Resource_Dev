@@ -75,14 +75,14 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
         }
         string? RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort, bool canSeeAllInfo)
         {
-            if (MyExtendedRole == null || ExtendedRoleInstance == null) return null;
-            
-            DefinedRole aideRole = Aide.MyRole;
-            string str = isShort ? $"{MyExtendedRole.GetRoleIconTagSmall()}{MyExtendedRole.DisplayColoredShort} {aideRole.GetRoleIconTagSmall()}{aideRole.DisplayColoredShort}" : $"{MyExtendedRole.DisplayColoredName} {aideRole.DisplayColoredName}";
-
-            return str;
+            if ((AmOwner || canSeeAllInfo) && MyExtendedRole != null && ExtendedRoleInstance != null)
+            {
+                var suffix = isShort ? $"{ExtendedRoleInstance.GetRoleIconTagSmall()}{ExtendedRoleInstance.DisplayColoredShort}" : ExtendedRoleInstance.DisplayColoredName;
+                return $"{lastRoleName} ({suffix})";
+            }
+            return lastRoleName;
         }
-        
+
         void RuntimeAssignable.OnActivated()
         {
             if (AmOwner && MyExtendedRole == null)

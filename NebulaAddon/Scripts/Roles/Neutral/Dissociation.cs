@@ -1,4 +1,4 @@
-﻿using Nebula.Game.Statistics;
+using Nebula.Game.Statistics;
 using Nebula.Roles.Complex;
 using Nebula.Roles.Crewmate;
 using Plana.Roles.Crewmate;
@@ -224,7 +224,7 @@ internal class Dissociation : DefinedRoleTemplate, DefinedRole,DefinedAssignable
             ExtRoleInstance.DisplayColoredName;
 
         IEnumerable<DefinedAssignable> RuntimeAssignable.AssignableOnHelp => ShouldShowDissociationRole ? [MyRole,myExtRole] : [myExtRole];
-        IEnumerable<IPlayerAbility> RuntimeAssignable.MyAbilities => ExtRoleInstance == null ? Array.Empty<IPlayerAbility>() : ExtRoleInstance.MyAbilities!;
+        IEnumerable<IPlayerAbility?> RuntimeAssignable.MyAbilities => ExtRoleInstance == null ? [] : ExtRoleInstance.MyAbilities;
         (Image, Virial.Color?, Virial.Color?)? RuntimeAssignable.OverriddenRoleIcon => (myExtRole.GetRoleIcon()!, myExtRole.Color, null);
         RoleTaskType RuntimeRole.TaskType => amAware ? RoleTaskType.NoTask : RoleTaskType.CrewmateTask;
         bool RuntimeAssignable.MyCrewmateTaskIsIgnored => true;

@@ -1,4 +1,5 @@
-﻿using Plana.Core;
+using Plana.Core;
+using Virial.Helpers;
 
 namespace Plana.Roles.Modifier;
 
@@ -63,9 +64,10 @@ private Nocturnal(): base("nocturnal", "nct", NebulaTeams.ImpostorTeam.Color, [M
         {
             MyVisionAbility = new IgnoreWallVisionAbility(MyPlayer).Register(this);
         }
-        string? RuntimeAssignable.OverrideRoleName(string lastRoleName,bool isShort,bool canSeeAllInfo)
+
+        string RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort, bool canSeeAllInfo)
         {
-            return (this as RuntimeAssignable).DisplayColoredName + " "+lastRoleName;
+            return isShort ? this.GetRoleIconTagSmall() + lastRoleName : (this as RuntimeAssignable).DisplayColoredName + " " + lastRoleName;
         }
     }
     public class IgnoreWallVisionAbility : AbstractPlayerAbility,IPlayerAbility
