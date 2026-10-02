@@ -6383,12 +6383,14 @@ public class PatchManager
         {
             return !ImpostorCannotSeeOther;
         }
-        [HarmonyPatch(typeof(NoSVCRoom), "RegisterRadioChannel", typeof(string), typeof(Virial.Media.Image), typeof(Func<GamePlayer, bool>), typeof(ILifespan), typeof(Color))]
+
+        [HarmonyPatch(typeof(RadioManager), "Register", typeof(RadioKind), typeof(string), typeof(Func<GamePlayer, bool>), typeof(ILifespan), typeof(Color))]
         [HarmonyPrefix]
         public static bool AllPlayerBlockRun()
         {
             return !AllPlayerCannotSeeOtherNameColor;
         }
+
         [HarmonyPatch(typeof(PlayerModInfo), "UpdateNameText")]
         [HarmonyPostfix]
         private static void AllPlayerBlockNameColor(TextMeshProHandler nameText)
