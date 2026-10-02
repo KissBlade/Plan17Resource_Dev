@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "HRyS0kJnhtg=",
+  "dgSpecHash": "VYp9ABETYLg=",
   "success": true,
-  "projectFilePath": "C:\\Users\\admin\\source\\repos\\Plan17Resource_Dev\\NebulaAddon\\NebulaAddon.csproj",
+  "projectFilePath": "E:\\Dev\\NebulaAddon\\NebulaAddon.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\admin\\.nuget\\packages\\krafs.publicizer\\2.3.0\\krafs.publicizer.2.3.0.nupkg.sha512"
+    "C:\\Users\\hp\\.nuget\\packages\\krafs.publicizer\\2.3.0\\krafs.publicizer.2.3.0.nupkg.sha512"
   ],
   "logs": []
 }

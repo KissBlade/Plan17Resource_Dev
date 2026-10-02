@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NebulaAddon")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0bab9ec54e65d16c900a3846ccde05ee37a961b1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+77e47c4c1a213112b20f2a9d219d6ea1881dc56b")]
 [assembly: System.Reflection.AssemblyProductAttribute("NebulaAddon")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NebulaAddon")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
