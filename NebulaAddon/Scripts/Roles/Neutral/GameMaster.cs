@@ -1,4 +1,4 @@
-﻿using Il2CppSystem.Linq.Expressions.Interpreter;
+using Il2CppSystem.Linq.Expressions.Interpreter;
 using Nebula.Roles.MapLayer;
 using Nebula.Roles.Neutral;
 using Plana.Core;
@@ -69,20 +69,20 @@ public class GameMaster : DefinedRoleTemplate, DefinedRole, HasCitation ,IAssign
         {
             try
             {
-                if (!(ev is MapOpenAdminEvent) && !MeetingHud.Instance.AsBoolFast())
+                if (ev is not MapOpenAdminEvent && !MeetingHud.Instance.AsBoolFast())
                 {
-                    if (!this.mapCountLayer)
+                    if (!this.mapCountLayer.AsBoolFast())
                     {
                         this.mapCountLayer = UnityHelper.CreateObject<CrawlerEngineer.ShowPlayersMapLayer>("CountLayer", MapBehaviour.Instance.transform, new UnityEngine.Vector3(0f, 0f, -1f), null);
                         this.BindGameObject(this.mapCountLayer.gameObject);
                         this.mapCountLayer.SetUp(p => true, null, true, null);
                     }
-                    this.mapCountLayer.gameObject.SetActive(true);
+                    this.mapCountLayer?.gameObject.SetActive(true);
                     return;
                 }
-                if (this.mapCountLayer)
+                if (this.mapCountLayer.AsBoolFast())
                 {
-                    this.mapCountLayer.gameObject.SetActive(false);
+                    this.mapCountLayer?.gameObject.SetActive(false);
                 }
             }
             catch (Exception e)
@@ -100,23 +100,28 @@ public class GameMaster : DefinedRoleTemplate, DefinedRole, HasCitation ,IAssign
         {
             ev.CanSeeRole = true;
         }
+
         [Local]
         void ShowNameColor(PlayerDecorateNameEvent ev) 
         {
+            if (ev.Player == null) return;
+
             if (ev.Player.Modifiers.Any(m=>m is SidekickModifier.Instance))
             {
                 ev.Color = Jackal.MyRole.RoleColor;
             }
             else
             {
-                ev.Color = ev.Player?.Role?.Role?.Color??Virial.Color.White;
+                ev.Color = ev.Player.Role.Role.Color;
             }
         }
+
         [OnlyMyPlayer]
         void ShowMyRole(PlayerCheckRoleInfoVisibilityLocalEvent ev)
         {
             ev.CanSeeRole = true;
         }
+
         [OnlyMyPlayer]
         void ShowMyNameColor(PlayerDecorateNameEvent ev)
         {

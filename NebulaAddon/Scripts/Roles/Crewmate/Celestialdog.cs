@@ -1,4 +1,4 @@
-﻿using Plana.Core;
+using Plana.Core;
 using Plana.Roles.Impostor;
 using Plana.Roles.Neutral;
 using Rewired.Demos.CustomPlatform;
@@ -117,7 +117,7 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
                 if (SkillEndCanUseTeleport)
                 {
                     teleportButton = NebulaAPI.Modules.AbilityButton(this, MyPlayer, VirtualKeyInput.SecondaryAbility, 0f, "celestialdog.teleport", TeleportImage);
-                    teleportButton.Visibility = (button) => skillButton.IsInEffect && skillButton.EffectTimer.Percentage <= 0.25f && !usedTeleport;
+                    teleportButton.Visibility = (button) => skillButton.IsInEffect && skillButton.EffectTimer?.Percentage <= 0.25f && !usedTeleport;
                     teleportButton.PlayFlashWhile = (button) => true;
                     teleportButton.OnClick = (button) =>
                     {
@@ -209,6 +209,8 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
         (message, _) =>
         {
             var player = GamePlayer.GetPlayer(message.playerId);
+            if (player == null) return;
+
             var role = player.Role;
             if (role is Celestialdog.Instance instance)
             {
@@ -228,7 +230,6 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
             public DogState(GamePlayer owner) : base(owner, false, "Dogstate")
             {
                 spriteIndex = 0;
-                //NebulaManager.Instance.StartCoroutine(CoAppear().WrapToIl2Cpp());
                 owner.VanillaPlayer.Visible = false;
             }
             void IGameOperator.OnReleased()
@@ -270,30 +271,6 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
                     updateSpriteTime = 0f;
                 }
             }
-            /*System.Collections.IEnumerator CoAppear()
-            {
-                animing = true;
-                for (int i = 0; i <= 1; i++)
-                {
-                    Renderer.sprite = PadSprite.AsLoader(i).GetSprite();
-                    yield return Effects.Wait(0.08f);
-                }
-                animing = false;
-            }
-            System.Collections.IEnumerator CoDisappear()
-            {
-                animing = true;
-                for (int i = 2; i <= 3; i++)
-                {
-                    Renderer.sprite = PadSprite.AsLoader(i).GetSprite();
-                    yield return Effects.Wait(0.08f);
-                }
-                Release();
-            }
-            public void UnUsePad()
-            {
-                NebulaManager.Instance.StartCoroutine(CoDisappear().WrapToIl2Cpp());
-            }*/
         }
     }
 }

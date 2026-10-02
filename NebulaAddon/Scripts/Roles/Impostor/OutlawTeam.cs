@@ -70,6 +70,7 @@ internal class OutlawTeam : DefinedRoleTemplate, DefinedRole, IAssignableDocumen
     static public RemoteProcess<GamePlayer> RpcSetCanKill = new("RpcSetCanKill", (message, _) =>
     {
         var role = message.Role;
+
         if (role is Assistant.Instance assistant) assistant.CanKill = true;
         if (role is Dunner.Instance dunner) dunner.CanKill = true;
     });
@@ -137,6 +138,7 @@ internal class OutlawLeader : DefinedRoleTemplate, DefinedRole, IAssignableDocum
         {
             var players = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => !p.IsDead && IsSameTeam(p) && p.Role.Role != MyRole).ToArray();
             if (players == null) return;
+
             var random = players[System.Random.Shared.Next(players.Length)];
             OutlawTeam.RpcSetCanKill.Invoke(random);
 

@@ -1,4 +1,4 @@
-﻿using Nebula.Game.Statistics;
+using Nebula.Game.Statistics;
 using Nebula.Roles.Modifier;
 using Virial;
 using Virial.Assignable;
@@ -34,9 +34,11 @@ public class BountyHunter : DefinedSingleAbilityRoleTemplate<BountyHunter.Abilit
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.KillersSide;
     MultipleAssignmentType DefinedRole.MultipleAssignment => MultipleAssignmentType.AsUniqueKillAbility;
 
+    Image? DefinedAssignable.IconImage => Nebula.Roles.Impostor.BountyHunter.MyRole.GetRoleIcon();
+
     static private readonly GameStatsEntry StatsBountyKill = NebulaAPI.CreateStatsEntry("stats.bountyHunter.bountyKill", GameStatsCategory.Roles, MyRole);
     static private readonly GameStatsEntry StatsOthersKill = NebulaAPI.CreateStatsEntry("stats.bountyHunter.othersKill", GameStatsCategory.Roles, MyRole);
-    float MaxKillCoolDown => Mathn.Max(BountyKillCoolDownOption.Cooldown, OthersKillCoolDownOption.Cooldown, AmongUsLLImpl.Instance.VanillaKillCooldown);
+    static float MaxKillCoolDown => Mathn.Max(BountyKillCoolDownOption.Cooldown, OthersKillCoolDownOption.Cooldown, AmongUsLLImpl.Instance.VanillaKillCooldown);
     IEnumerable<DefinedAssignable> DefinedAssignable.AchievementGroups => [Nebula.Roles.Impostor.BountyHunter.MyRole, Nebula.Roles.Impostor.BountyHunter.MyRole, MyRole];
     public class Ability : AbstractPlayerUsurpableAbility, IPlayerAbility
     {
@@ -131,7 +133,7 @@ public class BountyHunter : DefinedSingleAbilityRoleTemplate<BountyHunter.Abilit
                 {
                     (button.CoolDownTimer as AdvancedTimer).SetVisualMax(AmongUsLLImpl.Instance.VanillaKillCooldown);
                 };
-                killButton.CoolDownTimer = new AdvancedTimer(10f, MyRole.MaxKillCoolDown).SetDefault(AmongUsLLImpl.Instance.VanillaKillCooldown).SetAsKillCoolDown().Start(10f).Register(this);
+                killButton.CoolDownTimer = new AdvancedTimer(10f, MaxKillCoolDown).SetDefault(AmongUsLLImpl.Instance.VanillaKillCooldown).SetAsKillCoolDown().Start(10f).Register(this);
                 killButton.SetLabelType(Virial.Components.ModAbilityButton.LabelType.Impostor);
                 killButton.SetLabel("kill");
                 if (ChangeBountySkillOption&&!NoResetBountyTarget)

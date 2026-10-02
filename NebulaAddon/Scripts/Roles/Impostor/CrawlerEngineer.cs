@@ -394,8 +394,14 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                 if (message.equip)
                 {
                     ability.EquipPad(player);
-                    if (localPlayer.AmOwner && localPlayer.IsSameSideOf(player) && !localPlayer.CanKill(player) && !player.CanKill(localPlayer))
+                    if (ability.MyPlayer.IsImpostor && localPlayer.IsImpostor)
+                    {
                         new CrawlerEngineerTrackAbility(localPlayer, ability);
+                    }
+                    else if (ability.MyPlayer.IsSameSideOf(localPlayer) && localPlayer.IsSameSideOf(ability.MyPlayer))
+                    {
+                        new CrawlerEngineerTrackAbility(localPlayer, ability);
+                    }
                 }
                 else
                 {
@@ -780,13 +786,33 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             this.crawlerEngineer = crawlerEngineer;
 
             this.Register(crawlerEngineer.MyPad);
-            NebulaGameManager.Instance?.AllPlayerInfo.Where(p => !p.AmOwner && p.IsAlive && !p.CanKill(crawlerEngineer.MyPlayer)).Do(p => TryRegisterArrow(p));
+
+            CheckArrowRegister();
 
             var arrowAbility = new DeadbodyArrowAbility();
             arrowAbility.RegisterSelf();
             arrowAbility.Bind(this);
+        }
 
-            GameOperatorManager.Instance?.Subscribe<GameUpdateEvent>(ev => arrowAbility.ShowArrow = myPlayer.IsAlive, this);
+        void CheckArrowRegister()
+        {
+            arrows.RemoveAll(a =>
+            {
+                if (a.MyPlayer.IsDead || (myPlayer.IsImpostorlike && !a.MyPlayer.IsImpostorlike) || !myPlayer.IsSameSideOf(a.MyPlayer))
+                {
+                    a.Release(); return true;
+                }
+                else return false;
+            });
+
+            NebulaGameManager.Instance?.AllPlayerInfo.Where(p =>
+            {
+                if (p.IsDead || p.AmOwner) return false;
+
+                if (myPlayer.IsImpostor) return p.IsImpostorlike;
+
+                return myPlayer.IsSameSideOf(p);
+            }).Do(p => TryRegisterArrow(p));
         }
 
         private void TryRegisterArrow(GamePlayer player)
@@ -807,41 +833,41 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                     mapLayer = UnityHelper.CreateObject<ShowPlayersMapLayer>("CountLayer", MapBehaviour.Instance.transform, new UnityEngine.Vector3(0f, 0f, -1f), null);
                     this.BindGameObject(mapLayer.gameObject);
 
-                    if (crawlerEngineer.MyPlayer.PlayerId != myPlayer.PlayerId)
+                    if (myPlayer == crawlerEngineer.MyPlayer)
+                    {
+                        MapBehaviour.Instance.ColorControl.SetColor(new UnityEngine.Color32(171, 0, 126, 255));
+                    }
+                    else
                     {
                         mapLayer.collider.Destroy();
                         mapLayer.dotRenderer.Destroy();
                         mapLayer.camera.Destroy();
                     }
-                    else
-                        MapBehaviour.Instance?.ColorControl?.SetColor(new UnityEngine.Color32(171, 0, 126, 255));
 
                     mapLayer.SetUp(p => true, null!, false, null!);
                 }
+
                 mapLayer!.gameObject.SetActive(true);
                 return;
             }
+
             if (mapLayer.AsBoolFast()) mapLayer!.gameObject.SetActive(false);
+        }
+
+        void OnUpdate(GameHudUpdateEvent ev)
+        {
+            if (!myPlayer.IsSameSideOf(crawlerEngineer.MyPlayer))
+            {
+                this.Release();
+            }
+
+            CheckArrowRegister();
         }
 
         [OnlyMyPlayer]
         void OnPlayerDead(PlayerDieEvent ev)
         {
             this.Release();
-        }
-
-        [Local]
-        void OnSetRole(PlayerRoleSetEvent ev)
-        {
-            if (myPlayer == ev.Player && (myPlayer.CanKill(crawlerEngineer.MyPlayer) || crawlerEngineer.MyPlayer.CanKill(myPlayer)))
-                this.Release();
-
-            if (!ev.Player.AmOwner && !myPlayer.CanKill(ev.Player) && !ev.Player.CanKill(myPlayer))
-                TryRegisterArrow(ev.Player);
-            else
-            {
-                arrows.RemoveAll(a => { if (a.MyPlayer == ev.Player) { a.Release(); return true; } else return false; });
-            }
         }
     }
 
