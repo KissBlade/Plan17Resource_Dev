@@ -27,6 +27,7 @@ using Nebula.Roles.Impostor;
 using Nebula.Roles.Neutral;
 using Nebula.Roles.Perks;
 using Nebula.Utilities;
+using Nebula.Modifications.Map;
 using Nebula.VoiceChat;
 using Plana.Roles.Crewmate;
 using Plana.Roles.Impostor;
@@ -157,8 +158,8 @@ public class PatchManager
             harmony.Patch(typeof(PlayerModInfo).GetMethod("OnGameStart"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("PlayerStartGame")));
             harmony.Patch(typeof(PlayerModInfo).GetMethod("Update"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("PlayerUpdate")));
             harmony.Patch(typeof(PlayerControl).GetMethod("CmdReportDeadBody"), new HarmonyMethod(typeof(PatchManager).GetMethod("CmdReportBody")));
-            harmony.Patch(typeof(ShipExtension).GetPrivateStaticMethodInfoType("ModifyPolus"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ModifyPolus")));
-            harmony.Patch(typeof(ShipExtension).GetPrivateStaticMethodInfoType("ModifyEarlierPolus"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ModifyPolusEarly")));
+            harmony.Patch(typeof(PolusModification).GetMethod("Modify"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ModifyPolus")));
+            harmony.Patch(typeof(ShipModification).GetMethod("PatchEarlierModification"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ModifyPolusEarly")));
             var interfaceType = typeof(Virial.Game.IPlayerAbility);
             string getterName = $"{interfaceType.FullName}.get_HideKillButton";
             PDebug.Log(6);
@@ -4521,36 +4522,40 @@ public class PatchManager
 
     public static Image? ChristmasTreeImage = NebulaAPI.AddonAsset.GetResource("ChristmasTree.png")!.AsImage();
     public static Image? TreeShadowImage = NebulaAPI.AddonAsset.GetResource("ChristmasTreeShadow.png")!.AsImage();
-    public static void ModifyPolusEarly()
+    public static void ModifyPolusEarly(byte mapId,ShipStatus ship)
     {
+        if (mapId!=2)
+        {
+            return;
+        }
         if (PolusHasOxygenSabotage)
         {
             try
             {
                 PDebug.Log("GetSkeldAdmin");
-                List<global::Console> list = AmongUsLLImpl.ShipStatusInstance.AllConsoles.ToList<global::Console>();
+                List<Console> list = ship.AllConsoles.ToList<Console>();
                 PDebug.Log(VanillaAsset.MapAsset[0].gameObject.name);
                 var oxygenConsole = VanillaAsset.MapAsset[0].gameObject.transform.Find("LifeSupport/Ground/LifeSuppTank/NoOxyConsole");
                 PDebug.Log("Done");
                 var oxygenA = UnityEngine.Object.Instantiate(oxygenConsole);
                 PDebug.Log("GenerateOxygenA");
                 PlainShipRoom roomObj;
-                oxygenA.SetParent(AmongUsLLImpl.ShipStatusInstance.FastRooms.TryGetValue(SystemTypes.LifeSupp, out roomObj) ? roomObj.transform : AmongUsLLImpl.ShipStatusInstance.transform);
+                oxygenA.SetParent(ship.FastRooms.TryGetValue(SystemTypes.LifeSupp, out roomObj) ? roomObj.transform : ship.transform);
                 oxygenA.transform.localPosition = new UnityEngine.Vector3(0.42f, 1.65f, 0f);
-                Console console = ShipExtension.Consolize<Console>(oxygenA.gameObject, null!);
+                Console console = ShipModification.Consolize<Console>(oxygenA.gameObject, null!);
                 console.Room = SystemTypes.LifeSupp;
                 console.ConsoleId = 0;
                 list.Add(console);
                 oxygenConsole = VanillaAsset.MapAsset[0].gameObject.transform.Find("Admin/Ground/admin_walls/NoOxyConsole");
                 var oxygenB = UnityEngine.Object.Instantiate(oxygenConsole);
                 PDebug.Log("GenerateOxygenB");
-                oxygenB.SetParent(AmongUsLLImpl.ShipStatusInstance.FastRooms.TryGetValue(SystemTypes.Laboratory, out roomObj) ? roomObj.transform : AmongUsLLImpl.ShipStatusInstance.transform);
+                oxygenB.SetParent(ship.FastRooms.TryGetValue(SystemTypes.Laboratory, out roomObj) ? roomObj.transform : ship.transform);
                 oxygenB.transform.localPosition = new UnityEngine.Vector3(-0.83f, 1.78f, 0f);
-                console = ShipExtension.Consolize<Console>(oxygenB.gameObject, null!);
+                console = ShipModification.Consolize<Console>(oxygenB.gameObject, null!);
                 console.Room = SystemTypes.Laboratory;
                 console.ConsoleId = 1;
                 list.Add(console);
-                AmongUsLLImpl.ShipStatusInstance.AllConsoles = new Il2CppReferenceArray<Console>(list.ToArray());
+                ship.AllConsoles = new Il2CppReferenceArray<Console>(list.ToArray());
             }
             catch (Exception e)
             {
@@ -4558,18 +4563,18 @@ public class PatchManager
             }
         }
     }
-    public static void ModifyPolus()
+    public static void ModifyPolus(ShipStatus ship)
     {
         var now = DateTime.Now;
         if ((now.Month == 12 && now.Day >= 10) || (now.Month == 1 && now.Day <= 25))
         {
-            SpriteRenderer treeRenderer = UnityHelper.CreateSpriteRenderer("christmasTree", AmongUsLLImpl.ShipStatusInstance.transform, new Vector3(20.5062f, -7.9289f, -1.2f));
+            SpriteRenderer treeRenderer = UnityHelper.CreateSpriteRenderer("christmasTree", ship.transform, new Vector3(20.5062f, -7.9289f, -1.2f));
             treeRenderer.sprite = ChristmasTreeImage!.GetSprite();
             treeRenderer.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
-            SpriteRenderer shadowRenderer = UnityHelper.CreateSpriteRenderer("christmasTreeShadow", AmongUsLLImpl.ShipStatusInstance.transform, new Vector3(20.5062f, -7.7289f, -0.0095f));
+            SpriteRenderer shadowRenderer = UnityHelper.CreateSpriteRenderer("christmasTreeShadow", ship.transform, new Vector3(20.5062f, -7.7289f, -0.0095f));
             shadowRenderer.sprite = TreeShadowImage!.GetSprite();
             shadowRenderer.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
-            ShipExtension.AddModWall([
+            ShipModification.AddModWall([
                 new Vector2(19.8644f, -9.4064f),
                 new Vector2(19.8564f, -9.8618f),
                 new Vector2(20.993f, -9.8618f),
@@ -4605,7 +4610,7 @@ public class PatchManager
                             {
                                 return;
                             }
-                            AmongUsLLImpl.ShipStatusInstance.RpcUpdateSystem(SystemTypes.Sabotage, 8);
+                            ship.RpcUpdateSystem(SystemTypes.Sabotage, 8);
                         });
                         List<ButtonBehavior> allButtons = infected.allButtons.ToList<ButtonBehavior>();
                         allButtons.Add(button);
@@ -4635,7 +4640,7 @@ public class PatchManager
                     }
                 }, NebulaAPI.CurrentGame!, 100);
                 LifeSuppSystemType LifeSuppSystem = new LifeSuppSystemType(PolusOxygenSabotageTime);
-                AmongUsLLImpl.ShipStatusInstance.Systems[SystemTypes.LifeSupp] = LifeSuppSystem.CastFast<ISystemType>();
+                ship.Systems[SystemTypes.LifeSupp] = LifeSuppSystem.CastFast<ISystemType>();
                 GameOperatorManager.Instance.Subscribe<GameUpdateEvent>(delegate (GameUpdateEvent ev)
                 {
                     if (LifeSuppSystem.Countdown < 0)
@@ -4646,11 +4651,11 @@ public class PatchManager
                         }
                         LifeSuppSystem.Countdown = 10000;
                     }
-                }, new GameObjectLifespan(AmongUsLLImpl.ShipStatusInstance.gameObject), 100);
-                AmongUsLLImpl.ShipStatusInstance.Systems[SystemTypes.Sabotage].CastFast<SabotageSystemType>().specials.Add(LifeSuppSystem.CastFast<IActivatable>());
-                List<PlayerTask> specialTasks = AmongUsLLImpl.ShipStatusInstance.SpecialTasks.ToList<PlayerTask>();
+                }, new GameObjectLifespan(ship.gameObject), 100);
+                ship.Systems[SystemTypes.Sabotage].CastFast<SabotageSystemType>().specials.Add(LifeSuppSystem.CastFast<IActivatable>());
+                List<PlayerTask> specialTasks = ship.SpecialTasks.ToList<PlayerTask>();
                 specialTasks.Add(VanillaAsset.MapAsset[0].SpecialTasks[3]);
-                AmongUsLLImpl.ShipStatusInstance.SpecialTasks = specialTasks.ToArray();
+                ship.SpecialTasks = specialTasks.ToArray();
             }
             catch (Exception e)
             {

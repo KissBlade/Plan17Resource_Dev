@@ -3,6 +3,7 @@
 ################################################################################
 
 /NebulaAddon/.vs
-/NebulaAddon/bin/Debug/net6.0
-/NebulaAddon/obj/Debug/net6.0
+/NebulaAddon/bin
+/NebulaAddon/obj
 /.gitignore
+/.vs
