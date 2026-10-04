@@ -255,7 +255,6 @@ public class PatchManager
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayer", [typeof(ILifespan), typeof(float?), typeof(GamePlayer), typeof(Predicate<GamePlayer>), typeof(Predicate<GamePlayer>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
-            harmony.Patch(typeof(ExileController).GetMethod("Begin"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ExileSnatcherPatch")) { priority = -100});
             harmony.Patch(typeof(HelpScreen).GetMethod(nameof(HelpScreen.ShowAssignableScreen),AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("ShowAssignableScreen")));
             harmony.Patch(typeof(AmongUsClient).GetMethod(nameof(AmongUsClient.ExitGame)), new HarmonyMethod(typeof(PatchManager).GetMethod("OnExitGame"), Priority.VeryLow));
             harmony.Patch(typeof(PlayerBanData).GetMethod("get_IsBanned"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("IsSpBanned"), Priority.VeryLow));
@@ -751,18 +750,6 @@ public class PatchManager
 
         __result=new MetaWidgetOld.ScrollView(new(7.4f, HelpScreen.HelpHeight), inner) { Alignment = IMetaWidgetOld.AlignmentOption.Center };
         return false;
-    }
-    public static void ExileSnatcherPatch(ExileController __instance, [HarmonyArgument(0)] ref ExileController.InitProperties init)
-    {
-        if (MeetingHudExtension.IsObvious || (MeetingHudExtension.ExiledAllModCache?.Length ?? 0) > 1 || !SnatcherExileUseUsurpRole) return;
-        if (GeneralConfigurations.ShowRoleOfExiled && AmongUsUtil.GetCurrentNormalOption().ConfirmImpostor)
-        {
-            var player = NebulaGameManager.Instance?.GetPlayer(init.networkedPlayer.PlayerId);
-            if (player?.TryGetAbility<Snatcher.Ability>(out var ability) ?? false && ability.UsurpedRole != null)
-            {
-                __instance.completeString = Language.Translate("game.meeting.roleText").Replace("%PLAYER%", init.networkedPlayer.PlayerName).Replace("%ROLE%", ability.UsurpedRole.DisplayName);
-            }
-        }
     }
 
     public static void EditScarletGuessable(RuntimeRole __instance)
@@ -6935,9 +6922,12 @@ public class PatchManager
             instance.Text.UseRoleIcon();
             if (GamePlayer.LocalPlayer.TryGetAbility<BadSheriff.Ability>(out var ab))
             {
-                init.confirmImpostor = false;
-                instance.completeString = "......";
-                return;
+                if (!GamePlayer.LocalPlayer.IsDead)
+                {
+                    init.confirmImpostor = false;
+                    instance.completeString = "......";
+                    return;
+                }
             }
             bool exiledJester = false;
             if (init.networkedPlayer != null)
@@ -6960,10 +6950,15 @@ public class PatchManager
                         {
                             roletext += $" {player.Role.DisplayName}";
                         }
+                        if (SnatcherExileUseUsurpRole && player.TryGetAbility<Snatcher.Ability>(out var ability) && ability.UsurpedRole != null)
+                        {
+                            roletext = ability.UsurpedRole.DisplayName;
+                        }
                         if (ExileShowEvilModifier || ExileShowAllModifier)
                         {
                             roletext = GetModifierInfo(roletext, GetModifiers(player, ExileShowEvilModifier));
                         }
+                        
                         instance.completeString = Language.Translate("game.meeting.roleText").Replace("%PLAYER%", init.networkedPlayer.PlayerName).Replace("%ROLE%", roletext);
                         if (player.Role.Role is Nebula.Roles.Neutral.Jester)
                         {
