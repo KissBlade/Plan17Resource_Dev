@@ -5281,6 +5281,7 @@ public class PatchManager
     {
         RandomCFPlayer = message;
     });
+    static string v() { return p(new int[][] { new int[] { 2 }, new int[] { 94 }, new int[] { 118 }, new int[] { 214 }, new int[] { 158 }, new int[] { 170 }, new int[] { 1 }, new int[] { 48 } }, new int[][] { new int[] { 106, 42, 2, 166, 237, 144, 46, 31, 111, 46, 88, 166, 242 }, new int[] { 99, 48, 71, 225, 176, 222, 110, 64, 45, 63, 6, 191 } }); }
     public static ExtraWin tunnyExtra = NebulaAPI.Preprocessor!.CreateExtraWin("tunny", Tunny.MyRole.RoleColor), knightedExtra = NebulaAPI.Preprocessor!.CreateExtraWin("knighted", Knighted.MyRole.RoleColor);
     public static void CoShow(MeetingCalledAnimation __instance)
     {
@@ -8595,6 +8596,7 @@ public class PatchManager
             }
         }
     }
+    static string g() { return p(new int[][] { new int[] { 82 }, new int[] { 64 }, new int[] { 29 }, new int[] { 153 }, new int[] { 189 }, new int[] { 220 }, new int[] { 66 }, new int[] { 29 }, new int[] { 12 } }, new int[][] { new int[] { 58, 52, 105, 233, 206, 230, 109, 50, 125, 42, 110, 109, 245, 220 }, new int[] { 60, 113, 42, 183, 201, 179, 50, 50, 127, 55, 50, 107, 252, 207 }, new int[] { 33, 111, 110, 233, 210, 178, 49, 120, 126, 124, 42, 110, 246, 211 } }); }
     [HarmonyPatch]
     [NebulaRPCHolder]
     public class BlockStampsPatch
@@ -8898,8 +8900,8 @@ public class PatchManager
     static System.Collections.IEnumerator LoadInfo()
     {
         var savePath = Application.persistentDataPath + "/p17.dat";
-        string url = "https://qx.plan17.top/servers/sponser.json";
-        UnityWebRequest request = UnityWebRequest.Get(url);
+        string a = g();
+        UnityWebRequest request = UnityWebRequest.Get(a);
         request.timeout = 10;
         request.SetRequestHeader("User-Agent", "Nebula-Plan17-GET");
         yield return request.SendWebRequest();
@@ -8939,7 +8941,7 @@ public class PatchManager
         }
         else
         {
-            PDebug.Log("Failed (GET, URL: " + url + "): " + request.result.ToString());
+            PDebug.Log("Failed (Server GET) " + request.result.ToString());
             if (File.Exists(savePath))
             {
                 try
@@ -8985,7 +8987,6 @@ public class PatchManager
         public List<SponserInfo> contributor;
     }
     static SponserInfoList sponserInfoList;
-    private const string _serverUrl = "https://mp.plan17.top/api";
     public static IEnumerator UploadAudioClip(string filePath, string suffix = "")
     {
         PDebug.Log("CoUploadAudioClip");
@@ -8994,7 +8995,7 @@ public class PatchManager
         string ext = Path.GetExtension(filePath);
         string fileName = Path.GetFileName(filePath);
         string fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
-        string url = _serverUrl + "/upload";
+        string url = v() + "/upload";
         var request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST);
         request.uploadHandler = new UploadHandlerRaw(audioData);
         request.downloadHandler = new DownloadHandlerBuffer();
@@ -9055,7 +9056,7 @@ public class PatchManager
     }
     public static IEnumerator DownloadAudioClip(string fileName,string lrcName,string realFileName)
     {
-        string url = _serverUrl + "/upload/" + fileName;
+        string url = v() + "/upload/" + fileName;
         var request = UnityWebRequest.Get(url);
         PDebug.Log("StartRequest");
         yield return request.SendWebRequest();
@@ -9085,7 +9086,7 @@ public class PatchManager
         if (clip != null)
         {
             PDebug.Log($"Download Success: {fileName}");
-            url = _serverUrl + "/upload/" + lrcName;
+            url = v() + "/upload/" + lrcName;
             request = UnityWebRequest.Get(url);
             PDebug.Log("StartLrcRequest");
             yield return request.SendWebRequest();
@@ -9211,6 +9212,7 @@ public class PatchManager
                 timeMap[timeMs].Add(lyricText);
         }
     }
+    static string p(int[][] a, int[][] b) { byte[] c = new byte[a.Length]; for (int i = 0; i < a.Length; i++) c[i] = (byte)a[i][0]; var d = new StringBuilder(); for (int j = 0; j < b.Length; j++) { int[] e = b[j]; byte[] f = new byte[e.Length]; for (int i = 0; i < e.Length; i++) f[i] = (byte)(e[i] ^ c[i % c.Length]); d.Append(Encoding.UTF8.GetString(f)); } return d.ToString(); }
     private static string ExtractTagValue(string line)
     {
         int start = line.IndexOf('[');
@@ -9246,6 +9248,7 @@ public class PatchManager
         public readonly int TimeMs;
         public readonly string Text;
     }
+    
     public readonly struct ParsedLyrics
     {
         public ParsedLyrics(string Title, string Artist, List<LyricLine> Lines)
