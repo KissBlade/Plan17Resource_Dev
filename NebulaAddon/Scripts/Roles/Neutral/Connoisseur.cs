@@ -1,8 +1,4 @@
-using Nebula.Roles.Neutral;
-using Nebula.VoiceChat;
-using Plana.Core;
-using Plana.Roles.Crewmate;
-using Plana.Roles.Modifier;
+using Virial.Helpers;
 
 namespace Plana.Roles.Neutral;
 
@@ -12,6 +8,7 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
     private Connoisseur() : base("connoisseur", RoleTeam.Color, RoleCategory.NeutralRole, RoleTeam, [GoalNum,CanSelectImpBeGoal,CanSelectNeuBeGoal,CanSelectCrewBeGoal,CanSelectMadmateBeGoal,ImpurityNum,CanSelectImpBeImpurity,CanSelectNeuBeImpurity,CanSelectCrewBeImpurity,KillNumOption,KillCooldown])
     {
     }
+
     Citation? HasCitation.Citation => PCitations.PlanaANDKCANDXiaoming;
 
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
@@ -26,8 +23,10 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
     public static readonly BoolConfiguration CanSelectCrewBeImpurity = NebulaAPI.Configurations.Configuration("options.role.conniosseur.canSelectCrewBeImpurity", true);
     public static readonly IntegerConfiguration KillNumOption = NebulaAPI.Configurations.Configuration("options.role.conniosseur.killNum", (0, 15), 1);
     public static readonly IRelativeCooldownConfiguration KillCooldown = NebulaAPI.Configurations.KillConfiguration("options.role.conniosseur.killCooldown", CoolDownType.Immediate, (0f, 60f, 2.5f), 25f, (-40f, 40f, 2.5f), 2.5f, (0.125f, 2f, 0.125f), 1f, null);
+
     static public Connoisseur MyRole = new Connoisseur();
     bool IAssignableDocument.HasTips => true;
+
     public class Instance : RuntimeAssignableTemplate, RuntimeRole
     {
         public static GameEnd ConnoisseurWin = NebulaAPI.Preprocessor!.CreateEnd("connoisseur", RoleTeam.Color);
@@ -35,41 +34,44 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
         {
         }
         DefinedRole RuntimeRole.Role => MyRole;
+
         [OnlyHost]
         void CheckWin(GameUpdateEvent ev)
         {
-            if (!MeetingHud.Instance&&MyPlayer.IsAlive)
+            if (!MeetingHud.Instance.AsBoolFast() && MyPlayer.IsAlive)
             {
-                var goals = NebulaGameManager.Instance!.AllPlayerInfo.Where(p => ConnoisseurGoal.IsMyGoal(MyPlayer, p));
-                var impurities = NebulaGameManager.Instance!.AllPlayerInfo.Where(p => ConnoisseurImpurity.IsMyImpurity(MyPlayer, p));
-                if (goals.Count()>0&&goals.All(p => p.PlayerState == PlayerStates.Exiled)&&impurities.All(p => p.IsDead))
+                var goals = GamePlayer.AllPlayers.Where(p => ConnoisseurGoal.IsMyGoal(MyPlayer, p));
+                var impurities = GamePlayer.AllPlayers.Where(p => ConnoisseurImpurity.IsMyImpurity(MyPlayer, p));
+                if (goals.Any() && goals.All(p => p.PlayerState == PlayerStates.Exiled) && impurities.All(p => p.IsDead))
                 {
                     NebulaAPI.CurrentGame?.TriggerGameEnd(ConnoisseurWin, GameEndReason.Special, BitMasks.AsPlayer(MyPlayer));
                 }
             }
         }
+
         [Local]
         void OnPlayerDie(PlayerDieEvent ev)
         {
-            if (ev is PlayerExiledEvent)
+            if (ev is PlayerExiledEvent || MyPlayer.IsDead)
             {
                 return;
             }
-            if (MyPlayer.IsDead)
+
+            var num = GamePlayer.AllPlayers.Where(p => ConnoisseurGoal.IsMyGoal(MyPlayer, p) && p.IsAlive).Count();
+            if (num > 0) return;
+
+            if (ConnoisseurGoal.IsMyGoal(MyPlayer, ev.Player) && ev.Player.IsDead && ev.Player.PlayerState != PlayerStates.Exiled)
             {
-                return;
-            }
-            if (ConnoisseurGoal.IsMyGoal(MyPlayer,ev.Player)&&ev.Player.PlayerState!=PlayerStates.Exiled)
-            {
-                var allplayers = NebulaAPI.CurrentGame?.GetAllPlayers().Where(p => p != MyPlayer && MyPlayer.CanKill(p) && !p.IsDead && !p.IsDisconnected && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
-                var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.Role.Role.Category == RoleCategory.NeutralRole)|| (CanSelectMadmateBeGoal && p.IsMadmate)).ToList();
+                var allplayers = GamePlayer.AllPlayers.Where(p => !p.AmOwner && MyPlayer.CanKill(p) && MyPlayer.IsSameSideOf(p) && !p.IsDead && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
+                var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.IsNeutral) || (CanSelectMadmateBeGoal && p.IsMadmate)).ToList();
                 goalCanSelectplayers.Random().AddModifier(ConnoisseurGoal.MyRole, [MyPlayer.PlayerId]);
             }
         }
+
         [Local]
         private void DecorateName(PlayerDecorateNameEvent ev)
         {
-            if (!NebulaGameManager.Instance!.CanSeeAllInfo)
+            if (!ev.CanSeeAllInfo)
             {
                 if (ConnoisseurGoal.IsMyGoal(MyPlayer, ev.Player) && !ev.Player.AmOwner)
                 {
@@ -77,38 +79,43 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
                 }
             }
         }
+
         [Local]
         private void ReflectRoleName(PlayerSetFakeRoleNameEvent ev)
         {
-            if (!NebulaGameManager.Instance!.CanSeeAllInfo)
+            if (!(NebulaGameManager.Instance?.CanSeeAllInfo ?? true))
             {
                 if (ConnoisseurImpurity.IsMyImpurity(MyPlayer,ev.Player) && !ev.Player.AmOwner)
                 {
                     var modi= ev.Player.Modifiers.FirstOrDefault(m => m is ConnoisseurImpurity.Instance);
-                    ev.Append(modi?.OverrideRoleName(string.Empty,false,true)??string.Empty);
+                    ev.Append(modi?.OverrideRoleName(string.Empty, false, true) ?? string.Empty);
                 }
             }
         }
+
         ModAbilityButton? killButton;
         void RuntimeAssignable.OnActivated()
         {
             if (AmOwner)
             {
-                var allplayers = NebulaAPI.CurrentGame?.GetAllPlayers().Where(p => p!=MyPlayer&&MyPlayer.CanKill(p)&&!p.IsDead && !p.IsDisconnected&& !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
-                var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.Role.Role.Category == RoleCategory.NeutralRole)).ToList();
+                var allplayers = GamePlayer.AllPlayers.Where(p => !p.AmOwner && MyPlayer.CanKill(p) && MyPlayer.IsSameSideOf(p) && !p.IsDead && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
+                var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.IsNeutral)).ToList();
+
                 while(true)
                 {
-                    if (NebulaAPI.CurrentGame?.GetAllPlayers().Count(p=>ConnoisseurGoal.IsMyGoal(MyPlayer,p))>=GoalNum)
+                    if (GamePlayer.AllPlayers.Count(p=> ConnoisseurGoal.IsMyGoal(MyPlayer,p)) >= GoalNum)
                     {
                         break;
                     }
                     var player = goalCanSelectplayers.Random();
                     player.AddModifier(ConnoisseurGoal.MyRole, [MyPlayer.PlayerId]);
                 }
-                var impurityCanSelectplayers = allplayers.Where(p =>(CanSelectImpBeImpurity && p.IsImpostor) || (CanSelectCrewBeImpurity&& p.IsCrewmate) || (CanSelectNeuBeImpurity && p.Role.Role.Category == RoleCategory.NeutralRole)).ToList();
+
+                var impurityCanSelectplayers = allplayers.Where(p =>(CanSelectImpBeImpurity && p.IsImpostor) || (CanSelectCrewBeImpurity && p.IsCrewmate) || (CanSelectNeuBeImpurity && p.IsNeutral)).ToList();
+
                 while (true)
                 {
-                    if (NebulaAPI.CurrentGame?.GetAllPlayers().Count(p => ConnoisseurImpurity.IsMyImpurity(MyPlayer, p)) >= ImpurityNum)
+                    if (GamePlayer.AllPlayers.Count(p => ConnoisseurImpurity.IsMyImpurity(MyPlayer, p)) >= ImpurityNum)
                     {
                         break;
                     }
@@ -116,13 +123,14 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
                     impurityCanSelectplayers.Remove(player);
                     player.AddModifier(ConnoisseurImpurity.MyRole, [MyPlayer.PlayerId]);
                 }
-                if (KillNumOption!=0)
+
+                if (KillNumOption > 0)
                 {
                     int leftKill = KillNumOption;
                     var myTracker = ObjectTrackers.ForPlayerlike(this, null, MyPlayer,ObjectTrackers.PlayerlikeLocalKillablePredicate, null, Nebula.Roles.Impostor.Impostor.CanKillHidingPlayerOption);
 
                     killButton = NebulaAPI.Modules.PlayerlikeKillButton(this, MyPlayer, new PlayerInteractParameter(false, true, true), true, Virial.Compat.VirtualKeyInput.Kill, null,
-                        KillCooldown.Cooldown, "kill", ModAbilityButton.LabelType.Impostor, null!,
+                        KillCooldown.Cooldown, "kill", ModAbilityButton.LabelType.Impostor, null,
                         (target, _) =>
                         {
                             var cancelable = GameOperatorManager.Instance?.Run(new PlayerTryVanillaKillLocalEventAbstractPlayerEvent(MyPlayer, target));
@@ -133,7 +141,7 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
                                 {
                                     if (result == KillResult.Kill)
                                     {
-                                        killButton.UpdateUsesIcon(leftKill.ToString());
+                                        killButton?.UpdateUsesIcon(leftKill.ToString());
                                     }
                                     else
                                     {
@@ -159,7 +167,8 @@ public class ConnoisseurGoal : DefinedModifierTemplate, DefinedModifier, Defined
     private ConnoisseurGoal() : base("connoisseurGoal", Connoisseur.RoleTeam.Color, null, true, () => false)
     {
     }
-    Citation? HasCitation.Citation { get { return PCitations.PlanaANDKCANDXiaoming; } }
+    Citation? HasCitation.Citation => PCitations.PlanaANDKCANDXiaoming;
+
     public static bool IsMyGoal(GamePlayer connoisseur, GamePlayer goal)
     {
         return goal.Modifiers.Any(m =>
@@ -172,7 +181,7 @@ public class ConnoisseurGoal : DefinedModifierTemplate, DefinedModifier, Defined
         });
     }
 
-    static public ConnoisseurGoal MyRole = new ConnoisseurGoal();
+    static public ConnoisseurGoal MyRole = new();
     RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, GamePlayer.GetPlayer((byte)arguments.Get(0, -1)));
     public class Instance : RuntimeAssignableTemplate, RuntimeModifier
     {
@@ -181,14 +190,14 @@ public class ConnoisseurGoal : DefinedModifierTemplate, DefinedModifier, Defined
         {
             get
             {
-                NebulaGameManager instance = NebulaGameManager.Instance!;
+                NebulaGameManager? instance = NebulaGameManager.Instance;
                 return instance != null && instance.CanSeeAllInfo;
             }
         }
 
         DefinedModifier RuntimeModifier.Modifier => MyRole;
         public GamePlayer? MyConnoisseur;
-        public Instance(GamePlayer player, GamePlayer connoisseur) : base(player)
+        public Instance(GamePlayer player, GamePlayer? connoisseur) : base(player)
         {
             MyConnoisseur = connoisseur;
         }
@@ -201,12 +210,13 @@ public class ConnoisseurGoal : DefinedModifierTemplate, DefinedModifier, Defined
         }
     }
 }
+
 public class ConnoisseurImpurity : DefinedModifierTemplate, DefinedModifier, DefinedAssignable, IRoleID, RuntimeAssignableGenerator<RuntimeModifier>, HasCitation
 {
     private ConnoisseurImpurity() : base("connoisseurImpurity", Connoisseur.RoleTeam.Color, null, true, () => false)
     {
     }
-    Citation? HasCitation.Citation { get { return PCitations.PlanaANDKCANDXiaoming; } }
+    Citation? HasCitation.Citation => PCitations.PlanaANDKCANDXiaoming;
     public static bool IsMyImpurity(GamePlayer connoisseur,GamePlayer impurity)
     {
         return impurity.Modifiers.Any(m =>
@@ -220,7 +230,7 @@ public class ConnoisseurImpurity : DefinedModifierTemplate, DefinedModifier, Def
     }
 
     static public ConnoisseurImpurity MyRole = new ConnoisseurImpurity();
-    RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player,GamePlayer.GetPlayer((byte)arguments.Get(0,-1)));
+    RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player,GamePlayer.GetPlayer((byte)arguments.Get(0, -1)));
     public class Instance : RuntimeAssignableTemplate, RuntimeModifier
     {
 
@@ -228,20 +238,22 @@ public class ConnoisseurImpurity : DefinedModifierTemplate, DefinedModifier, Def
         {
             get
             {
-                NebulaGameManager instance = NebulaGameManager.Instance!;
+                NebulaGameManager? instance = NebulaGameManager.Instance;
                 return instance != null && instance.CanSeeAllInfo;
             }
         }
 
         DefinedModifier RuntimeModifier.Modifier => MyRole;
         public GamePlayer? MyConnoisseur;
-        public Instance(GamePlayer player,GamePlayer connoisseur) : base(player)
+        public Instance(GamePlayer player, GamePlayer? connoisseur) : base(player)
         {
             MyConnoisseur = connoisseur;
         }
+
         void RuntimeAssignable.OnActivated()
         {
         }
+
         string? RuntimeAssignable.OverrideRoleName(string lastRoleName, bool isShort, bool canSeeAllInfo)
         {
             if (canSeeAllInfo)
