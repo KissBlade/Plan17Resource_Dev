@@ -6934,9 +6934,12 @@ public class PatchManager
             instance.Text.UseRoleIcon();
             if (GamePlayer.LocalPlayer.TryGetAbility<BadSheriff.Ability>(out var ab))
             {
-                init.confirmImpostor = false;
-                instance.completeString = "......";
-                return;
+                if (!GamePlayer.LocalPlayer.IsDead)
+                {
+                    init.confirmImpostor = false;
+                    instance.completeString = "......";
+                    return;
+                }
             }
             bool exiledJester = false;
             if (init.networkedPlayer != null)

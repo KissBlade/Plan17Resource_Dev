@@ -226,7 +226,7 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
 
             var markedIds = playerIcons.Where(CheckMarked).Select(p => p.Item1);
             var inRoles = GamePlayer.AllPlayers.Where(p => markedIds.Contains(p.PlayerId)).Select(p => p?.Role?.Role).NotNull().ToArray();
-            var outRoles = GamePlayer.AllPlayers.Where(p => !markedIds.Contains(p.PlayerId)).Select(p => p?.Role?.Role).NotNull().ToArray();
+            var outRoles = GamePlayer.AllPlayers.Where(p => !markedIds.Contains(p.PlayerId)&&!p.IsDead).Select(p => p?.Role?.Role).NotNull().ToArray();
             var rnd = System.Random.Shared;
 
             string inText = Language.Translate("role.sommelier.ui.roleInResult");
