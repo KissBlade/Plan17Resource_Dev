@@ -6946,7 +6946,7 @@ public class PatchManager
                         {
                             roletext += $" {player.Role.DisplayName}";
                         }
-                        if (player.TryGetAbility<Snatcher.Ability>(out var ability) && ability.UsurpedRole != null)
+                        if (SnatcherExileUseUsurpRole && player.TryGetAbility<Snatcher.Ability>(out var ability) && ability.UsurpedRole != null)
                         {
                             roletext = ability.UsurpedRole.DisplayName;
                         }
