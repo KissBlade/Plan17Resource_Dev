@@ -1,5 +1,6 @@
 #pragma warning disable CS8019, CS8933
 global using GamePlayer = Virial.Game.Player;
+global using ManagedBass;
 global using System;
 global using System.Collections.Generic;
 global using System.IO;
