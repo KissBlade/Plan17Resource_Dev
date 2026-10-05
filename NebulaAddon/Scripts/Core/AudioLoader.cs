@@ -1,7 +1,6 @@
 using AmongUs.Data;
 using AsmResolver.Patching;
 using Cpp2IL.Core.Extensions;
-using CustomMusicPlayer.Core;
 using Il2CppInterop.Runtime.Injection;
 using NAudio.Wave;
 using Rewired.Demos;
@@ -124,7 +123,6 @@ internal class MusicPlayer : MonoBehaviour
     public void SetVolume(double volume)
     {
         _player!.Volume = volume;
-        CustomMusicPlayerLogger.Log($"[BassMusicPlayer] set volume to {volume}");
     }
 
     private void Stop()
