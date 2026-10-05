@@ -201,7 +201,7 @@ public static class AudioLoader
         {
             return;
         }
-
+        Init();
         var ext = Path.GetExtension(filePath).ToLowerInvariant();
         /*switch (ext)
         {
