@@ -20,7 +20,10 @@ internal class MusicPlayer : MonoBehaviour
     private bool _initialized;
     private int _requestId;
 
-    static MusicPlayer() => ClassInjector.RegisterTypeInIl2Cpp<MusicPlayer>();
+    static MusicPlayer()
+    {
+        ClassInjector.RegisterTypeInIl2Cpp<MusicPlayer>();
+    }
     public static void Init()
     {
         if (_instance != null && _instance.AsBoolFast()) return;
@@ -77,6 +80,11 @@ internal class MusicPlayer : MonoBehaviour
 
     public System.Collections.IEnumerator CoPlayMusic(string path, double volume = 1f, bool loop = true, Action? onSuccess = null)
     {
+        if (!LobbyBehaviour.Instance)
+        {
+            PDebug.Log("Not In Lobby,Cancel Play Music.");
+            yield break;
+        }
         if (!_initialized || _player == null)
         {
             PDebug.Log("MediaPlayer Not Initialized");
@@ -100,6 +108,14 @@ internal class MusicPlayer : MonoBehaviour
         {
             try
             {
+                var handleProp = typeof(MediaPlayer).GetProperty("Handle",AccessTools.all);
+                if (Bass.ChannelGetInfo((int)handleProp.GetValue(_player), out var info))
+                {
+                    if (info.Frequency != _player.Frequency)
+                    {
+                        _player.Frequency = info.Frequency;
+                    }
+                }
                 _player.Volume = volume;
                 _player.Loop = loop;
                 _player.Play();
@@ -118,9 +134,14 @@ internal class MusicPlayer : MonoBehaviour
                 $"MeidaPlayer Load failed: {path}, " +
                 $"BASS: {Bass.LastError}, ex: {exText}");
         }
-        GameOperatorManager.Instance.RegisterOnReleased(() => Stop(), new GameObjectLifespan(AmongUsLLImpl.LobbyInstance.gameObject));
     }
-
+    void Update()
+    {
+        if (!LobbyBehaviour.Instance.AsBoolFast())
+        {
+            Stop();
+        }
+    }
     public void SetVolume(double volume)
     {
         _player!.Volume = volume;
