@@ -8633,7 +8633,7 @@ public class PatchManager
             }
         }, true);
     }
-    static string LobbyMusicPath => PathHelpers.GameRootPath + Path.DirectorySeparatorChar + "Cache" + Path.DirectorySeparatorChar + "Music";
+    public static string LobbyMusicPath => PathHelpers.GameRootPath + Path.DirectorySeparatorChar + "Cache" + Path.DirectorySeparatorChar + "Music";
     public static string OpenSelectMusicWindow()
     {
         try
@@ -8674,6 +8674,17 @@ public class PatchManager
                 yield return UploadAudioClip(filePath, Guid.NewGuid().ToString()/*ComputeConstantHash().ToString()*/);
                 yield break;
             }
+            LoadAudioV2(filePath, () =>
+            {
+                var smIns = AmongUsLLImpl.SoundManagerInstance;
+                if (smIns.AsBoolFast())
+                {
+                    smIns.StopNamedSound("MapTheme");
+                }
+                    lifespan.Release();
+                    lifespan = null;
+            });
+            /*
             AudioClip audioClip = null;
             var task = LoadAudioWithFallbacksAsync(filePath);
             while (!task.IsCompleted)
@@ -8710,7 +8721,7 @@ public class PatchManager
             {
                 lifespan.Release();
                 lifespan = null;
-            }
+            }*/
         }
     }
     public static System.Collections.IEnumerator CoLoadLobbyMusic(string filePath, ParsedLyrics lyrics, bool share = false)
@@ -8724,7 +8735,25 @@ public class PatchManager
                 yield return UploadAudioClip(filePath, Guid.NewGuid().ToString()/*ComputeConstantHash().ToString()*/);
                 yield break;
             }
-            AudioClip audioClip = null;
+            LoadAudioV2(filePath, () =>
+            {
+                var smIns = AmongUsLLImpl.SoundManagerInstance;
+                if (smIns.AsBoolFast())
+                {
+                    smIns.StopNamedSound("MapTheme");
+                }
+                if (lyrics.Lines.Count > 0)
+                {
+                    var source = MusicPlayer.Instance._player;
+                    CoPushLyrics(source, lyrics);
+                }
+                else if (lifespan != null)
+                {
+                    lifespan.Release();
+                    lifespan = null;
+                }
+            });
+            /*AudioClip audioClip = null;
             var task = LoadAudioWithFallbacksAsync(filePath);
             while (!task.IsCompleted)
             {
@@ -8752,7 +8781,7 @@ public class PatchManager
             {
                 lifespan.Release();
                 lifespan = null;
-            }
+            }*/
         }
     }
     private static async System.Threading.Tasks.Task<AudioClip> LoadAudioWithFallbacksAsync(string path)
@@ -8760,6 +8789,10 @@ public class PatchManager
         var clip=await AudioLoader.LoadAudioClipAsync(path);
         if (clip != null) return clip;
         return null;
+    }
+    private static void LoadAudioV2(string path,Action? onSuccess)
+    {
+        AudioLoader.LoadAudioClipAsyncV2(path,onSuccess);
     }
     /*private static AudioClip? ParseWav(byte[] bytes, string clipName)
     {
@@ -9071,7 +9104,37 @@ public class PatchManager
         if (!Directory.Exists(LobbyMusicPath)) Directory.CreateDirectory(LobbyMusicPath);
         var path = LobbyMusicPath + Path.DirectorySeparatorChar + fileName;
         File.WriteAllBytes(path, audioData);
-        var task = AudioLoader.LoadAudioClipAsync(path);
+        url = v() + "/upload/" + lrcName;
+        request = UnityWebRequest.Get(url);
+        PDebug.Log("StartLrcRequest");
+        yield return request.SendWebRequest();
+        while (request.result == UnityWebRequest.Result.InProgress)
+        {
+            yield return null;
+        }
+        PDebug.Log("LrcRequestEnd");
+        string lrcText = Encoding.UTF8.GetString(Convert.FromBase64String(request.downloadHandler.text));
+        request.Dispose();
+        var lyrics = ParseLrc(realFileName, lrcText);
+        LoadAudioV2(path, () =>
+        {
+            var smIns = AmongUsLLImpl.SoundManagerInstance;
+            if (smIns.AsBoolFast())
+            {
+                smIns.StopNamedSound("MapTheme");
+            }
+            if (lyrics.Lines.Count > 0)
+            {
+                var source = MusicPlayer.Instance._player;
+                CoPushLyrics(source, lyrics);
+            }
+            else if (lifespan != null)
+            {
+                lifespan.Release();
+                lifespan = null;
+            }
+        });
+        /*var task = AudioLoader.LoadAudioClipAsync(path);
         while (!task.IsCompleted)
         {
             yield return null;
@@ -9114,11 +9177,37 @@ public class PatchManager
         else
         {
             PDebug.Log("Download Fail Unknown Error");
-        }
+        }*/
         File.Delete(path);
     }
     static FunctionalDebugTextContent lyricTextContext;
     static FlexibleLifespan lifespan;
+    public static void CoPushLyrics(ManagedBass.MediaPlayer player, ParsedLyrics lyrics)
+    {
+        if (lifespan != null)
+        {
+            lifespan.Release();
+        }
+        lifespan = new(NebulaAPI.CurrentGame);
+        lyricTextContext = new FunctionalDebugTextContent(() =>
+        {
+            if (player == null)
+            {
+                return null;
+            }
+            var sb = new StringBuilder().Append("当前播放音乐:").Append(lyrics.Title).Append(Environment.NewLine);
+
+            double preciseSeconds = player.Position.TotalSeconds;
+            int sourceTime = (int)(preciseSeconds * 1000);
+            var LastLyricLine = lyrics.Lines.LastOrDefault(l => sourceTime >= l.TimeMs);
+            if (!string.IsNullOrEmpty(LastLyricLine.Text))
+            {
+                sb.Append(LastLyricLine.Text);
+            }
+            return sb.ToString();
+        }, lifespan);
+        DebugScreen.Push(lyricTextContext);
+    }
     public static void CoPushLyrics(AudioSource source, ParsedLyrics lyrics)
     {
         if (lifespan != null)

@@ -1,12 +1,249 @@
+using AmongUs.Data;
 using AsmResolver.Patching;
 using Cpp2IL.Core.Extensions;
+using CustomMusicPlayer.Core;
+using Il2CppInterop.Runtime.Injection;
 using NAudio.Wave;
+using Rewired.Demos;
+using System.Runtime.InteropServices;
+using Unity.Services.Core.Scheduler.Internal;
+using Virial.Helpers;
 
 namespace Plana.Core;
 
+//This is Code by Oldsix and AI
+internal class MusicPlayer : MonoBehaviour
+{
+    private static MusicPlayer? _instance;
+
+    public static MusicPlayer? Instance => _instance;
+    public MediaPlayer? _player;
+    private bool _initialized;
+    private int _requestId;
+
+    static MusicPlayer() => ClassInjector.RegisterTypeInIl2Cpp<MusicPlayer>();
+    public static void Init()
+    {
+        if (_instance != null && _instance.AsBoolFast()) return;
+
+        var go = new GameObject("BMPAudioLoaderAPI");
+        DontDestroyOnLoad(go);
+        _instance = go.AddComponent<MusicPlayer>();
+    }
+
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+        try
+        {
+            if (!Bass.Init())
+            {
+                PDebug.Log("Bass Init failed");
+                _initialized = false;
+                return;
+            }
+            _player = new MediaPlayer();
+            _initialized = true;
+        }
+        catch (Exception ex)
+        {
+            _initialized = false;
+            PDebug.Log(ex);
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        Stop();
+    }
+    private void OnDestroy()
+    {
+        if (_instance != this) return;
+        _instance = null;
+        Stop();
+    }
+    public void PlayMusic(string path, double volume = 1f, bool loop = true, Action? onSuccess = null)
+    {
+        if (this.AsBoolFast() && _initialized)
+        {
+            StartCoroutine(CoPlayMusic(path, volume, loop, onSuccess).WrapToIl2Cpp());
+        }
+    }
+
+    public IEnumerator CoPlayMusic(string path, double volume = 1f, bool loop = true, Action? onSuccess = null)
+    {
+        if (!_initialized || _player == null)
+        {
+            PDebug.Log("MediaPlayer Not Initialized");
+            yield break;
+        }
+        int id = ++_requestId;
+        System.Threading.Tasks.Task<bool>? result;
+        try
+        {
+            result = _player.LoadAsync(path);
+        }
+        catch (Exception ex)
+        {
+            PDebug.Log("MediaPlayer LoadAsync Error:" + ex.ToString());
+            yield break;
+        }
+        while (!result.IsCompleted)
+            yield return null;
+        if (id != _requestId) yield break;
+        if (result.IsCompletedSuccessfully && result.Result)
+        {
+            try
+            {
+                _player.Volume = volume;
+                _player.Loop = loop;
+                _player.Play();
+                onSuccess?.Invoke();
+
+            }
+            catch (Exception ex)
+            {
+                PDebug.Log("Play failed error:" + ex.ToString());
+            }
+        }
+        else
+        {
+            string exText = result.Exception?.ToString() ?? "no feedback";
+            PDebug.Log(
+                $"MeidaPlayer Load failed: {path}, " +
+                $"BASS: {Bass.LastError}, ex: {exText}");
+        }
+    }
+
+    public void SetVolume(double volume)
+    {
+        _player!.Volume = volume;
+        CustomMusicPlayerLogger.Log($"[BassMusicPlayer] set volume to {volume}");
+    }
+
+    private void Stop()
+    {
+        _player?.Dispose();
+        _player = null;
+
+        if (_initialized)
+        {
+            Bass.Free();
+            _initialized = false;
+        }
+    }
+}
 //code by slok7565
 public static class AudioLoader
 {
+    static bool inited;
+    private static MusicPlayer? _instance;
+    public static void Init()
+    {
+        if (inited)
+        {
+            return;
+        }
+        var path = ExtractNativeDLL();
+        NativeLibrary.SetDllImportResolver(typeof(Bass).Assembly, (libraryName, assembly, searchPath) =>
+    {
+        if (libraryName != "bass")
+            return IntPtr.Zero;
+
+        if (File.Exists(path))
+            return NativeLibrary.Load(path);
+
+        return IntPtr.Zero;
+    });
+        MusicPlayer.Init();
+        inited = true;
+    }
+    private static string ExtractNativeDLL()
+    {
+        string nativeDir = PatchManager.LobbyMusicPath;
+        if (!Directory.Exists(nativeDir))
+        {
+            Directory.CreateDirectory(nativeDir);
+        }
+        string path = Path.Combine(nativeDir, "bass.dll");
+        try
+        {
+            var resource = NebulaAPI.AddonAsset.GetResource("bass.dll");
+            if (resource == null)
+            {
+                PDebug.Log("Not Found bass");
+                return null;
+            }
+            using var stream = resource.AsStream();
+            if (stream == null)
+            {
+                PDebug.Log("Not Found bass Stream Data");
+                return null;
+            }
+            using (var fs = File.Create(path))
+            {
+                stream.CopyTo(fs);
+            }
+        }
+        catch (Exception ex)
+        {
+            PDebug.Log(ex);
+        }
+        return path;
+    }
+    public static void LoadAudioClipAsyncV2(string filePath,Action? onSuccess)
+    {
+        if (!File.Exists(filePath))
+        {
+            return;
+        }
+
+        var ext = Path.GetExtension(filePath).ToLowerInvariant();
+        /*switch (ext)
+        {
+            case ".wav":
+            case ".mp3":
+            case ".ogg":
+                try
+                {
+                    return await System.Threading.Tasks.Task.Run(()=>LoadAudioWithImmersionAudio(filePath));
+                }
+                catch (Exception e)
+                {
+                    PDebug.Log(e);
+                    return null;
+                }
+            default:
+                PDebug.Log($"[AudioLoader] Unsupported extension: {ext}");
+                return null;
+        }*/
+        switch (ext)
+        {
+            case ".wav":
+            case ".mp3":
+            case ".ogg":
+            case ".aif":
+                try
+                {
+                    PlayMusic(filePath,onSuccess);
+                }
+                catch (Exception e)
+                {
+                    PDebug.Log(e);
+                    return;
+                }
+                break;
+            default:
+                PDebug.Log($"[AudioLoaderV2] Unsupported extension: {ext}");
+                return;
+        }
+    }
     public static async System.Threading.Tasks.Task<AudioClip> LoadAudioClipAsync(string filePath)
     {
         if (!File.Exists(filePath))
@@ -84,7 +321,10 @@ public static class AudioLoader
     #endregion
 
     #region WAV
-
+    private static void PlayMusic(string path,Action? onsuccess)
+    {
+        MusicPlayer.Instance.PlayMusic(path, SoundManager.MusicVolume, true, onsuccess);
+    }
     private static async System.Threading.Tasks.Task<AudioClip> LoadWavAsync(string path)
     {
         var bytes = await ReadAllBytesAsync(path);

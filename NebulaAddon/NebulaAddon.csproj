@@ -160,6 +160,9 @@
     <Reference Include="LibCpp2IL">
       <HintPath>..\lib\LibCpp2IL.dll</HintPath>
     </Reference>
+    <Reference Include="ManagedBass">
+      <HintPath>..\lib\ManagedBass.dll</HintPath>
+    </Reference>
     <Reference Include="Mono.Cecil">
       <HintPath>..\lib\Mono.Cecil.dll</HintPath>
     </Reference>
