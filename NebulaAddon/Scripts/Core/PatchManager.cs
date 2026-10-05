@@ -1590,6 +1590,7 @@ public class PatchManager
     });
     public static void ModernBGPatch(ref BackgroundSetting background)
     {
+        if (background == BackgroundSetting.Off) return;
         if (ClientOption.GetValue((ClientOption.ClientOptionType)127) == 1)
         {
             background = BackgroundSetting.Modern;

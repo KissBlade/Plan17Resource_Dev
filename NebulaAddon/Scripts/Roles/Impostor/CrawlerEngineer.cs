@@ -596,16 +596,17 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                 }
             }
         }
-        private void OnMapInstantiated(MapInstantiateEvent ev)
+        void OnMapInstantiated(MapInstantiateEvent ev)
         {
-            OptimizeMap(role?.MyPad!=null,MapBehaviour.Instance.infectedOverlay);
+            OptimizeMap(role?.MyPad !=null ,MapBehaviour.Instance.infectedOverlay);
         }
-        public void SetUp(Predicate<IPlayerlike> showPredicate, Action<int> postAction, bool showdead, CrawlerEngineer.Ability role)
+
+        public void SetUp(Predicate<IPlayerlike> showPredicate, Action<int> postAction, bool showDead, CrawlerEngineer.Ability role)
         {
             this.showPredicate = showPredicate;
             this.postShownAction = postAction;
 
-            showDead = showdead;
+            this.showDead = showDead;
             this.role = role;
             GameOperatorManager.Instance!.Subscribe<MapInstantiateEvent>(OnMapInstantiated, role);
         }
@@ -620,16 +621,20 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                     m.gameObject.SetActive(true);
                 }
             }
+
             if (cameraDotRenderer)
             {
                 cameraDotRenderer.enabled = true;
             }
-            if (camera)
+
+            if (camera.AsBoolFast())
             {
                 camera.enabled = true;
             }
+
             OptimizeMap(true, MapBehaviour.Instance.infectedOverlay);
         }
+
         void OnDisable()
         {
             if (mapIcons != null)
@@ -643,25 +648,27 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             {
                 cameraDotRenderer.enabled = false;
             }
-            if (camera)
+            if (camera.AsBoolFast())
             {
                 camera.enabled = false;
             }
             OptimizeMap(false, MapBehaviour.Instance.infectedOverlay);
         }
+
         private void OnDestroy()
         {
-            if (camera)
+            if (camera.AsBoolFast())
             {
                 UnityEngine.Object.Destroy(camera.gameObject);
             }
         }
+
         void InitializeIcons(MapBehaviour __instance, PlayerControl pc = null!)
         {
             List<PlayerControl> list = new List<PlayerControl>();
             if (pc == null)
             {
-                mapIcons = new Dictionary<byte, SpriteRenderer>();
+                mapIcons = [];
                 foreach (PlayerControl playerControl in PlayerControl.AllPlayerControls)
                 {
                     list.Add(playerControl);
@@ -678,6 +685,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                 PlayerMaterial.SetColors(playerControl2.ToNebulaPlayer().CurrentOutfit.outfit.ColorId, mapIcons[playerId]);
             }
         }
+
         public void Start()
         {
             if (mapIcons == null)
@@ -720,9 +728,9 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                         OnEnable();
                     }
                 }
-                foreach (PlayerControl playerControl in PlayerControl.AllPlayerControls)
+                foreach (PlayerControl playerControl in PlayerControl.AllPlayerControls.GetFastEnumerator())
                 {
-                    if (playerControl != null)
+                    if (playerControl.AsBoolFast())
                     {
                         byte playerId = playerControl.PlayerId;
                         if (mapIcons!.ContainsKey(playerId))
@@ -789,9 +797,18 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
 
             CheckArrowRegister();
 
-            var arrowAbility = new DeadbodyArrowAbility();
-            arrowAbility.RegisterSelf();
-            arrowAbility.Bind(this);
+            var arrowAbility = new DeadbodyArrowAbility().Register(this);
+
+            GameOperatorManager.Instance?.Subscribe<GameHudUpdateEvent>(ev =>
+            {
+                if (!crawlerEngineer.MyPlayer.IsSameSideOf(myPlayer))
+                {
+                    this.Release();
+                }
+
+                CheckArrowRegister();
+                arrowAbility.ShowArrow &= myPlayer.IsAlive;
+            }, this);
         }
 
         void CheckArrowRegister()
@@ -844,7 +861,7 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
                         mapLayer.camera.Destroy();
                     }
 
-                    mapLayer.SetUp(p => true, null!, false, null!);
+                    mapLayer.SetUp(p => true, null!, false, crawlerEngineer);
                 }
 
                 mapLayer!.gameObject.SetActive(true);
@@ -852,16 +869,6 @@ public class CrawlerEngineer : DefinedSingleAbilityRoleTemplate<CrawlerEngineer.
             }
 
             if (mapLayer.AsBoolFast()) mapLayer!.gameObject.SetActive(false);
-        }
-
-        void OnUpdate(GameHudUpdateEvent ev)
-        {
-            if (!myPlayer.IsSameSideOf(crawlerEngineer.MyPlayer))
-            {
-                this.Release();
-            }
-
-            CheckArrowRegister();
         }
 
         [OnlyMyPlayer]

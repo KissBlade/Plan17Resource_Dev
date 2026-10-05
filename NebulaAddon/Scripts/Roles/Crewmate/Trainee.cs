@@ -78,7 +78,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
             if ((AmOwner || canSeeAllInfo) && MyExtendedRole != null && ExtendedRoleInstance != null)
             {
                 var prefix = isShort ? $"{ExtendedRoleInstance.GetRoleIconTagSmall()}{ExtendedRoleInstance.DisplayColoredShort}" : ExtendedRoleInstance.DisplayColoredName;
-                return $"{prefix} {lastRoleName}";
+                return $"{prefix} {(Aide.MyRole as DefinedAssignable).DisplayColoredName}";
             }
             return lastRoleName;
         }
