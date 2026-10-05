@@ -118,6 +118,7 @@ internal class MusicPlayer : MonoBehaviour
                 $"MeidaPlayer Load failed: {path}, " +
                 $"BASS: {Bass.LastError}, ex: {exText}");
         }
+        GameOperatorManager.Instance.RegisterOnReleased(() => Stop(), new GameObjectLifespan(AmongUsLLImpl.LobbyInstance.gameObject));
     }
 
     public void SetVolume(double volume)
@@ -129,7 +130,6 @@ internal class MusicPlayer : MonoBehaviour
     {
         _player?.Dispose();
         _player = null;
-
         if (_initialized)
         {
             Bass.Free();
@@ -321,7 +321,7 @@ public static class AudioLoader
     #region WAV
     private static void PlayMusic(string path,Action? onsuccess)
     {
-        MusicPlayer.Instance.PlayMusic(path, SoundManager.MusicVolume, true, onsuccess);
+        MusicPlayer.Instance.PlayMusic(path, 1, true, onsuccess);
     }
     private static async System.Threading.Tasks.Task<AudioClip> LoadWavAsync(string path)
     {
