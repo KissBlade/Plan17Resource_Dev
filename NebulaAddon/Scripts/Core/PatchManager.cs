@@ -8682,8 +8682,23 @@ public class PatchManager
                 {
                     smIns.StopNamedSound("MapTheme");
                 }
+                ParsedLyrics lyrics = new();
+                string directory = Path.GetDirectoryName(filePath);
+                string lrcName = Path.GetFileNameWithoutExtension(filePath);
+                var lyricpath = Path.Combine(directory, lrcName + ".lrc");
+                if (File.Exists(lyricpath))
+                {
+                    lyrics = ParseLrc(Path.GetFileName(filePath), File.ReadAllText(lyricpath));
+                    if (lyrics.Lines.Count > 0)
+                    {
+                        CoPushLyrics(MusicPlayer.Instance._player, lyrics);
+                    }
+                }
+                else if (lifespan != null)
+                {
                     lifespan.Release();
                     lifespan = null;
+                }
             });
             /*
             AudioClip audioClip = null;
