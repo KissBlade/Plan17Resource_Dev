@@ -150,12 +150,12 @@ internal class MusicPlayer : MonoBehaviour
     private void Stop()
     {
         _player?.Dispose();
-        _player = null;
+        /*_player = null;
         if (_initialized)
         {
             Bass.Free();
             _initialized = false;
-        }
+        }*/
     }
 }
 //code by slok7565
