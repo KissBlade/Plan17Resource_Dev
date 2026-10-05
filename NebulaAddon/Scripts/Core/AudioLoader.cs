@@ -75,7 +75,7 @@ internal class MusicPlayer : MonoBehaviour
         }
     }
 
-    public IEnumerator CoPlayMusic(string path, double volume = 1f, bool loop = true, Action? onSuccess = null)
+    public System.Collections.IEnumerator CoPlayMusic(string path, double volume = 1f, bool loop = true, Action? onSuccess = null)
     {
         if (!_initialized || _player == null)
         {
