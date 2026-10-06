@@ -1,11 +1,12 @@
-using Plana.Core;
+using NAudio.CoreAudioApi;
 using Nebula.Roles.Assignment;
-using Nebula.Roles.Impostor;
-using Plana.Roles.Modifier;
-using Plana.Roles.Crewmate;
 using Nebula.Roles.Complex;
-using Vector3 = UnityEngine.Vector3;
+using Nebula.Roles.Impostor;
+using Plana.Core;
+using Plana.Roles.Crewmate;
+using Plana.Roles.Modifier;
 using Virial.Helpers;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Plana.Roles.Impostor;
 
@@ -107,19 +108,24 @@ public class Dreamweaver : DefinedRoleTemplate, DefinedRole, HasCitation, IAssig
         }
         MetaScreen SelectRoleScreen;
         List<TrackingArrowAbility> tracking = new List<TrackingArrowAbility>();
-
-        void SetRole(DefinedRole role)
+        [NebulaRPC]
+        void PessimistSetRole(GamePlayer player,DefinedRole role)
         {
             if (MyPlayer.TryGetRole<Pessimist.Instance>(out var instance))
             {
                 var extendedRoleInstance = role.CreateInstance(MyPlayer, role.DefaultAssignableArguments ?? []);
                 extendedRoleInstance.OnActivated();
                 extendedRoleInstance.Register(this);
-
-                Pessimist.RpcClearMyExtendedRoleInfo.Invoke(instance.MyPlayer);
-
+                Pessimist.RpcClearMyExtendedRoleInfo.LocalInvoke(instance.MyPlayer);
                 instance.MyExtendedRole = role;
                 instance.ExtendedRoleInstance = extendedRoleInstance;
+            }
+        }
+        void SetRole(DefinedRole role)
+        {
+            if (MyPlayer.TryGetRole<Pessimist.Instance>(out var instance))
+            {
+                PessimistSetRole(MyPlayer, role);
             }
             else
                 MyPlayer.SetRole(role, role.DefaultAssignableArguments);

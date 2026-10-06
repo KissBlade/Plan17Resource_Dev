@@ -65,6 +65,22 @@ public class Insomniacs : DefinedRoleTemplate, HasCitation, DefinedRole, Defined
             }
         }
         RoleTaskType RuntimeRole.TaskType => RoleTaskType.NoTask;
+        public static bool CheckAliveDreamweaver(GamePlayer p)
+        {
+            if (p.IsDead)
+            {
+                return false;
+            }
+            if (p.Role is Dreamweaver.Instance || p.Modifiers.Any(m => m is DreamweaverModifier.Instance))
+            {
+                return true;
+            }
+            if (p.Role.AssignableOnHelp.Any(p=>p is Dreamweaver||p is DreamweaverModifier))
+            {
+                return true;
+            }
+            return false;
+        }
         void RuntimeAssignable.OnActivated()
         {
             if (AmOwner)
@@ -126,7 +142,7 @@ public class Insomniacs : DefinedRoleTemplate, HasCitation, DefinedRole, Defined
                     MyPlayer.SetRole(nextRole, nextArgs);
                     if (instance != null)
                     {
-                        List<GamePlayer> list = instance.AllPlayerInfo.Where((GamePlayer p) => !p.IsDead && (p.Role is Dreamweaver.Instance || p.Modifiers.Any(m => m is DreamweaverModifier.Instance))).ToList();
+                        List<GamePlayer> list = instance.AllPlayerInfo.Where(CheckAliveDreamweaver).ToList();
                         if (list.Count == 0)
                         {
                             return;
@@ -178,7 +194,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
         private void OnMeetingEnd(TaskPhaseRestartEvent ev)
         {
             NebulaGameManager? instance = NebulaGameManager.Instance;
-            List<GamePlayer> list = instance.AllPlayerInfo.Where((GamePlayer p) => !p.IsDead && (p.Role is Dreamweaver.Instance || p.Modifiers.Any(m => m is DreamweaverModifier.Instance))).ToList();
+            List<GamePlayer> list = instance.AllPlayerInfo.Where(Insomniacs.Instance.CheckAliveDreamweaver).ToList();
             if (list.Count <= 0 && !MyPlayer.IsDead)
             {
                 MyPlayer.RemoveModifier(MyRole);
@@ -187,7 +203,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
         [OnlyMyPlayer]
         void OnCheckExtraWin(PlayerCheckExtraWinEvent ev)
         {
-            List<GamePlayer> list = NebulaGameManager.Instance.AllPlayerInfo.Where((GamePlayer p) => p.Role is Dreamweaver.Instance || p.Modifiers.Any(m => m is DreamweaverModifier.Instance)).ToList();
+            List<GamePlayer> list = NebulaGameManager.Instance.AllPlayerInfo.Where(Insomniacs.Instance.CheckAliveDreamweaver).ToList();
             if (list.Any(p => ev.WinnersMask.Test(p)))
             {
                 ev.SetWin(true);
@@ -201,7 +217,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
         [Local]
         private void DecorateNameColor(PlayerDecorateNameEvent ev)
         {
-            if (!ev.Player.AmOwner && (ev.Player.Role is Dreamweaver.Instance || ev.Player.TryGetModifier<DreamweaverModifier.Instance>(out var m)))
+            if (!ev.Player.AmOwner && Insomniacs.Instance.CheckAliveDreamweaver(ev.Player))
             {
                 ev.Color = new Virial.Color(233, 96, 174);
             }
@@ -245,7 +261,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
         [OnlyMyPlayer]
         void OnCheckKill(PlayerCheckCanKillLocalEvent ev)
         {
-            if (ev.Target.Role is Dreamweaver.Instance || ev.Target.TryGetModifier<DreamweaverModifier.Instance>(out var dm))
+            if (Insomniacs.Instance.CheckAliveDreamweaver(ev.Target))
             {
                 ev.SetAsCannotKillBasically();
             }
@@ -331,7 +347,7 @@ public class InsomniacsModifier : DefinedModifierTemplate, DefinedModifier, Defi
                     killButton.SetLabelType(ModAbilityButton.LabelType.Impostor);
                     NebulaAPI.CurrentGame?.KillButtonLikeHandler.Register(killButton.GetKillButtonLike());
                 }
-                List<GamePlayer> list = NebulaGameManager.Instance.AllPlayerInfo.Where((GamePlayer p) => !p.IsDead && (p.Role is Dreamweaver.Instance || p.Modifiers.Any(m => m is DreamweaverModifier.Instance))).ToList();
+                List<GamePlayer> list = NebulaGameManager.Instance.AllPlayerInfo.Where(Insomniacs.Instance.CheckAliveDreamweaver).ToList();
                 if (list.Count == 0)
                 {
                     return;

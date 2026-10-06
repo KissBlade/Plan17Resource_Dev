@@ -66,7 +66,10 @@ public class Pessimist : DefinedRoleTemplate, DefinedRole, HasCitation, IAssigna
                 ExtendedRoleInstance.OnActivated();
                 ExtendedRoleInstance.Register(this);
 
-                ev.Dead.SetRole(Nebula.Roles.Impostor.Impostor.MyRole);
+                if (ev.Dead.AmOwner)
+                {
+                    ev.Dead.SetRole(Nebula.Roles.Impostor.Impostor.MyRole);
+                }
                 if (sidekickButton==null)
                 {
                     return;
