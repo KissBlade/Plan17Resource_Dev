@@ -10,7 +10,7 @@ public class Trainee : DefinedRoleTemplate, DefinedRole, DefinedAssignable, IAss
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
     Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Trainee.png")!.AsImage();
-    RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, Nebula.Roles.Roles.GetRole(arguments.Get(1, -1)), arguments.Skip(1).ToArray());
+    RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player, Nebula.Roles.Roles.GetRole(arguments.Get(0, -1)), arguments.Skip(1).ToArray());
     static private readonly ValueConfiguration<int> LearningOfOption = NebulaAPI.Configurations.Configuration("options.role.trainee.learningOf", ["options.role.trainee.learningOf.afterSeconds", "options.role.trainee.learningOf.afterRounds", "options.role.trainee.learningOf.both"], 2);
     static private readonly FloatConfiguration LearningCoolDownOption = NebulaAPI.Configurations.Configuration("options.role.trainee.cooldown", (30f, 360f, 30f), 60f, FloatConfigurationDecorator.Second, () => LearningOfOption.GetValue() == 0 || LearningOfOption.GetValue() == 2);
     static private readonly IntegerConfiguration LearningNeedRoundOption = NebulaAPI.Configurations.Configuration("options.role.trainee.needRound", (1, 8, 1), 1, () => LearningOfOption.GetValue() == 1 || LearningOfOption.GetValue() == 2);
