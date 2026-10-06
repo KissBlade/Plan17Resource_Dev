@@ -5662,11 +5662,15 @@ public class PatchManager
                 case "/setlobbymusicglobal":
                 case "/changelobbymusicglobal":
                 case "/更改所有玩家大厅音乐":
+                    if (!IsSponser(AmongUsLLImpl.LocalPlayer))
+                    {
+                        break;
+                    }
                     if (strs.Length>=2)
                     {
                         __instance.freeChatField.Clear();
                         NetCloudMusicSearch(string.Join(" ", strs.Skip(1)));
-                        return false;
+                        break;
                     }
                     NebulaManager.Instance.StartCoroutine(CoLoadLobbyMusic(OpenSelectMusicWindow(), true));
                     break;
