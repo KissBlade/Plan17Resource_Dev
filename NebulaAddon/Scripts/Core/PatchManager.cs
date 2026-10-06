@@ -16,6 +16,7 @@ using NAudio.CoreAudioApi;
 using Nebula.Bridge;
 using Nebula.Listeners;
 using Nebula.Map;
+using Nebula.Modifications.Map;
 using Nebula.Modules;
 using Nebula.Modules.Cosmetics;
 using Nebula.Modules.GUIWidget;
@@ -27,7 +28,6 @@ using Nebula.Roles.Impostor;
 using Nebula.Roles.Neutral;
 using Nebula.Roles.Perks;
 using Nebula.Utilities;
-using Nebula.Modifications.Map;
 using Nebula.VoiceChat;
 using Plana.Roles.Crewmate;
 using Plana.Roles.Impostor;
@@ -38,6 +38,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml;
+using Plana.Core.CloudPlayer;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Networking;
@@ -51,6 +52,7 @@ using Virial.Events.Game.Minimap;
 using Virial.Game;
 using Virial.Helpers;
 using Virial.Runtime;
+using static FilterPopUp.FilterInfoUI;
 using static Il2CppSystem.Globalization.CultureInfo;
 using static UnityEngine.GraphicsBuffer;
 using BindingFlags = System.Reflection.BindingFlags;
@@ -1147,14 +1149,13 @@ public class PatchManager
                     if (time <= 0f)
                     {
                         time = 5f;
-                        return;
-                    }
-                    foreach (var p in PlayerControl.AllPlayerControls)
-                    {
-                        var list = BlackListReadWriter.ReadBlacklist();
-                        if (list.Contains(p.FriendCode))
+                        foreach (var p in PlayerControl.AllPlayerControls)
                         {
-                            AmongUsLLImpl.AmongUsClientInstance.KickPlayer(p.Data.ClientId, true);
+                            var list = BlackListReadWriter.ReadBlacklist();
+                            if (list.Contains(p.FriendCode))
+                            {
+                                AmongUsLLImpl.AmongUsClientInstance.KickPlayer(p.Data.ClientId, true);
+                            }
                         }
                     }
                 }, NebulaAPI.CurrentGame);
@@ -2486,7 +2487,7 @@ public class PatchManager
             {
                 //CurrentChatId = 0;
                 //currentIndex = 0;
-                firstDeadName = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => p.IsDead).MinBy(p => p.DeathTime)?.PlayerName ?? "";
+                firstDeadName = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => p.IsDead).MinBy(p => p.DeathTime.HasValue ? (float)p.DeathTime : 114514f)?.PlayerName ?? "";
                 ChatLogSystem.ExportNow();
             }, __instance);
             VitalsMinigame OpenSpecialVitalsMinigame()
@@ -5661,12 +5662,26 @@ public class PatchManager
                 case "/setlobbymusicglobal":
                 case "/changelobbymusicglobal":
                 case "/更改所有玩家大厅音乐":
-                    if (!IsSponser(AmongUsLLImpl.LocalPlayer))
+                    if (strs.Length>=2)
                     {
-                        break;
+                        __instance.freeChatField.Clear();
+                        NetCloudMusicSearch(string.Join(" ", strs.Skip(1)));
+                        return false;
                     }
                     NebulaManager.Instance.StartCoroutine(CoLoadLobbyMusic(OpenSelectMusicWindow(), true));
                     break;
+                case "/play":
+                    __instance.freeChatField.Clear();
+                    if (!int.TryParse(strs.Length >= 2 ? strs[1] : string.Empty, out int pick)
+                        || pick < 1 || pick > netcloudSongs.Count)
+                    {
+                        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "序号无效，先用 /setlobbymusicglobal 歌名 搜索。");
+                        return false;
+                    }
+                    var picked = netcloudSongs[pick - 1];
+                    AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, $"正在播放：{picked.Display}");
+                    NebulaManager.Instance.StartCoroutine(CoFetch(picked.Id).WrapToIl2Cpp());
+                    return false;
                 case "/changelobbymusic":
                 case "/更改大厅音乐":
                 case "/setlobbymusic":
@@ -8663,6 +8678,92 @@ public class PatchManager
             PDebug.Log(e);
         }
         return string.Empty;
+    }
+    static bool fetching;
+    static bool searching;
+    static List<NeteaseClient.Song> netcloudSongs = new();
+    [NebulaRPC]
+    private static void Fetch(string songId,string sendname)
+    {
+        if (fetching) return;
+        var host = AmongUsLLImpl.HudManagerInstance;
+        if (host == null) return;
+        bool confirm = false;
+        MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform, () => confirm = true, () => confirm =false, $"玩家{sendname}转发了云音乐{songId}\"\n要接收并播放吗？");
+        if (!confirm)
+        {
+            return;
+        }
+        fetching = true;
+        host.StartCoroutine(CoFetch(songId).WrapToIl2Cpp());
+    }
+    private static IEnumerator CoFetch(string songId)
+    {
+        string url = null;
+        string error = null;
+        yield return NeteaseClient.CoGetSongUrl(songId, value => url = value, err => error = err);
+
+        if (url == null)
+        {
+            fetching = false;
+            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "无效的链接。");
+            yield break;
+        }
+
+        byte[] audio = null;
+        yield return NeteaseClient.CoDownloadAudio(url, data => audio = data, err => error = err);
+
+        fetching = false;
+
+        if (audio == null || audio.Length == 0)
+        {
+            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "下载音频失败。");
+            yield break;
+        }
+        var filePath = LobbyMusicPath + "/" + songId + ".mp3";
+        if (!Directory.Exists(LobbyMusicPath)) Directory.CreateDirectory(LobbyMusicPath);
+        File.WriteAllBytes(filePath,audio);
+        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "音频加载中。");
+        yield return CoLoadLobbyMusic(filePath);
+        yield break;
+    }
+    
+    public static void CoShareNetCloudMusicSong(string songId)
+    {
+        Fetch(songId,AmongUsLLImpl.LocalPlayer.name);
+    }
+    static void NetCloudMusicSearch(string keyword)
+    {
+        if (searching) return;
+        var host = AmongUsLLImpl.HudManagerInstance;
+        if (host == null) return;
+        searching = true;
+        host.StartCoroutine(CoNetCloudMusicSearch(keyword).WrapToIl2Cpp());
+    }
+    static IEnumerator CoNetCloudMusicSearch(string keyword)
+    {
+        List<NeteaseClient.Song> songs = null;
+        string error = null;
+        yield return NeteaseClient.CoSearch(keyword, value => songs = value, err => error = err);
+
+        searching = false;
+
+        if (songs == null || songs.Count == 0)
+        {
+            AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, error ?? "没有搜到结果。");
+            yield break;
+        }
+
+        netcloudSongs = songs;
+        var say = AmongUsLLImpl.HudManagerBridge.Chat;
+        say.AddChat(AmongUsLLImpl.LocalPlayer, $"「{keyword}」找到 {songs.Count} 首：");
+        for (int i = 0; i < songs.Count; i++)
+        {
+            var song = songs[i];
+            var vip = song.RequiresVip ? " <color=#FF4D4D>[VIP]</color>" : string.Empty;
+            say.AddChat(AmongUsLLImpl.LocalPlayer, $"<color=#FFC864>[{i + 1}]</color> {song.Display}{vip}");
+        }
+        say.AddChat(AmongUsLLImpl.LocalPlayer, "用 /play 序号 播放");
     }
     public static System.Collections.IEnumerator CoLoadLobbyMusic(string filePath,bool share=false)
     {
