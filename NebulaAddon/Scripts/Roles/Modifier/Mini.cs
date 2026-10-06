@@ -102,14 +102,10 @@ public class PMini : DefinedAllocatableModifierTemplate, HasCitation, DefinedAll
             }
             if (IsMini())
             {
-                if (ev.EventDetail == EventDetail.Bubbled)
+                if (ev.PlayerState != PlayerState.Bubbled && ev.PlayerState != PlayerState.Crushed)
                 {
-                    NebulaManager.Instance.StartDelayAction(2f, () =>
-                    {
-                        PatchManager.SetVisible.Invoke(MyPlayer);
-                    });
+                    ev.Result = KillResult.Rejected;
                 }
-                ev.Result = KillResult.Rejected;
             }
         }
         void OnCheckKill(PlayerCheckCanKillLocalEvent ev)
