@@ -6,6 +6,7 @@ using AmongUs.Data.Player;
 using AmongUs.GameOptions;
 using Cpp2IL.Core.Extensions;
 using HarmonyLib;
+using System.Text.Json;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
@@ -8711,6 +8712,63 @@ public class PatchManager
     static bool fetching;
     static bool searching;
     static List<NeteaseClient.Song> netcloudSongs = new();
+    public static bool TryExtract(string json,bool only1language, out string lrc, out string tlyric)
+    {
+        lrc = null;
+        tlyric = null;
+
+        if (string.IsNullOrWhiteSpace(json))
+            return false;
+
+        try
+        {
+            int success = 0;
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // 检查 code，非 200 视为失败（可选）
+            if (root.TryGetProperty("code", out var code) &&
+                code.ValueKind == JsonValueKind.Number &&
+                code.GetInt32() != 200)
+            {
+                return false;
+            }
+
+            // 提取 lrc.lyric
+            if (root.TryGetProperty("lrc", out var lrcObj) &&
+                lrcObj.ValueKind == JsonValueKind.Object &&
+                lrcObj.TryGetProperty("lyric", out var lrcText) &&
+                lrcText.ValueKind == JsonValueKind.String)
+            {
+                lrc = lrcText.GetString();
+                success++;
+                if (only1language)
+                {
+                    return true;
+                }
+            }
+
+            // 提取 tlyric.lyric
+            if (root.TryGetProperty("tlyric", out var tlyricObj) &&
+                tlyricObj.ValueKind == JsonValueKind.Object &&
+                tlyricObj.TryGetProperty("lyric", out var tlyricText) &&
+                tlyricText.ValueKind == JsonValueKind.String)
+            {
+                tlyric = tlyricText.GetString();
+                success++;
+                if (only1language)
+                {
+                    return true;
+                }    
+            }
+
+            return success==2;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
     [NebulaRPC]
     public static void Fetch(string songId,string sendname,string songName)
     {
@@ -8746,39 +8804,60 @@ public class PatchManager
             yield break;
         }
         var filePath = LobbyMusicPath + "/" + songName + ".mp3";
+
         if (!Directory.Exists(LobbyMusicPath)) Directory.CreateDirectory(LobbyMusicPath);
         File.WriteAllBytes(filePath,audio);
-        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "音频加载中。");
+        //AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "音频加载中。");
         var lrcPath = LobbyMusicPath + "/" + songName + ".lrc";
-        var tempPath = lrcPath + ".temp";
-        var tempcnPath = lrcPath + "cn.temp";
         int successnum = 0;
-        yield return NeteaseClient.CoGetLyrics(songId, false, (s) =>
+        string lrc = string.Empty, tlyric = string.Empty;
+        yield return NeteaseClient.CoGetLyrics(songId, 2, (s) =>
         {
-            File.WriteAllText(tempPath, s);
-            successnum++;
+            if (TryExtract(s, false, out lrc, out tlyric))
+            {
+                File.WriteAllText(lrcPath, MergeLrc(lrc, tlyric));
+                successnum++;
+            }
         }, (e) => PDebug.Log(e));
-        yield return NeteaseClient.CoGetLyrics(songId, true, (s) =>
+        if (successnum == 0)
         {
-            File.WriteAllText(tempcnPath, s);
-            successnum++;
-        }, (e) => PDebug.Log(e));
-        if (successnum == 2)
-        {
-            MergeLrc(tempPath, tempcnPath, lrcPath);
+            yield return NeteaseClient.CoGetLyrics(songId, 1, (s) =>
+            {
+                if (TryExtract(s, true, out lrc, out tlyric))
+                {
+                    File.WriteAllText(lrcPath, tlyric);
+                    successnum++;
+                }
+            }, (e) => PDebug.Log(e));
         }
-        else
+        if (successnum == 0)
         {
-            if (File.Exists(tempPath))
+            yield return NeteaseClient.CoGetLyrics(songId, 0, (s) =>
             {
-                File.Move(tempPath, lrcPath);
-            }
-            else if (File.Exists(tempcnPath))
-            {
-                File.Move(tempcnPath, lrcPath);
-            }
+                if (TryExtract(s, true, out lrc, out tlyric))
+                {
+                    File.WriteAllText(lrcPath, lrc);
+                    successnum++;
+                }
+            }, (e) => PDebug.Log(e));
         }
         yield return CoLoadLobbyMusic(filePath);
+        /*if (File.Exists(tempPath))
+        {
+            File.Delete(tempPath);
+        }
+        if (File.Exists(tempcnPath))
+        {
+            File.Delete(tempcnPath);
+        }
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+        if (File.Exists(lrcPath))
+        {
+            File.Delete(lrcPath);
+        }*/
         yield break;
     }
     static IEnumerator CoGetMusicInfo(string songId)
@@ -8847,6 +8926,7 @@ public class PatchManager
                 yield return UploadAudioClip(filePath, Guid.NewGuid().ToString()/*ComputeConstantHash().ToString()*/);
                 yield break;
             }
+            bool loaded = false;
             LoadAudioV2(filePath, () =>
             {
                 var smIns = AmongUsLLImpl.SoundManagerInstance;
@@ -8871,7 +8951,14 @@ public class PatchManager
                     lifespan.Release();
                     lifespan = null;
                 }
+                loaded = true;
             });
+            float time = 0f;
+            while(!loaded&&time<=30f)
+            {
+                time+= Time.deltaTime;
+                yield return null;
+            }
             /*
             AudioClip audioClip = null;
             var task = LoadAudioWithFallbacksAsync(filePath);
@@ -9243,6 +9330,8 @@ public class PatchManager
             if (request.result == UnityWebRequest.Result.Success)
             {
                 PDebug.Log($"Upload Success: {request.downloadHandler.text}");
+                PDebug.Log("ShareAudioClip");
+                ShareAudioClipDownloadInfo(AmongUsLLImpl.LocalPlayer.PlayerId, filePath, fileName, AllFileName, lrcAllName);
             }
             else
             {
@@ -9250,8 +9339,6 @@ public class PatchManager
             }
             request.Dispose();
         }
-        PDebug.Log("ShareAudioClip");
-        ShareAudioClipDownloadInfo(AmongUsLLImpl.LocalPlayer.PlayerId, filePath, fileName, AllFileName, lrcAllName);
     }
     [NebulaRPC]
     public static void ShareAudioClipDownloadInfo(byte senderPlayer, string filepath, string fileName, string downloadpath,string lrcDownloadPath)
@@ -9369,7 +9456,7 @@ public class PatchManager
         File.Delete(path);
     }
     static FunctionalDebugTextContent lyricTextContext;
-    static FlexibleLifespan lifespan;
+    public static FlexibleLifespan lifespan;
     public static void CoPushLyrics(ManagedBass.MediaPlayer player, ParsedLyrics lyrics)
     {
         if (lifespan != null)
@@ -9424,16 +9511,17 @@ public class PatchManager
     }
     private static readonly Regex TagRegex = new Regex(@"^(\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\])", RegexOptions.Compiled);
 
-    public static void MergeLrc(string originalPath, string translationPath,string outputPath, string translationPrefix = "")
+    public static string MergeLrc(string originalLrc,string translationLrc,string translationPrefix = "")
     {
-        var original = File.ReadAllLines(originalPath);
-        var translation = File.ReadAllLines(translationPath);
+        var original = SplitLines(originalLrc);
+        var translation = SplitLines(translationLrc);
         var originalMap = GroupByTag(original);
         var translationMap = GroupByTag(translation);
         var sb = new StringBuilder();
         foreach (var line in original)
         {
-            if (!TagRegex.IsMatch(line.Trim()) && line.Trim().Length > 0)
+            var t = line.Trim();
+            if (t.Length > 0 && !TagRegex.IsMatch(t))
                 sb.AppendLine(line);
         }
         var orderedTags = new List<string>();
@@ -9451,7 +9539,13 @@ public class PatchManager
                 foreach (var t in tLines)
                     sb.AppendLine(tag + translationPrefix + t);
         }
-        File.WriteAllText(outputPath, sb.ToString(), new UTF8Encoding(false));
+        return sb.ToString();
+    }
+    private static string[] SplitLines(string content)
+    {
+        if (string.IsNullOrEmpty(content))
+            return Array.Empty<string>();
+        return content.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n', StringSplitOptions.RemoveEmptyEntries);
     }
     private static Dictionary<string, List<string>> GroupByTag(string[] lines)
     {

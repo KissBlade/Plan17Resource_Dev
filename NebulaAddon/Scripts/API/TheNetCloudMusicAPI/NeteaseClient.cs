@@ -270,12 +270,12 @@ namespace Plana.Core.CloudPlayer
 
             onDone?.Invoke(data);
         }
-        public static IEnumerator CoGetLyrics(string songId,bool isTranslate, Action<string> onSuccess, Action<string> onError)
+        public static IEnumerator CoGetLyrics(string songId,int translateMode, Action<string> onSuccess, Action<string> onError)
         {
             PDebug.Log("正在获取" + songId + "的歌词信息。");
             string lyrics = null;
             string error = null;
-            yield return Http.CoGetString(Host + "/api/song/lyric?os=pc&" + Escape(songId)+ "&"+(isTranslate?"tv":"lv")+"-1", (body, err) => { lyrics= body; error = err; });
+            yield return Http.CoGetString(Host + "/api/song/lyric?os=pc&id=" + Escape(songId)+ "&"+(translateMode==2?"tv=-1&lv":translateMode==1?"tv":"lv")+"=-1", (body, err) => { lyrics= body; error = err; });
 
             if (error != null)
             {

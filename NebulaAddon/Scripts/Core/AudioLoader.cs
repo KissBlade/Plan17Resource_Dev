@@ -150,6 +150,8 @@ internal class MusicPlayer : MonoBehaviour
     private void Stop()
     {
         _player?.Dispose();
+        PatchManager.lifespan?.Release();
+        PatchManager.lifespan = null;
         /*_player = null;
         if (_initialized)
         {
