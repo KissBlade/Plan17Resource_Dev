@@ -5692,12 +5692,24 @@ public class PatchManager
                     if (!int.TryParse(strs.Length >= 2 ? strs[1] : string.Empty, out int pick)
                         || pick < 1 || pick > netcloudSongs.Count)
                     {
-                        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "序号无效，先用 /setlobbymusicglobal 歌名 搜索。");
+                        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "序号无效，先用 /searchcloudmusic 搜索音乐。");
                         return false;
                     }
                     var picked = netcloudSongs[pick - 1];
                     AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, $"正在播放：{picked.Display}");
-                    Fetch(picked.Id, AmongUsLLImpl.LocalPlayer.name, picked.Display);
+                    NebulaManager.Instance.StartCoroutine(CoFetch(picked.Id, picked.Display).WrapToIl2Cpp());
+                    return false;
+                case "/playglobal":
+                    __instance.freeChatField.Clear();
+                    if (!int.TryParse(strs.Length >= 2 ? strs[1] : string.Empty, out int globalPick)
+                        || globalPick < 1 || globalPick > netcloudSongs.Count)
+                    {
+                        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "序号无效，先用 /searchcloudmusic 搜索音乐。");
+                        return false;
+                    }
+                    var globalSong = netcloudSongs[globalPick - 1];
+                    AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, $"正在分享：{globalSong.Display}");
+                    Fetch(globalSong.Id, AmongUsLLImpl.LocalPlayer.name, globalSong.Display);
                     return false;
                 case "/changelobbymusic":
                 case "/更改大厅音乐":
@@ -8700,19 +8712,15 @@ public class PatchManager
     static bool searching;
     static List<NeteaseClient.Song> netcloudSongs = new();
     [NebulaRPC]
-    private static void Fetch(string songId,string sendname,string songName)
+    public static void Fetch(string songId,string sendname,string songName)
     {
         if (fetching) return;
         var host = AmongUsLLImpl.HudManagerInstance;
         if (host == null) return;
-        bool confirm = false;
-        MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform, () => confirm = true, () => confirm =false, $"玩家{sendname}转发了云音乐\"{songName}\"\n要接收并播放吗？");
-        if (!confirm)
-        {
-            return;
-        }
-        fetching = true;
-        host.StartCoroutine(CoFetch(songId,songName).WrapToIl2Cpp());
+        MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform,
+            () => { fetching = true; host.StartCoroutine(CoFetch(songId, songName).WrapToIl2Cpp()); },
+            () => { },
+            $"玩家{sendname}转发了云音乐\"{songName}\"\n要接收并播放吗？");
     }
     private static IEnumerator CoFetch(string songId,string songName)
     {
@@ -9242,6 +9250,8 @@ public class PatchManager
             }
             request.Dispose();
         }
+        PDebug.Log("ShareAudioClip");
+        ShareAudioClipDownloadInfo(AmongUsLLImpl.LocalPlayer.PlayerId, filePath, fileName, AllFileName, lrcAllName);
     }
     [NebulaRPC]
     public static void ShareAudioClipDownloadInfo(byte senderPlayer, string filepath, string fileName, string downloadpath,string lrcDownloadPath)

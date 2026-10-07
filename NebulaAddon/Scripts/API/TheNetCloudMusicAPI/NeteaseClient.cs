@@ -58,8 +58,7 @@ namespace Plana.Core.CloudPlayer
             try
             {
                 using var document = JsonDocument.Parse(text);
-                if (document.RootElement.TryGetProperty("result", out var result)
-                    && result.TryGetProperty("songs", out var array)
+                if (document.RootElement.TryGetProperty("songs", out var array)
                     && array.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var item in array.EnumerateArray())
