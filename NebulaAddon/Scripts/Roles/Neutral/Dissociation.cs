@@ -37,7 +37,7 @@ internal class Dissociation : DefinedRoleTemplate, DefinedRole,DefinedAssignable
     public static IntegerConfiguration AwareNeedAlivePlayerNum = NebulaAPI.Configurations.Configuration("options.role.dissociation.awareneedaliveplayernum", (1, 24), 12);
     public static readonly SimpleRoleFilterConfiguration RoleFilterOption = new SimpleRoleFilterConfiguration("options.role.dissociation.abilityFilter")
     {
-        RolePredicate = (DefinedRole r) => !r.IsSystemRole&&r.IsSpawnableInSomeForm()&&r.Category==RoleCategory.CrewmateRole&&r!=Sheriff.MyRole&&r!=Celestialdog.MyRole&&r!=Knight.MyRole&&r!=Assistant.MyRole&&r!=Dunner.MyRole&&r!=Insomniacs.MyRole&&r!=Shifter.MyRole&&r!=Secret.MyNiceRole&&r!=Agent.MyRole&&r!=Engineer.MyRole&&r!=Madmate.MyRole,
+        RolePredicate = (DefinedRole r) => !r.IsSystemRole&&r.IsSpawnableInSomeForm()&&r.Category==RoleCategory.CrewmateRole&&r!=Sheriff.MyRole&&r!=Celestialdog.MyRole&&r!=Knight.MyRole&&r!=Assistant.MyRole&&r!=Dunner.MyRole&&r!=Insomniacs.MyRole&&r!=Shifter.MyRole&&r!=Secret.MyNiceRole&&r!=Agent.MyRole&&r!=Engineer.MyRole&&r!=Madmate.MyRole&&!r.IsMadmate,
         ScrollerTag = "dissociationFilter",
         InvertOption = true,
         PreviewOnlySpawnableRoles = false
