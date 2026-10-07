@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json;
+using static AmongUs.QuickChat.QuickChatPhraseBuilderResult;
 
 namespace Plana.Core.CloudPlayer
 {
@@ -16,7 +17,7 @@ namespace Plana.Core.CloudPlayer
             public string Artist;
             public bool RequiresVip;
 
-            public string Display => Artist.Length > 0 ? Name + " - " + Artist : Name;
+            public string Display => Artist?.Length > 0 ? Name + " - " + Artist : Name;
         }
 
         public static string ApiBase { get; private set; } = string.Empty;
@@ -36,7 +37,50 @@ namespace Plana.Core.CloudPlayer
             if (!trimmed.StartsWith("http://") && !trimmed.StartsWith("https://")) trimmed = "http://" + trimmed;
             ApiBase = trimmed.TrimEnd('/');
         }
+        public static IEnumerator CoGetMusicInfo(string songId, Action<Song> onDone, Action<string> onError)
+        {
+            string url = "http://music.163.com/api/song/detail/?id=" + Escape(songId)+ "&ids=[" + Escape(songId) + "]&csrf_token=";
+            string text = null;
+            string error = null;
+            yield return Http.CoGetString(url, (body, err) => { text = body; error = err; });
+            if (error != null)
+            {
+                onError?.Invoke(error);
+                yield break;
+            }
 
+            if (string.IsNullOrEmpty(text))
+            {
+                onError?.Invoke("无结果");
+                yield break;
+            }
+            var songs = new List<Song>();
+            try
+            {
+                using var document = JsonDocument.Parse(text);
+                if (document.RootElement.TryGetProperty("result", out var result)
+                    && result.TryGetProperty("songs", out var array)
+                    && array.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in array.EnumerateArray())
+                    {
+                        var song = ReadSong(item);
+                        if (song != null) songs.Add(song);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                onError?.Invoke(ex.Message);
+                yield break;
+            }
+            if (songs.Count<=0)
+            {
+                onError?.Invoke("未获取到歌曲信息。");
+                yield break;
+            }
+            onDone(songs[0]);
+        }
         public static IEnumerator CoSearch(string keyword, Action<List<Song>> onDone, Action<string> onError)
         {
             string url = HasApi
@@ -226,6 +270,27 @@ namespace Plana.Core.CloudPlayer
             }
 
             onDone?.Invoke(data);
+        }
+        public static IEnumerator CoGetLyrics(string songId,bool isTranslate, Action<string> onSuccess, Action<string> onError)
+        {
+            PDebug.Log("正在获取" + songId + "的歌词信息。");
+            string lyrics = null;
+            string error = null;
+            yield return Http.CoGetString(Host + "/api/song/lyric?os=pc&" + Escape(songId)+ "&"+(isTranslate?"tv":"lv")+"-1", (body, err) => { lyrics= body; error = err; });
+
+            if (error != null)
+            {
+                onError?.Invoke(error);
+                yield break;
+            }
+
+            if (string.IsNullOrEmpty(lyrics))
+            {
+                onError?.Invoke("下载歌词失败");
+                yield break;
+            }
+
+            onSuccess.Invoke(lyrics);
         }
     }
 }

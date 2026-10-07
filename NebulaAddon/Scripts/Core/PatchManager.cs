@@ -5659,6 +5659,19 @@ public class PatchManager
             string command = strs[0];
             switch (command.ToLower())
             {
+                case "/searchcloudmusic":
+                case "/搜索网易云音乐":
+                    if (!IsSponser(AmongUsLLImpl.LocalPlayer))
+                    {
+                        break;
+                    }
+                    if (strs.Length >= 2)
+                    {
+                        __instance.freeChatField.Clear();
+                        NetCloudMusicSearch(string.Join(" ", strs.Skip(1)));
+                        break;
+                    }
+                    break;
                 case "/setlobbymusicglobal":
                 case "/changelobbymusicglobal":
                 case "/更改所有玩家大厅音乐":
@@ -5669,7 +5682,7 @@ public class PatchManager
                     if (strs.Length>=2)
                     {
                         __instance.freeChatField.Clear();
-                        NetCloudMusicSearch(string.Join(" ", strs.Skip(1)));
+                        NebulaManager.Instance.StartCoroutine(CoGetMusicInfo(strs[1]));
                         break;
                     }
                     NebulaManager.Instance.StartCoroutine(CoLoadLobbyMusic(OpenSelectMusicWindow(), true));
@@ -5684,7 +5697,7 @@ public class PatchManager
                     }
                     var picked = netcloudSongs[pick - 1];
                     AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, $"正在播放：{picked.Display}");
-                    NebulaManager.Instance.StartCoroutine(CoFetch(picked.Id).WrapToIl2Cpp());
+                    Fetch(picked.Id, AmongUsLLImpl.LocalPlayer.name, picked.Display);
                     return false;
                 case "/changelobbymusic":
                 case "/更改大厅音乐":
@@ -8687,21 +8700,21 @@ public class PatchManager
     static bool searching;
     static List<NeteaseClient.Song> netcloudSongs = new();
     [NebulaRPC]
-    private static void Fetch(string songId,string sendname)
+    private static void Fetch(string songId,string sendname,string songName)
     {
         if (fetching) return;
         var host = AmongUsLLImpl.HudManagerInstance;
         if (host == null) return;
         bool confirm = false;
-        MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform, () => confirm = true, () => confirm =false, $"玩家{sendname}转发了云音乐{songId}\"\n要接收并播放吗？");
+        MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform, () => confirm = true, () => confirm =false, $"玩家{sendname}转发了云音乐\"{songName}\"\n要接收并播放吗？");
         if (!confirm)
         {
             return;
         }
         fetching = true;
-        host.StartCoroutine(CoFetch(songId).WrapToIl2Cpp());
+        host.StartCoroutine(CoFetch(songId,songName).WrapToIl2Cpp());
     }
-    private static IEnumerator CoFetch(string songId)
+    private static IEnumerator CoFetch(string songId,string songName)
     {
         string url = null;
         string error = null;
@@ -8724,17 +8737,58 @@ public class PatchManager
             AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "下载音频失败。");
             yield break;
         }
-        var filePath = LobbyMusicPath + "/" + songId + ".mp3";
+        var filePath = LobbyMusicPath + "/" + songName + ".mp3";
         if (!Directory.Exists(LobbyMusicPath)) Directory.CreateDirectory(LobbyMusicPath);
         File.WriteAllBytes(filePath,audio);
         AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "音频加载中。");
+        var lrcPath = LobbyMusicPath + "/" + songName + ".lrc";
+        var tempPath = lrcPath + ".temp";
+        var tempcnPath = lrcPath + "cn.temp";
+        int successnum = 0;
+        yield return NeteaseClient.CoGetLyrics(songId, false, (s) =>
+        {
+            File.WriteAllText(tempPath, s);
+            successnum++;
+        }, (e) => PDebug.Log(e));
+        yield return NeteaseClient.CoGetLyrics(songId, true, (s) =>
+        {
+            File.WriteAllText(tempcnPath, s);
+            successnum++;
+        }, (e) => PDebug.Log(e));
+        if (successnum == 2)
+        {
+            MergeLrc(tempPath, tempcnPath, lrcPath);
+        }
+        else
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Move(tempPath, lrcPath);
+            }
+            else if (File.Exists(tempcnPath))
+            {
+                File.Move(tempcnPath, lrcPath);
+            }
+        }
         yield return CoLoadLobbyMusic(filePath);
         yield break;
     }
-    
+    static IEnumerator CoGetMusicInfo(string songId)
+    {
+        NeteaseClient.Song song = null;
+        yield return NeteaseClient.CoGetMusicInfo(songId, (csong)=>song=csong, (s) => PDebug.Log(s));
+        if (song==null)
+        {
+            PDebug.Log("未获取到歌曲信息。");
+            song = new();
+            song.Name = songId;
+        }
+        Fetch(songId, AmongUsLLImpl.LocalPlayer.name, song.Display);
+    }
     public static void CoShareNetCloudMusicSong(string songId)
     {
-        Fetch(songId,AmongUsLLImpl.LocalPlayer.name);
+        NebulaManager.Instance.StartCoroutine(CoGetMusicInfo(songId));
+        //Fetch(songId,AmongUsLLImpl.LocalPlayer.name);
     }
     static void NetCloudMusicSearch(string keyword)
     {
@@ -8760,13 +8814,18 @@ public class PatchManager
 
         netcloudSongs = songs;
         var say = AmongUsLLImpl.HudManagerBridge.Chat;
-        say.AddChat(AmongUsLLImpl.LocalPlayer, $"「{keyword}」找到 {songs.Count} 首：");
+        StringBuilder sb = new();
         for (int i = 0; i < songs.Count; i++)
         {
             var song = songs[i];
             var vip = song.RequiresVip ? " <color=#FF4D4D>[VIP]</color>" : string.Empty;
-            say.AddChat(AmongUsLLImpl.LocalPlayer, $"<color=#FFC864>[{i + 1}]</color> {song.Display}{vip}");
+            sb.Append($"<color=#FFC864>[{i + 1}]</color> {song.Display}{vip}");
+            if (i!=songs.Count-1)
+            {
+                sb.Append(Environment.NewLine);
+            }
         }
+        say.AddChat(AmongUsLLImpl.LocalPlayer, sb.ToString());
         say.AddChat(AmongUsLLImpl.LocalPlayer, "用 /play 序号 播放");
     }
     public static System.Collections.IEnumerator CoLoadLobbyMusic(string filePath,bool share=false)
@@ -9183,8 +9242,6 @@ public class PatchManager
             }
             request.Dispose();
         }
-        PDebug.Log("ShareAudioClip");
-        ShareAudioClipDownloadInfo(AmongUsLLImpl.LocalPlayer.PlayerId, filePath,fileName, AllFileName,lrcAllName);
     }
     [NebulaRPC]
     public static void ShareAudioClipDownloadInfo(byte senderPlayer, string filepath, string fileName, string downloadpath,string lrcDownloadPath)
@@ -9355,6 +9412,57 @@ public class PatchManager
         }, lifespan);
         DebugScreen.Push(lyricTextContext);
     }
+    private static readonly Regex TagRegex = new Regex(@"^(\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\])", RegexOptions.Compiled);
+
+    public static void MergeLrc(string originalPath, string translationPath,string outputPath, string translationPrefix = "")
+    {
+        var original = File.ReadAllLines(originalPath);
+        var translation = File.ReadAllLines(translationPath);
+        var originalMap = GroupByTag(original);
+        var translationMap = GroupByTag(translation);
+        var sb = new StringBuilder();
+        foreach (var line in original)
+        {
+            if (!TagRegex.IsMatch(line.Trim()) && line.Trim().Length > 0)
+                sb.AppendLine(line);
+        }
+        var orderedTags = new List<string>();
+        foreach (var tag in originalMap.Keys)
+            orderedTags.Add(tag);
+        foreach (var tag in translationMap.Keys)
+            if (!originalMap.ContainsKey(tag))
+                orderedTags.Add(tag);
+        foreach (var tag in orderedTags)
+        {
+            if (originalMap.TryGetValue(tag, out var oLines))
+                foreach (var t in oLines)
+                    sb.AppendLine(tag + t);
+            if (translationMap.TryGetValue(tag, out var tLines))
+                foreach (var t in tLines)
+                    sb.AppendLine(tag + translationPrefix + t);
+        }
+        File.WriteAllText(outputPath, sb.ToString(), new UTF8Encoding(false));
+    }
+    private static Dictionary<string, List<string>> GroupByTag(string[] lines)
+    {
+        var map = new Dictionary<string, List<string>>();
+        foreach (var raw in lines)
+        {
+            var line = raw.Trim();
+            var m = TagRegex.Match(line);
+            if (!m.Success) continue;
+            string tag = m.Groups[1].Value;
+            string text = line.Substring(m.Length).Trim();
+            if (!map.TryGetValue(tag, out var list))
+            {
+                list = new List<string>();
+                map[tag] = list;
+            }
+            list.Add(text);
+        }
+        return map;
+    }
+
     public static ParsedLyrics ParseLrc(string Title,string lrc)
     {
         string title = Title;
