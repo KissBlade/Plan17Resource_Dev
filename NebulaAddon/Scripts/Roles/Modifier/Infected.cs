@@ -141,6 +141,7 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
     RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
     public class Instance : RuntimeAssignableTemplate, RuntimeModifier
     {
+        List<DefinedRole> RoleListInWindow;
         DefinedModifier RuntimeModifier.Modifier => MyRole;
 
         public Instance(GamePlayer player) : base(player)
@@ -181,6 +182,7 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
                     roles.Remove(role);
                 }
             }
+            RoleListInWindow = list;
             inner.Append(list, r => new CombinedWidgetOld(-1f, IMetaWidgetOld.AlignmentOption.Center, new MetaWidgetOld.HorizonalMargin(0.1f),
                 new MetaWidgetOld.Button(() => onSelected.Invoke(r), ButtonAttribute)
                 {
@@ -233,7 +235,7 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
             if (InfectedSetRoleImmediately)
             {
                 return;
-            }    
+            }
             if (MeetingHud.Instance.state==MeetingHud.MeetingStates.Discussion)
             {
                 if (SelectRoleScreen == null)
@@ -245,6 +247,19 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
                             SelectRoleScreen?.CloseScreen();
                             SelectRoleScreen = null;
                         });
+                }
+            }
+            if (MeetingHud.Instance.state == MeetingHud.MeetingStates.NotVoted && MyPlayer.Role.Role.Category != RoleCategory.ImpostorRole && MyPlayer.Modifiers.Any(m => m is Infected.Instance))
+            {
+                var impRoles = Nebula.Roles.Roles.AllRoles.Where(r => r.IsSpawnable && r.Category == RoleCategory.ImpostorRole && !r.IsSystemRole).ToList();
+                if (impRoles.Count > 0)
+                {
+                    var selectedRole = impRoles[UnityEngine.Random.Range(0, impRoles.Count)];
+                    MyPlayer.SetRole(selectedRole, selectedRole.DefaultAssignableArguments);
+                    Selected = true;
+                    SelectRoleScreen?.CloseScreen();
+                    SelectRoleScreen = null;
+                    RoleListInWindow = null;
                 }
             }
         }
@@ -267,7 +282,6 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
                 AmongUsUtil.PlayCustomFlash(MyRole.RoleColor, 0f, 0.8f, 0.7f, 0f);
                 if (InfectedSetRoleImmediately)
                 {
-                    Selected = true;
                     SelectRoleScreen = OpenRoleSelectWindow(false, (DefinedRole r) => r.IsSpawnable && r.Category == RoleCategory.ImpostorRole&&!r.IsSystemRole, Language.Translate("role.infected.selectImpRoleText"), (DefinedRole r) =>
                     {
                         MyPlayer.SetRole(r,r.DefaultAssignableArguments);
@@ -275,6 +289,33 @@ public class Infected : DefinedModifierTemplate, DefinedAllocatableModifier, Has
                         SelectRoleScreen = null;
                     });
                 }
+            }
+        }
+        [Local]
+        private void OnMeetingStart(MeetingStartEvent ev)
+        {
+            if (!Selected&& InfectedSetRoleImmediately)
+            {
+                ForceSelectRole();
+            }
+        }
+        void ForceSelectRole()
+        {
+            if(RoleListInWindow == null || RoleListInWindow.Count == 0)
+            {
+                PDebug.Log("RoleListInWindow is empty");
+                Selected = true;
+                SelectRoleScreen?.CloseScreen();
+                SelectRoleScreen = null;
+            }
+            else
+            {
+                var selectedRole = RoleListInWindow[UnityEngine.Random.Range(0, RoleListInWindow.Count)];
+                MyPlayer.SetRole(selectedRole, selectedRole.DefaultAssignableArguments);
+                Selected = true;
+                SelectRoleScreen?.CloseScreen();
+                SelectRoleScreen = null;
+                RoleListInWindow = null;
             }
         }
         void OnSheriffKill(SheriffCheckKillEvent ev)

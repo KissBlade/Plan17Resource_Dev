@@ -127,7 +127,14 @@ internal class Dissociation : DefinedRoleTemplate, DefinedRole,DefinedAssignable
         {
             if (!amAware&&!scheduled)
             {
-                if (NebulaGameManager.Instance?.AllPlayerInfo.Count(p => p.IsAlive) <= AwareNeedAlivePlayerNum)
+                if(NebulaGameManager.Instance?.AllPlayerInfo.Count(p => p.IsAlive)>AwareNeedAlivePlayerNum)
+                {
+                    if(!GamePlayer.AllPlayers.Any(p => !p.IsDead && p.IsImpostor))
+                    {
+                        ShareMyAwareInfo.Invoke(MyPlayer);
+                    }
+                }
+                else
                 {
                     if (!MeetingHud.Instance.AsBoolFast())
                     {
