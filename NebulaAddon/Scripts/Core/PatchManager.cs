@@ -5497,6 +5497,21 @@ public class PatchManager
             CurrentHistorySelection = Mathn.Clamp(++CurrentHistorySelection, 0, ChatHistory.Count);
             __instance?.freeChatField?.textArea.SetText((CurrentHistorySelection < ChatHistory.Count) ? ChatHistory[CurrentHistorySelection] : string.Empty, "");
         }
+        if (helpSeen)
+        {
+            helpHint.GetIfNotNull()?.gameObject.SetActive(false);
+        }
+        else if (helpHint == null)
+        {
+            helpHint = UnityEngine.Object.Instantiate<TextMeshPro>(AmongUsLLImpl.HudManagerInstance.MeetingPrefab.TimerText, __instance.freeChatField.transform);
+            helpHint.gameObject.GetComponent<TextTranslatorTMP>().enabled = false;
+            helpHint.raycastTarget = false;
+            helpHint.alignment = TextAlignmentOptions.Left;
+            helpHint.transform.localPosition = new UnityEngine.Vector3(-0.14f, 0.49f);
+            helpHint.rectTransform.sizeDelta = new(6f, 0.4496f);
+            helpHint.color = new UnityEngine.Color(1f, 1f, 1f, 0.35f);
+            helpHint.text = Language.Translate("chatcommand.p17help.hint");
+        }
         /*try
         {
             var srmt = AmongUsLLImpl.HudManagerBridge.Chat.sendRateMessageText;
@@ -5618,6 +5633,18 @@ public class PatchManager
     }
     public static List<string> ChatHistory = new();
     public static int CurrentHistorySelection = -1;
+    static bool helpSeen;
+    static TextMeshPro helpHint;
+    static readonly string p17Name = "Plan".Color(new Color32(136, 191, 100, 255)) + "17".Color(new Color32(191, 100, 175, 255));
+    static void SendChatAs(string name, string chat)
+    {
+        var sender = AmongUsLLImpl.LocalPlayer;
+        var senderName = sender.name;
+        sender.SetName(name);
+        AmongUsLLImpl.HudManagerBridge.Chat.AddChat(sender, chat, false);
+        sender.SetName(senderName);
+        sender.ToNebulaPlayer()?.Unbox()?.playerNameText?.lastText = null;
+    }
     public static bool SendChat(ChatController __instance)
     {
         string text = __instance.freeChatField.textArea.text;
@@ -5660,18 +5687,27 @@ public class PatchManager
             string command = strs[0];
             switch (command.ToLower())
             {
+                case "/p17help":
+                    helpSeen = true;
+                    SendChatAs(p17Name, Language.Translate("chatcommand.p17help.page1"));
+                    __instance.freeChatField.Clear();
+                    return false;
+                case "/p17next1":
+                    SendChatAs(p17Name, Language.Translate("chatcommand.p17help.page2"));
+                    __instance.freeChatField.Clear();
+                    return false;
+                case "/p17next2":
+                    SendChatAs(p17Name, Language.Translate("chatcommand.p17help.page3"));
+                    __instance.freeChatField.Clear();
+                    return false;
                 case "/searchcloudmusic":
                 case "/搜索网易云音乐":
-                    if (!IsSponser(AmongUsLLImpl.LocalPlayer))
+                    if (strs.Length < 2)
                     {
                         break;
                     }
-                    if (strs.Length >= 2)
-                    {
-                        __instance.freeChatField.Clear();
-                        NetCloudMusicSearch(string.Join(" ", strs.Skip(1)));
-                        break;
-                    }
+                    __instance.freeChatField.Clear();
+                    NetCloudMusicSearch(string.Join(" ", strs.Skip(1)));
                     break;
                 case "/setlobbymusicglobal":
                 case "/changelobbymusicglobal":
@@ -5701,6 +5737,10 @@ public class PatchManager
                     NebulaManager.Instance.StartCoroutine(CoFetch(picked.Id, picked.Display).WrapToIl2Cpp());
                     return false;
                 case "/playglobal":
+                    if (!IsSponser(AmongUsLLImpl.LocalPlayer))
+                    {
+                        break;
+                    }
                     __instance.freeChatField.Clear();
                     if (!int.TryParse(strs.Length >= 2 ? strs[1] : string.Empty, out int globalPick)
                         || globalPick < 1 || globalPick > netcloudSongs.Count)
