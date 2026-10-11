@@ -2126,33 +2126,19 @@ public class PatchManager
         }
         return true;
     }
-    public static bool DetermineGameMasterPre(IRoleTable __instance)
+    public static void DetermineGameMasterPre(IRoleTable __instance)
     {
         if (HostIsGameMaster)
         {
             try
             {
-                List<NebulaRPCInvoker> allInvokers = new List<NebulaRPCInvoker>();
-                var table = __instance as RoleTable;
                 __instance.SetRole(AmongUsLLImpl.LocalPlayer.PlayerId, GameMaster.MyRole);
-                foreach (ValueTuple<DefinedRole, int[], byte> role in table!.roles)
-                {
-                    allInvokers.Add(PlayerModInfo.RpcSetAssignable.GetInvoker(new ValueTuple<byte, int, int[], RoleType, Virial.Assignable.RoleAssignType>(role.Item3, role.Item1.Id, role.Item2, RoleType.Role, RoleAssignType.Standard)));
-                }
-                foreach (ValueTuple<DefinedModifier, int[], byte> modifier in table.modifiers)
-                {
-                    allInvokers.Add(PlayerModInfo.RpcSetAssignable.GetInvoker(new ValueTuple<byte, int, int[], RoleType, Virial.Assignable.RoleAssignType>(modifier.Item3, modifier.Item1.Id, modifier.Item2, RoleType.Modifier, RoleAssignType.Standard)));
-                }
-                allInvokers.Add(NebulaGameManager.RpcStartGame.GetInvoker(true));
-                CombinedRemoteProcess.CombinedRPC.Invoke(false, allInvokers.ToArray());
-                return false;
             }
             catch (Exception e)
             {
                 PDebug.Log(e);
             }
         }
-        return true;
     }
     public static void AssignGameMasterPre(List<byte> impostors, List<byte> others)
     {
@@ -2486,9 +2472,7 @@ public class PatchManager
             }, __instance);*/
             GameOperatorManager.Instance.Subscribe<GameEndEvent>(ev =>
             {
-                //CurrentChatId = 0;
-                //currentIndex = 0;
-                firstDeadName = NebulaGameManager.Instance?.AllPlayerInfo.Where(p => p.IsDead).MinBy(p => p.DeathTime.HasValue ? (float)p.DeathTime : 114514f)?.PlayerName ?? "";
+                firstDeadName = GamePlayer.AllPlayers.Where(p => p.IsDead)?.MinBy(p => p.DeathTime.HasValue ? p.DeathTime : float.MaxValue)?.DefaultOutfit.outfit.PlayerName ?? "";
                 ChatLogSystem.ExportNow();
             }, __instance);
             VitalsMinigame OpenSpecialVitalsMinigame()
@@ -4312,7 +4296,7 @@ public class PatchManager
                 }
                 if (DesperateAssignToImp)
                 {
-                    if (p.IsImpostor)
+                    if (p.IsImpostor && !p.TryGetModifier<Desperate.Instance>(out var _))
                     {
                         if (DesperateDoNotAssignToLoverImp && p.TryGetModifier<Lover.Instance>(out var m))
                         {
@@ -4329,7 +4313,7 @@ public class PatchManager
                     }
                 }
             }
-            killGuardPlayers = new Dictionary<PlayerControl, int>();
+            killGuardPlayers = [];
         }
     }
     public static bool BlockNosProgressTrackerUpdate()
