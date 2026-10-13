@@ -3,7 +3,6 @@ using Nebula.VoiceChat;
 using Plana.Core;
 using Plana.Roles.Crewmate;
 using Plana.Roles.Modifier;
-using UnityEngine.UIElements;
 using static NetworkedPlayerInfo;
 
 namespace Plana.Roles.Neutral;
@@ -26,6 +25,7 @@ public class Lawyer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignable
     static BoolConfiguration LawyerKnowClientRole = NebulaAPI.Configurations.Configuration("options.role.lawyer.lawyerknowclientrole", true);
     static BoolConfiguration LawyerCannotGuessClient = NebulaAPI.Configurations.Configuration("options.role.lawyer.lawyercannotguessclient", true);
     Citation? HasCitation.Citation => Citations.TheOtherRolesGM;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Lawyer.png")!.AsImage();
 
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
 

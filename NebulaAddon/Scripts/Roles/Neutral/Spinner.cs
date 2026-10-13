@@ -11,6 +11,7 @@ public class Spinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
         //ConfigurationHolder!.Illustration = NebulaAPI.AddonAsset.GetResource("RoleImages/Spinner.png")!.AsImage(115f)!;
     }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Spinner.png")!.AsImage();
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
     public static TranslatableTag EndofFate = new TranslatableTag("state.endoffate");
     static IntegerConfiguration CanSpinMinPlayerNum = NebulaAPI.Configurations.Configuration("options.role.spinner.canspinminplayernum", (2, 24), 3);

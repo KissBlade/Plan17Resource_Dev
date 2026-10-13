@@ -45,7 +45,106 @@ public class Doomsayer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
         public Instance(GamePlayer player) : base(player)
         {
         }
+        List<byte> oracledtargets = new List<byte>();
         public static Action? afterGuess;
+        Dictionary<byte, string> oracleResults = [];
+        public void AddResult(byte targetId, DefinedRole[] result)
+        {
+            oracleResults[targetId] = string.Join(", ", result.Select(r => r.DisplayColoredName));
+        }
+        private static List<DefinedRole> GiveResultList(GamePlayer player)
+        {
+            HashSet<DefinedRole> list = new HashSet<DefinedRole>();
+            HashSet<DefinedRole> spwanableRoles = new HashSet<DefinedRole>();
+            var rolelist = new List<DefinedRole>(Nebula.Roles.Roles.AllRoles);
+            rolelist.Remove(Doomsayer.MyRole);
+            rolelist.Remove(Nebula.Roles.Crewmate.Crewmate.MyRole);
+            rolelist.Remove(Nebula.Roles.Impostor.Impostor.MyRole);
+            rolelist.RemoveAll(r => !r.CanBeGuess);
+            rolelist.Do(p =>
+            {
+                foreach (var r in p.GetGuessableAbilityRoles())
+                {
+                    spwanableRoles.Add(r);
+                }
+                foreach (AssignmentType type in AssignmentType.AllTypes)
+                {
+                    if (type.CanGuessAsAbility && type.IsActive)
+                    {
+                        if (type.Predicate(p.AssignmentStatus, p))
+                        {
+                            AllocationParameters? customAllocationParameters = p.GetCustomAllocationParameters(type);
+                            if (customAllocationParameters != null && customAllocationParameters.RoleCountSum > 0)
+                            {
+                                spwanableRoles.Add(p);
+                            }
+                        }
+                    }
+                }
+            });
+            for (int i = 0; list.Count < OracleGetRoleNum - 1; i++)
+            {
+                var r = rolelist.Random();
+                if (r == player.Role.Role)
+                {
+                    rolelist.Remove(r);
+                    continue;
+                }
+                if (!list.Contains(r))
+                {
+                    if (!GetRoleIsSpawnable || spwanableRoles.Contains(r))
+                    {
+                        list.Add(r);
+                        rolelist.Remove(r);
+                    }
+                }
+            }
+            var resultList = list.ToList();
+            DefinedRole? playerRole;
+            if (player.Role.Role.GetGuessableAbilityRoles().Any(r => r == player.Role.Role))
+            {
+                playerRole = player.Role.Role;
+            }
+            else
+            {
+                playerRole = spwanableRoles.FirstOrDefault(r => player.Role.CheckGuessAbility(r) && r != player.Role.Role);
+            }
+            if (playerRole == null)
+            {
+                playerRole = player.Role.Role;
+            }
+            resultList.Insert(UnityEngine.Random.Range(0, list.Count), playerRole);
+            return resultList;
+        }
+        public static RemoteProcess<(byte MyPlayerID, byte oracleTargetId, DefinedRole[] resultArray)> UpdateOracle = new("UpdateOracleRPC", (m, _) =>
+        {
+            var player = GamePlayer.GetPlayer(m.Item1);
+            if(player.TryGetRole<Doomsayer.Instance>(out var role))
+            {
+                role.oracledtargets.Add(m.Item2);
+                role.AddResult(m.Item2, m.Item3);
+            }
+        });
+        GUIWidget RuntimeAssignable.ProgressWidget
+        {
+            get
+            {
+                GUIWidget[] array = new GUIWidget[2];
+                array[0] = ProgressGUI.OneLineText([Language.Translate("role.doomsayer.gui.results")]);
+                if (oracleResults.Count > 0)
+                {
+                    array[1] = ProgressGUI.Holder(
+                            oracleResults.Select(result =>
+                                ProgressGUI.OneLineText((GamePlayer.GetPlayer(result.Key)?.ColoredName ?? "???") + ": " + result.Value))
+                        );
+                }
+                else
+                {
+                    array[1] = ProgressGUI.OneLineText([Language.Translate("role.doomsayer.gui.none")]);
+                }
+                return ProgressGUI.Holder(array);
+            }
+        }
         [Local]
         void OnMeetingStart(MeetingStartEvent ev)
         {
@@ -135,69 +234,15 @@ public class Doomsayer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
                         }
                         else
                         {
-                            HashSet<DefinedRole> list = new HashSet<DefinedRole>();
-                            HashSet<DefinedRole> spwanableRoles = new HashSet<DefinedRole>();
-                            var rolelist = new List<DefinedRole>(Nebula.Roles.Roles.AllRoles);
-                            rolelist.Remove(Doomsayer.MyRole);
-                            rolelist.Remove(Nebula.Roles.Crewmate.Crewmate.MyRole);
-                            rolelist.Remove(Nebula.Roles.Impostor.Impostor.MyRole);
-                            rolelist.RemoveAll(r => !r.CanBeGuess);
-                            rolelist.Do(p =>
-                            {
-                                foreach (var r in p.GetGuessableAbilityRoles())
-                                {
-                                    spwanableRoles.Add(r);
-                                }
-                                foreach (AssignmentType type in AssignmentType.AllTypes)
-                                {
-                                    if (type.CanGuessAsAbility&&type.IsActive)
-                                    {
-                                        if (type.Predicate(p.AssignmentStatus,p))
-                                        {
-                                            AllocationParameters? customAllocationParameters = p.GetCustomAllocationParameters(type);
-                                            if (customAllocationParameters != null && customAllocationParameters.RoleCountSum > 0)
-                                            {
-                                                spwanableRoles.Add(p);
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-                            for (int i = 0; list.Count< OracleGetRoleNum - 1; i++)
-                            {
-                                var r = rolelist.Random();
-                                if (r == player?.Role.Role)
-                                {
-                                    rolelist.Remove(r);
-                                    continue;
-                                }
-                                if (!list.Contains(r))
-                                {
-                                    if (!GetRoleIsSpawnable || spwanableRoles.Contains(r))
-                                    {
-                                        list.Add(r);
-                                        rolelist.Remove(r);
-                                    }
-                                }
-                            }
-                            var resultList = list.ToList();
-                            DefinedRole? playerRole;
-                            if (player.Role.Role.GetGuessableAbilityRoles().Any(r=>r ==player.Role.Role))
-                            {
-                                playerRole = player.Role.Role;
-                            }
-                            else
-                            {
-                                playerRole = spwanableRoles.FirstOrDefault(r => player.Role.CheckGuessAbility(r) && r != player.Role.Role);
-                            }
-                            if (playerRole==null)
-                            {
-                                playerRole = player.Role.Role;
-                            }
-                            resultList.Insert(UnityEngine.Random.Range(0, list.Count), playerRole);
-                            var text = Language.Translate("role.doomsayer.oracletext").Replace("%NAME%", player.PlayerName).Replace("%ROLE%", string.Join(",", resultList.Select(r => r.DisplayName)));
-                            PatchManager.RpcSendSkillMessage.Invoke((MyPlayer, text));
+                            List<DefinedRole> resultList = GiveResultList(player);
+                            var resultArray = resultList.ToArray();
                             useskilltargets.Add(player.PlayerId);
+                            UpdateOracle.Invoke((MyPlayer.PlayerId, player.PlayerId, resultArray));
+                            var sb = new System.Text.StringBuilder().Append(Language.Translate("role.doomsayer.oracletext").Replace("%NAME%", player.PlayerName).Replace("%ROLE%", string.Join(",", resultList.Select(r => r.DisplayColoredName))));
+                            NebulaAPI.CurrentGame?.GetModule<MeetingOverlayHolder>()?.RegisterOverlay(NebulaAPI.GUI.VerticalHolder(GUIAlignment.Left, [
+                            NebulaAPI.GUI.LocalizedText(GUIAlignment.Left,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayTitle),"role.doomsayer.message.header"),
+                                    NebulaAPI.GUI.RawText(GUIAlignment.Center,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayContent),sb.ToString())
+                            ]), MeetingInfoIcon, MyRole.RoleColor, false);
                         }
                         button.StartCoolDown();
                     };
@@ -211,72 +256,15 @@ public class Doomsayer : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
                         if (CanUseOracle && BeforeMeetingStartNoSecondSkill && oracleTarget != null)
                         {
                             var player = oracleTarget;
-                            HashSet<DefinedRole> list = new HashSet<DefinedRole>();
-                            HashSet<DefinedRole> spwanableRoles = new HashSet<DefinedRole>();
-                            var rolelist = new List<DefinedRole>(Nebula.Roles.Roles.AllRoles);
-                            rolelist.Remove(Doomsayer.MyRole);
-                            rolelist.Remove(Nebula.Roles.Crewmate.Crewmate.MyRole);
-                            rolelist.Remove(Nebula.Roles.Impostor.Impostor.MyRole);
-                            rolelist.RemoveAll(r => !r.CanBeGuess);
-                            rolelist.Do(p =>
-                            {
-                                foreach (var r in p.GetGuessableAbilityRoles())
-                                {
-                                    spwanableRoles.Add(r);
-                                }
-                                foreach (AssignmentType type in AssignmentType.AllTypes)
-                                {
-                                    if (type.CanGuessAsAbility&&type.IsActive)
-                                    {
-                                        if (type.Predicate(p.AssignmentStatus, p))
-                                        {
-                                            AllocationParameters? customAllocationParameters = p.GetCustomAllocationParameters(type);
-                                            if (customAllocationParameters != null && customAllocationParameters.RoleCountSum > 0)
-                                            {
-                                                spwanableRoles.Add(p);
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-                            for (int i = 0; list.Count < OracleGetRoleNum - 1; i++)
-                            {
-                                var r = rolelist.Random();
-                                if (r == player.Role.Role)
-                                {
-                                    rolelist.Remove(r);
-                                    continue;
-                                }
-                                if (!list.Contains(r))
-                                {
-                                    if (!GetRoleIsSpawnable || spwanableRoles.Contains(r))
-                                    {
-                                        list.Add(r);
-                                        rolelist.Remove(r);
-                                    }
-                                }
-                            }
-                            var resultList = list.ToList();
-                            DefinedRole? playerRole;
-                            if (player.Role.Role.GetGuessableAbilityRoles().Any(r => r == player.Role.Role))
-                            {
-                                playerRole = player.Role.Role;
-                            }
-                            else
-                            {
-                                playerRole = spwanableRoles.FirstOrDefault(r => player.Role.CheckGuessAbility(r) && r != player.Role.Role);
-                            }
-                            if (playerRole == null)
-                            {
-                                playerRole = player.Role.Role;
-                            }
-                            resultList.Insert(UnityEngine.Random.Range(0, list.Count), playerRole);
+                            List<DefinedRole> resultList = GiveResultList(player);
+                            var resultArray = resultList.ToArray();
                             useskilltargets.Add(oracleTarget.PlayerId);
+                            UpdateOracle.Invoke((MyPlayer.PlayerId, player.PlayerId,resultArray));
                             var sb = new System.Text.StringBuilder().Append(Language.Translate("role.doomsayer.oracletext").Replace("%NAME%", oracleTarget.PlayerName).Replace("%ROLE%", string.Join(",", resultList.Select(r => r.DisplayColoredName))));
                             NebulaAPI.CurrentGame?.GetModule<MeetingOverlayHolder>()?.RegisterOverlay(NebulaAPI.GUI.VerticalHolder(GUIAlignment.Left, [
                             NebulaAPI.GUI.LocalizedText(GUIAlignment.Left,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayTitle),"role.doomsayer.message.header"),
                                     NebulaAPI.GUI.RawText(GUIAlignment.Center,NebulaAPI.GUI.GetAttribute(AttributeAsset.OverlayContent),sb.ToString())
-                            ]), Doomsayer.Instance.MeetingInfoIcon, MyRole.RoleColor, false);
+                            ]), MeetingInfoIcon, MyRole.RoleColor, false);
                             useskilltargets.Clear();
                             oracleTarget = null;
                             playericon = null;

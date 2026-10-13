@@ -96,6 +96,7 @@ internal class YandereTeamAllocator : AbstractModule<Virial.Game.Game>, IGameOpe
 public class Yandere : DefinedRoleTemplate, HasCitation, DefinedRole, DefinedSingleAssignable, DefinedCategorizedAssignable, DefinedAssignable, IRoleID, ISpawnable, RuntimeAssignableGenerator<RuntimeRole>, IGuessed, AssignableFilterHolder, IAssignableDocument
 {
     public static Team MyTeam = new Team("teams.yandere", YandereAssignmentUp.Color, TeamRevealType.OnlyMe);
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Yandere.png")!.AsImage();
     public static FloatConfiguration AddDistance = NebulaAPI.Configurations.Configuration("options.role.yandere.addTargetDistance", new ValueTuple<float, float, float>(0f, 20f, 0.25f), 1.5f, FloatConfigurationDecorator.Ratio);
     private Yandere() : base("yandere", YandereAssignmentUp.Color, RoleCategory.NeutralRole, MyTeam, [BaseKillCD, MaxKillCD, MinKillCD, TargetDeadKillCD, AddDistance, AddDuration, AddCoolDown, killCorrectSubCD, killWrongAddCD, ActiveTargetArrow, TargetArrowUpdateTime, ActiveKillTargetArrow, KillTargetArrowUpdateTime, StayKillCD, CanUseVent, HasImpostorVision, YandereRoleOption])
     {
@@ -610,6 +611,7 @@ public class YandereLover : DefinedModifierTemplate, DefinedModifier, DefinedAss
     {
     }
     Citation? HasCitation.Citation { get { return PCitations.ExtremeRoles; } }
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/YandereLover.png")!.AsImage();
     static public YandereLover MyRole = new YandereLover();
     public static bool IsMyLover(GamePlayer yandere, GamePlayer lover,int YandereTeamId)
     {

@@ -8,6 +8,7 @@ public class Sommelier : DefinedSingleAbilityRoleTemplate<Sommelier.Ability>, Ha
 
     private Sommelier() : base("sommelier", new(194,60,60), RoleCategory.CrewmateRole, NebulaTeams.CrewmateTeam, [MarkCoolDownOption,MarkDurationOption,UseSkillNum,NeedMarkPlayerOption,RolesRelustOf]) { }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Sommelier.png")!.AsImage();
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.CanLoadToMadmate;
     public override Ability CreateAbility(GamePlayer player, int[] arguments) => new Ability(player, arguments.GetAsBool(0),arguments.Get(1,0));
     private static FloatConfiguration MarkCoolDownOption = NebulaAPI.Configurations.Configuration("options.role.sommelier.markedCooldown", new ValueTuple<float, float, float>(0f, 30f, 2.5f), 7.5f, FloatConfigurationDecorator.Second, null, null);

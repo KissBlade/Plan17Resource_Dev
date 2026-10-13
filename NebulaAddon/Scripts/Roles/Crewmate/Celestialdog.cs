@@ -13,6 +13,7 @@ public class Celestialdog : DefinedRoleTemplate, HasCitation, DefinedRole, Defin
     {
     }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Celestialdog.png")!.AsImage();
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player,arguments.Get(0,0),arguments.GetAsBool(1));
     public static readonly FloatConfiguration SkillCooldownOption = NebulaAPI.Configurations.Configuration("options.role.celestialdog.skillCoolDown", (2.5f,60f,2.5f),20f,FloatConfigurationDecorator.Second);
     public static readonly FloatConfiguration SkillDurationOption = NebulaAPI.Configurations.Configuration("options.role.celestialdog.skillDuration", (2.5f, 60f, 2.5f), 20f, FloatConfigurationDecorator.Second);

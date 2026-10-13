@@ -2,7 +2,6 @@ using Il2CppSystem.IO.Ports;
 using Nebula.Roles.Ghost.Neutral;
 using Plana.Core;
 using Plana.Roles.Crewmate;
-using UnityEngine.UI;
 
 namespace Plana.Roles.Neutral;
 
@@ -15,7 +14,7 @@ public class Skinner : DefinedRoleTemplate, HasCitation, DefinedRole, IAssignabl
     }
 
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
-
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Skinner.png")!.AsImage();
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
 
     static public Skinner MyRole = new Skinner();
@@ -394,6 +393,7 @@ public class SkinnerDog : DefinedModifierTemplate, DefinedModifier, DefinedAssig
     private SkinnerDog() : base("skinnerdog", new(121,138,190),null,true,()=>false) { }
 
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/SkinnersDog.png")!.AsImage();
 
     RuntimeModifier RuntimeAssignableGenerator<RuntimeModifier>.CreateInstance(GamePlayer player, int[] arguments) => new Instance(player);
 

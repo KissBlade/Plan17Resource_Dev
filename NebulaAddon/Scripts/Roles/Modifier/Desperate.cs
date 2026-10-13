@@ -7,6 +7,7 @@ public class Desperate : DefinedModifierTemplate, DefinedModifier, DefinedAssign
         base.ConfigurationHolder?.ScheduleAddRelated(() => [GeneralConfigurations.AssignmentOptions]);
     }
     Citation HasCitation.Citation => PCitations.PlanaANDKC;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Desperate.png")!.AsImage();
     static IntegerConfiguration NoActiveMeeting = NebulaAPI.Configurations.Configuration("options.role.desperate.meeting", (1, 15), 2);
     static FloatConfiguration SuicideTime = NebulaAPI.Configurations.Configuration("options.role.desperate.suicideTime", (0f,120f,2.5f),60f,FloatConfigurationDecorator.Second);
     static public Desperate MyRole = new Desperate();

@@ -32,6 +32,7 @@ internal class Dissociation : DefinedRoleTemplate, DefinedRole,DefinedAssignable
     {
     }
     Citation? HasCitation.Citation => PCitations.PlanaANDKC;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/Dissociation.png")!.AsImage();
     bool DefinedRole.IsKiller => true;
     public static IRelativeCooldownConfiguration KillCooldown = NebulaAPI.Configurations.KillConfiguration("options.role.dissociation.killCooldown", CoolDownType.Relative, (0f, 60f, 2.5f), 25f, (-40f, 40f, 2.5f), +2.5f, (0.125f, 2f, 0.125f), 1.125f);
     public static IntegerConfiguration AwareNeedAlivePlayerNum = NebulaAPI.Configurations.Configuration("options.role.dissociation.awareneedaliveplayernum", (1, 24), 12);

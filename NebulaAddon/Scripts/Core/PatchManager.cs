@@ -114,6 +114,7 @@ public class PatchManager
             PDebug.Log("AssetBundleLoaded IsNull:" + (ab == null ? "true" : "false"));
             PDebug.Log("RunPatch");
             harmony = new Harmony("PatchManager");
+            harmony.Patch(typeof(ChatController).GetMethod("CoOpen"), null,new HarmonyMethod(typeof(PatchManager).GetMethod("OnChatOpen")));
             harmony.Patch(typeof(ChatController).GetMethod("SendChat"), new HarmonyMethod(typeof(PatchManager).GetMethod("SendChat")));
             harmony.Patch(typeof(ChatController).GetMethod("Update", AccessTools.all), null, new HarmonyMethod(typeof(PatchManager).GetMethod("ChatUpdate")));
             PDebug.Log(0);
@@ -258,7 +259,7 @@ public class PatchManager
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayer", [typeof(ILifespan), typeof(float?), typeof(GamePlayer), typeof(Predicate<GamePlayer>), typeof(Predicate<GamePlayer>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(ObjectTrackers).GetMethod("ForPlayerlike", [typeof(ILifespan), typeof(float?), typeof(Func<UnityEngine.Vector2?>), typeof(Predicate<IPlayerlike>), typeof(Predicate<IPlayerlike>), typeof(UnityEngine.Color?), typeof(bool), typeof(bool)]), new HarmonyMethod(typeof(PatchManager).GetMethod("FixModTrackerDistance")));
             harmony.Patch(typeof(Scarlet.Instance).GetMethod("OnActivated"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("EditScarletGuessable")));
-            harmony.Patch(typeof(HelpScreen).GetMethod(nameof(HelpScreen.ShowAssignableScreen),AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("ShowAssignableScreen")));
+            harmony.Patch(typeof(HelpScreen).GetMethod(nameof(HelpScreen.ShowAssignableScreen), AccessTools.all), new HarmonyMethod(typeof(PatchManager).GetMethod("ShowAssignableScreen")));
             harmony.Patch(typeof(AmongUsClient).GetMethod(nameof(AmongUsClient.ExitGame)), new HarmonyMethod(typeof(PatchManager).GetMethod("OnExitGame"), Priority.VeryLow));
             harmony.Patch(typeof(PlayerBanData).GetMethod("get_IsBanned"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("IsSpBanned"), Priority.VeryLow));
             //harmony.Patch(typeof(ObjectTrackerUnityImpl<,>).GetMethod(typeof(ObjectTracker<>).FullName+ "set_KeepAsLongAsPossible"), null, new HarmonyMethod(typeof(PatchManager).GetMethod("FixKeepAsLongAsPossible")));
@@ -352,7 +353,7 @@ public class PatchManager
             Mayor.MyRole.ConfigurationHolder?.AppendConfiguration(MayorExtraVoteAnonymousVote);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowEvilModifier);
             GeneralConfigurations.ExileOptions.AppendConfiguration(ExileShowAllModifier);
-            Scarlet.MyRole.ConfigurationHolder?.AppendConfigurations([ScarletPrivateMeetingChat,ScarletCannotGuessScarletTeam]);
+            Scarlet.MyRole.ConfigurationHolder?.AppendConfigurations([ScarletPrivateMeetingChat, ScarletCannotGuessScarletTeam]);
             new ClientOption((ClientOption.ClientOptionType)123, "useairshipSound", ["options.switch.off", "options.switch.on"], 0);
             new ClientOption((ClientOption.ClientOptionType)124, "darktheme", ["options.switch.off", "options.switch.on"], 0);
             new ClientOption((ClientOption.ClientOptionType)125, "ggdGuesserSound", ["options.switch.off", "options.switch.on"], 0);
@@ -603,7 +604,7 @@ public class PatchManager
                     return;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 PDebug.Log("SendFriendCode Error: " + e.Message);
             }
@@ -625,8 +626,8 @@ public class PatchManager
                 var list = BlackListReadWriter.ReadBlacklist();
                 if (list.Contains(friendCode))
                 {
-                    var client= GetClient(playerControl);
-                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,senderPlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
+                    var client = GetClient(playerControl);
+                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, senderPlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((client.Id, false));
@@ -648,7 +649,7 @@ public class PatchManager
             });
         }
     }
-    public static List<(IEnumerable<DefinedAssignable> roles,TextComponent label)> GetCustomAssignableLabel()
+    public static List<(IEnumerable<DefinedAssignable> roles, TextComponent label)> GetCustomAssignableLabel()
     {
         var madmateRoles = Nebula.Roles.Roles.AllRoles.Where(r => r.IsMadmate && r.ShowOnHelpScreen);
         var madmateModifier = Nebula.Roles.Roles.AllModifiers.Where(m => m.IsMadmate && m.ShowOnHelpScreen);
@@ -676,7 +677,7 @@ public class PatchManager
         void AddContent(TextComponent label, Action routine)
         {
             if (inner.Count > 0) inner.Append(new MetaWidgetOld.VerticalMargin(0.2f));
-            
+
             inner.Append(new MetaWidgetOld.WrappedWidget(new NoSGUIText(GUIAlignment.Left, NebulaGUIWidgetEngine.API.GetAttribute(Virial.Text.AttributeAsset.DocumentTitle), label)));
             inner.Append(new MetaWidgetOld.VerticalMargin(0.1f));
             routine.Invoke();
@@ -751,7 +752,7 @@ public class PatchManager
             });
         }
 
-        __result=new MetaWidgetOld.ScrollView(new(7.4f, HelpScreen.HelpHeight), inner) { Alignment = IMetaWidgetOld.AlignmentOption.Center };
+        __result = new MetaWidgetOld.ScrollView(new(7.4f, HelpScreen.HelpHeight), inner) { Alignment = IMetaWidgetOld.AlignmentOption.Center };
         return false;
     }
 
@@ -1116,15 +1117,15 @@ public class PatchManager
             __result = __instance.BanMinutesLeft > 0;
         }
     }
-    public static void OnExitGame(AmongUsClient __instance,DisconnectReasons reason)
+    public static void OnExitGame(AmongUsClient __instance, DisconnectReasons reason)
     {
         if (!AmongUsLLImpl.LobbyInstance.AsBoolFast() && __instance.NetworkMode == NetworkModes.OnlineGame && GeneralConfigurations.CurrentGameMode == Virial.Game.GameModes.Standard)
         {
-            if (AmongUsLLImpl.AmongUsClientInstance.AmHost||AmongUsLLImpl.LocalPlayer.Data.IsDead || IntroCutscene.Instance.AsBoolFast()||reason == DisconnectReasons.Custom)
+            if (AmongUsLLImpl.AmongUsClientInstance.AmHost || AmongUsLLImpl.LocalPlayer.Data.IsDead || IntroCutscene.Instance.AsBoolFast() || reason == DisconnectReasons.Custom)
             {
                 return;
             }
-            PDebug.RpcLog("Player " + AmongUsLLImpl.LocalPlayer.name + " Exit Game,FriendCode:" + EOSManager.Instance.FriendCode,true);
+            PDebug.RpcLog("Player " + AmongUsLLImpl.LocalPlayer.name + " Exit Game,FriendCode:" + EOSManager.Instance.FriendCode, true);
             DataManager.Player.Ban.PreviousGameStartDate = AmongUsDateTime.UtcNow;
             DataManager.Player.Ban.BanPoints = 3;
             if (!File.Exists(Application.persistentDataPath + "/sp"))
@@ -3519,7 +3520,7 @@ public class PatchManager
             SendKickreason = reason;
             void Exit()
             {
-                 AmongUsLLImpl.AmongUsClientInstance.ExitGame(DisconnectReasons.Custom);
+                AmongUsLLImpl.AmongUsClientInstance.ExitGame(DisconnectReasons.Custom);
             }
 
             if (client.ClientId == senderClientId)
@@ -4496,9 +4497,9 @@ public class PatchManager
 
     public static Image? ChristmasTreeImage = NebulaAPI.AddonAsset.GetResource("ChristmasTree.png")!.AsImage();
     public static Image? TreeShadowImage = NebulaAPI.AddonAsset.GetResource("ChristmasTreeShadow.png")!.AsImage();
-    public static void ModifyPolusEarly(byte mapId,ShipStatus ship)
+    public static void ModifyPolusEarly(byte mapId, ShipStatus ship)
     {
-        if (mapId!=2)
+        if (mapId != 2)
         {
             return;
         }
@@ -5384,11 +5385,11 @@ public class PatchManager
         return list.Any(c => code == c.Friendcode);
     }
     static Dictionary<PlayerControl, int> killGuardPlayers = new Dictionary<PlayerControl, int>();
-    static RemoteProcess<(byte,byte, string)> SetSendKickPlayer = new RemoteProcess<(byte,byte, string)>("SetSendKickPlayerRPC", (message, _) =>
+    static RemoteProcess<(byte, byte, string)> SetSendKickPlayer = new RemoteProcess<(byte, byte, string)>("SetSendKickPlayerRPC", (message, _) =>
     {
         SendKickPlayer = PlayerControl.AllPlayerControls.GetFastEnumerator()!.FirstOrDefault(p => p.PlayerId == message.Item1)!;
-        var targetplayer= PlayerControl.AllPlayerControls.GetFastEnumerator()!.FirstOrDefault(p => p.PlayerId == message.Item2)!;
-        if (targetplayer?.AmOwner??false)
+        var targetplayer = PlayerControl.AllPlayerControls.GetFastEnumerator()!.FirstOrDefault(p => p.PlayerId == message.Item2)!;
+        if (targetplayer?.AmOwner ?? false)
         {
             SendKickreason = message.Item3;
         }
@@ -5454,6 +5455,31 @@ public class PatchManager
         }
         return true;
     }
+
+    public static void OnChatOpen(ChatController __instance)
+    {
+        if (helpSeen)
+        {
+            helpHint.GetIfNotNull()?.gameObject.Destroy();
+        }
+        else if (helpHint == null)
+        {
+            helpHint = UnityEngine.Object.Instantiate<TextMeshPro>(AmongUsLLImpl.HudManagerInstance.MeetingPrefab.TimerText, __instance.freeChatField.transform);
+            helpHint.gameObject.GetComponent<TextTranslatorTMP>().enabled = false;
+            helpHint.raycastTarget = false;
+            helpHint.alignment = TextAlignmentOptions.Left;
+            helpHint.transform.localPosition = new UnityEngine.Vector3(-0.14f, 0.49f);
+            helpHint.rectTransform.sizeDelta = new(6f, 0.4496f);
+            helpHint.color = new UnityEngine.Color(1f, 1f, 1f, 0.35f);
+            helpHint.text = Language.Translate("chatcommand.p17help.hint");
+
+            GameOperatorManager.Instance?.Subscribe<LobbyDestroyEvent>(ev =>
+            {
+                helpSeen = true;
+            }, new GameObjectLifespan(helpHint.gameObject));
+        }
+    }
+
     //static TextMeshPro? chatTeamText;
     //public static List<int>? CanUseChatList;
     //static int CurrentChatId, currentIndex;
@@ -5480,21 +5506,6 @@ public class PatchManager
         {
             CurrentHistorySelection = Mathn.Clamp(++CurrentHistorySelection, 0, ChatHistory.Count);
             __instance?.freeChatField?.textArea.SetText((CurrentHistorySelection < ChatHistory.Count) ? ChatHistory[CurrentHistorySelection] : string.Empty, "");
-        }
-        if (helpSeen)
-        {
-            helpHint.GetIfNotNull()?.gameObject.SetActive(false);
-        }
-        else if (helpHint == null)
-        {
-            helpHint = UnityEngine.Object.Instantiate<TextMeshPro>(AmongUsLLImpl.HudManagerInstance.MeetingPrefab.TimerText, __instance.freeChatField.transform);
-            helpHint.gameObject.GetComponent<TextTranslatorTMP>().enabled = false;
-            helpHint.raycastTarget = false;
-            helpHint.alignment = TextAlignmentOptions.Left;
-            helpHint.transform.localPosition = new UnityEngine.Vector3(-0.14f, 0.49f);
-            helpHint.rectTransform.sizeDelta = new(6f, 0.4496f);
-            helpHint.color = new UnityEngine.Color(1f, 1f, 1f, 0.35f);
-            helpHint.text = Language.Translate("chatcommand.p17help.hint");
         }
         /*try
         {
@@ -5672,7 +5683,6 @@ public class PatchManager
             switch (command.ToLower())
             {
                 case "/p17help":
-                    helpSeen = true;
                     SendChatAs(p17Name, Language.Translate("chatcommand.p17help.page1"));
                     __instance.freeChatField.Clear();
                     return false;
@@ -5700,7 +5710,7 @@ public class PatchManager
                     {
                         break;
                     }
-                    if (strs.Length>=2)
+                    if (strs.Length >= 2)
                     {
                         __instance.freeChatField.Clear();
                         NebulaManager.Instance.StartCoroutine(CoGetMusicInfo(strs[1]));
@@ -5838,7 +5848,7 @@ public class PatchManager
                     var targetplayer = targetplayerC.Data;
                     if (targetplayer == null) break;
                     string str = strs.Length >= 3 ? string.Join(Environment.NewLine, strs.Skip(2)) : string.Empty;
-                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,targetplayer.PlayerId, Language.Translate("chatcommand.kick.reason").Replace("%REASON%", str)));
+                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, targetplayer.PlayerId, Language.Translate("chatcommand.kick.reason").Replace("%REASON%", str)));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((targetplayer.ClientId, false));
@@ -5855,7 +5865,7 @@ public class PatchManager
                     var target = targetC.Data;
                     if (target == null) break;
                     string stri = strs.Length >= 3 ? string.Join(Environment.NewLine, strs.Skip(2)) : "";
-                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,target.PlayerId, Language.Translate("chatcommand.ban.reason").Replace("%REASON%", stri)));
+                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, target.PlayerId, Language.Translate("chatcommand.ban.reason").Replace("%REASON%", stri)));
                     NebulaManager.Instance.StartDelayAction(1f, () =>
                     {
                         KickPlayer.Invoke((target.ClientId, true));
@@ -5977,7 +5987,7 @@ public class PatchManager
                             }
                             string targetCode = strs[1];
                             var blacklist = BlackListReadWriter.ReadBlacklist();
-                            if(targetCode == AmongUsLLImpl.LocalPlayer.FriendCode)
+                            if (targetCode == AmongUsLLImpl.LocalPlayer.FriendCode)
                             {
                                 AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, Language.Translate("chatcommand.blackmaillist.self"));
                                 break;
@@ -5988,15 +5998,15 @@ public class PatchManager
                                 break;
                             }
                             BlackListReadWriter.WritePlayer(targetCode);
-                            foreach(var p in PlayerControl.AllPlayerControls)
+                            foreach (var p in PlayerControl.AllPlayerControls)
                             {
                                 if (GetClient(p).FriendCode == targetCode)
                                 {
                                     var client = GetClient(p);
-                                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,p.PlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
+                                    SetSendKickPlayer.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, p.PlayerId, Language.Translate("chatcommand.blackmaillist.kickreason")));
                                     NebulaManager.Instance.StartDelayAction(1f, () =>
                                     {
-                                        KickPlayer.Invoke((client.Id, false)); 
+                                        KickPlayer.Invoke((client.Id, false));
                                     });
                                 }
                             }
@@ -6005,7 +6015,7 @@ public class PatchManager
                     }
                     break;
                 case "/rbl":
-                case"/removeblacklist":
+                case "/removeblacklist":
                     {
                         if (strs.Length < 2) break;
                         else
@@ -6021,18 +6031,18 @@ public class PatchManager
                     }
                     break;
                 case "/cbl":
-                case "/checkblacklist":  
+                case "/checkblacklist":
                     {
                         var blacklist = BlackListReadWriter.ReadBlacklist();
                         if (!AmongUsLLImpl.AmongUsClientInstance.AmHost)
                         {
                             break;
                         }
-                        if (blacklist.Count!=0)
+                        if (blacklist.Count != 0)
                         {
                             var sb = new StringBuilder();
                             sb.Append(Language.Translate("chatcommand.blackmaillist.list") + "\n");
-                            foreach(var code in blacklist)
+                            foreach (var code in blacklist)
                             {
                                 sb.Append(code + "\n");
                             }
@@ -7028,7 +7038,7 @@ public class PatchManager
                         {
                             roletext = GetModifierInfo(roletext, GetModifiers(player, ExileShowEvilModifier));
                         }
-                        
+
                         instance.completeString = Language.Translate("game.meeting.roleText").Replace("%PLAYER%", init.networkedPlayer.PlayerName).Replace("%ROLE%", roletext);
                         if (player.Role.Role is Nebula.Roles.Neutral.Jester)
                         {
@@ -7727,7 +7737,7 @@ public class PatchManager
                 }
 
                 //Debug.Log($"Exiled: ({string.Join(',', (exiledAll ?? []).Select(b => b.ToString()))})");
-                MeetingModRpc.RpcModCompleteVoting.Invoke((allStates,new List<ValueTuple<byte, byte>>(), exiled?.PlayerId ?? byte.MaxValue, exiledAll?.Select(e => e.PlayerId).ToArray() ?? [], tie, false));
+                MeetingModRpc.RpcModCompleteVoting.Invoke((allStates, new List<ValueTuple<byte, byte>>(), exiled?.PlayerId ?? byte.MaxValue, exiledAll?.Select(e => e.PlayerId).ToArray() ?? [], tie, false));
                 //サーバー用、プレイヤーは全員このメッセージを無視する
                 //__instance.RpcVotingComplete(allStates.ToArray(), Helpers.GetPlayer(exiled?.PlayerId)?.Data, tie);
             }
@@ -8135,7 +8145,7 @@ public class PatchManager
                         back.transform.localScale = new(0.6f, 0.6f, 1f);
                         back.sprite = holder.GetSprite();
                         //back.material = HatManager.Instance.PlayerMaterial;
-                        yield return StartCoroutine(CoAnimColor(back, new (1f, 1f, 1f, 0f), new(1f, 1f, 1f, 1f), 0.5f).WrapToIl2Cpp());
+                        yield return StartCoroutine(CoAnimColor(back, new(1f, 1f, 1f, 0f), new(1f, 1f, 1f, 1f), 0.5f).WrapToIl2Cpp());
                         try
                         {
                             var mask = UnityHelper.CreateObject<SortingGroup>("Masked", back.transform, new(0f, 0f, -0.5f));
@@ -8633,7 +8643,7 @@ public class PatchManager
                 if (!GamePlayer.LocalPlayer!.IsImpostor)
                 {
                     var obj = UnityEngine.Object.Instantiate(GameManagerCreator.Instance.HideAndSeekManagerPrefab.DeathPopupPrefab, AmongUsLLImpl.HudManagerInstance.transform.parent);
-                    obj.transform.position += new UnityEngine.Vector3(0f,-0.5f);
+                    obj.transform.position += new UnityEngine.Vector3(0f, -0.5f);
                     obj.Show(ev.Player.VanillaPlayer, 1);
                     TextTranslatorTMP tmp;
                     if (obj.text.transform.TryGetComponent<TextTranslatorTMP>(out tmp))
@@ -8670,10 +8680,10 @@ public class PatchManager
         [HarmonyPatch(typeof(StampManager), "SendStamp", typeof(string)), HarmonyPrefix]
         public static bool SendStampV2(string stampProdId)
         {
-            RpcShowStampV2.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId,stampProdId));
+            RpcShowStampV2.Invoke((AmongUsLLImpl.LocalPlayer.PlayerId, stampProdId));
             return false;
         }
-        public static RemoteProcess<ValueTuple<byte, string>> RpcShowStampV2 = new RemoteProcess<ValueTuple<byte, string>>("ShowStampRpcV2", delegate(ValueTuple<byte, string> message, bool _)
+        public static RemoteProcess<ValueTuple<byte, string>> RpcShowStampV2 = new RemoteProcess<ValueTuple<byte, string>>("ShowStampRpcV2", delegate (ValueTuple<byte, string> message, bool _)
         {
             if (IsActive)
             {
@@ -8710,7 +8720,7 @@ public class PatchManager
         {
             var openFileName = new OpenFileName();
             openFileName.structSize = Marshal.SizeOf(openFileName.GetType());
-                openFileName.filter = "Music Files(*.wav,*.mp3,*.aif,*.aiff,*.flac)\0*.wav;*.aiff;*.aif;*.flac;*.mp3\0";//"Music Files(*.ogg,*.wav,*.mp3)\0*.wav;*.ogg;*.mp3\0";
+            openFileName.filter = "Music Files(*.wav,*.mp3,*.aif,*.aiff,*.flac)\0*.wav;*.aiff;*.aif;*.flac;*.mp3\0";//"Music Files(*.ogg,*.wav,*.mp3)\0*.wav;*.ogg;*.mp3\0";
             openFileName.file = new string(new char[256]);
             openFileName.maxFile = openFileName.file.Length;
             openFileName.fileTitle = new string(new char[64]);
@@ -8727,7 +8737,7 @@ public class PatchManager
             PDebug.Log("selected music full path:" + openFileName.file);
             return openFileName.file;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             PDebug.Log(e);
         }
@@ -8736,7 +8746,7 @@ public class PatchManager
     static bool fetching;
     static bool searching;
     static List<NeteaseClient.Song> netcloudSongs = new();
-    public static bool TryExtract(string json,bool only1language, out string lrc, out string tlyric)
+    public static bool TryExtract(string json, bool only1language, out string lrc, out string tlyric)
     {
         lrc = null;
         tlyric = null;
@@ -8783,10 +8793,10 @@ public class PatchManager
                 if (only1language)
                 {
                     return true;
-                }    
+                }
             }
 
-            return success==2;
+            return success == 2;
         }
         catch (JsonException)
         {
@@ -8794,7 +8804,7 @@ public class PatchManager
         }
     }
     [NebulaRPC]
-    public static void Fetch(string songId,string sendname,string songName)
+    public static void Fetch(string songId, string sendname, string songName)
     {
         if (fetching) return;
         var host = AmongUsLLImpl.HudManagerInstance;
@@ -8804,7 +8814,7 @@ public class PatchManager
             () => { },
             $"玩家{sendname}转发了云音乐\"{songName}\"\n要接收并播放吗？");
     }
-    private static IEnumerator CoFetch(string songId,string songName)
+    private static IEnumerator CoFetch(string songId, string songName)
     {
         string url = null;
         string error = null;
@@ -8830,7 +8840,7 @@ public class PatchManager
         var filePath = LobbyMusicPath + "/" + songName + ".mp3";
 
         if (!Directory.Exists(LobbyMusicPath)) Directory.CreateDirectory(LobbyMusicPath);
-        File.WriteAllBytes(filePath,audio);
+        File.WriteAllBytes(filePath, audio);
         //AmongUsLLImpl.HudManagerBridge.Chat.AddChat(AmongUsLLImpl.LocalPlayer, "音频加载中。");
         var lrcPath = LobbyMusicPath + "/" + songName + ".lrc";
         int successnum = 0;
@@ -8887,8 +8897,8 @@ public class PatchManager
     static IEnumerator CoGetMusicInfo(string songId)
     {
         NeteaseClient.Song song = null;
-        yield return NeteaseClient.CoGetMusicInfo(songId, (csong)=>song=csong, (s) => PDebug.Log(s));
-        if (song==null)
+        yield return NeteaseClient.CoGetMusicInfo(songId, (csong) => song = csong, (s) => PDebug.Log(s));
+        if (song == null)
         {
             PDebug.Log("未获取到歌曲信息。");
             song = new();
@@ -8931,7 +8941,7 @@ public class PatchManager
             var song = songs[i];
             var vip = song.RequiresVip ? " <color=#FF4D4D>[VIP]</color>" : string.Empty;
             sb.Append($"<color=#FFC864>[{i + 1}]</color> {song.Display}{vip}");
-            if (i!=songs.Count-1)
+            if (i != songs.Count - 1)
             {
                 sb.Append(Environment.NewLine);
             }
@@ -8939,7 +8949,7 @@ public class PatchManager
         say.AddChat(AmongUsLLImpl.LocalPlayer, sb.ToString());
         say.AddChat(AmongUsLLImpl.LocalPlayer, "用 /play 序号 播放");
     }
-    public static System.Collections.IEnumerator CoLoadLobbyMusic(string filePath,bool share=false)
+    public static System.Collections.IEnumerator CoLoadLobbyMusic(string filePath, bool share = false)
     {
         filePath = filePath.Replace("\\", "/").Trim();
         if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
@@ -8978,9 +8988,9 @@ public class PatchManager
                 loaded = true;
             });
             float time = 0f;
-            while(!loaded&&time<=30f)
+            while (!loaded && time <= 30f)
             {
-                time+= Time.deltaTime;
+                time += Time.deltaTime;
                 yield return null;
             }
             /*
@@ -9085,13 +9095,13 @@ public class PatchManager
     }
     private static async System.Threading.Tasks.Task<AudioClip> LoadAudioWithFallbacksAsync(string path)
     {
-        var clip=await AudioLoader.LoadAudioClipAsync(path);
+        var clip = await AudioLoader.LoadAudioClipAsync(path);
         if (clip != null) return clip;
         return null;
     }
-    private static void LoadAudioV2(string path,Action? onSuccess)
+    private static void LoadAudioV2(string path, Action? onSuccess)
     {
-        AudioLoader.LoadAudioClipAsyncV2(path,onSuccess);
+        AudioLoader.LoadAudioClipAsyncV2(path, onSuccess);
     }
     /*private static AudioClip? ParseWav(byte[] bytes, string clipName)
     {
@@ -9365,7 +9375,7 @@ public class PatchManager
         }
     }
     [NebulaRPC]
-    public static void ShareAudioClipDownloadInfo(byte senderPlayer, string filepath, string fileName, string downloadpath,string lrcDownloadPath)
+    public static void ShareAudioClipDownloadInfo(byte senderPlayer, string filepath, string fileName, string downloadpath, string lrcDownloadPath)
     {
         PDebug.Log("ReceiveShareDownloadInfo");
         var sender = PlayerControl.AllPlayerControls.GetFastEnumerator().FirstOrDefault(p => p.PlayerId == senderPlayer);
@@ -9373,7 +9383,7 @@ public class PatchManager
         {
             if (!sender.AmOwner)
             {
-                MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform, () => NebulaManager.Instance.StartCoroutine(DownloadAudioClip(downloadpath,lrcDownloadPath,fileName)), () => { }, $"玩家{sender.name}转发了音乐\"{fileName}\"\n要接收并播放吗？");
+                MetaUI.ShowYesOrNoDialog(AmongUsLLImpl.HudManagerInstance.transform, () => NebulaManager.Instance.StartCoroutine(DownloadAudioClip(downloadpath, lrcDownloadPath, fileName)), () => { }, $"玩家{sender.name}转发了音乐\"{fileName}\"\n要接收并播放吗？");
             }
             else
             {
@@ -9381,7 +9391,7 @@ public class PatchManager
             }
         }
     }
-    public static IEnumerator DownloadAudioClip(string fileName,string lrcName,string realFileName)
+    public static IEnumerator DownloadAudioClip(string fileName, string lrcName, string realFileName)
     {
         string url = v() + "/upload/" + fileName;
         var request = UnityWebRequest.Get(url);
@@ -9516,7 +9526,7 @@ public class PatchManager
         lifespan = new(NebulaAPI.CurrentGame);
         lyricTextContext = new FunctionalDebugTextContent(() =>
         {
-            if (!source.AsBoolFast()||!source.clip.AsBoolFast())
+            if (!source.AsBoolFast() || !source.clip.AsBoolFast())
             {
                 return null;
             }
@@ -9535,7 +9545,7 @@ public class PatchManager
     }
     private static readonly Regex TagRegex = new Regex(@"^(\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\])", RegexOptions.Compiled);
 
-    public static string MergeLrc(string originalLrc,string translationLrc,string translationPrefix = "")
+    public static string MergeLrc(string originalLrc, string translationLrc, string translationPrefix = "")
     {
         var original = SplitLines(originalLrc);
         var translation = SplitLines(translationLrc);
@@ -9591,7 +9601,7 @@ public class PatchManager
         return map;
     }
 
-    public static ParsedLyrics ParseLrc(string Title,string lrc)
+    public static ParsedLyrics ParseLrc(string Title, string lrc)
     {
         string title = Title;
         string artist = string.Empty;
@@ -9670,7 +9680,7 @@ public class PatchManager
     {
         ms = 0;
         string pattern = @"^(?:(?<h>\d+):)?(?<m>\d+):(?<s>\d+(?:\.\d+)?)$";
-       Match match = Regex.Match(ts, pattern);
+        Match match = Regex.Match(ts, pattern);
         if (!match.Success)
             return false;
         int hours = match.Groups["h"].Success ? int.Parse(match.Groups["h"].Value) : 0;
@@ -9681,7 +9691,7 @@ public class PatchManager
     }
     public readonly struct LyricLine
     {
-        public LyricLine(int timeMs,string text)
+        public LyricLine(int timeMs, string text)
         {
             TimeMs = timeMs;
             Text = text;
@@ -9689,7 +9699,7 @@ public class PatchManager
         public readonly int TimeMs;
         public readonly string Text;
     }
-    
+
     public readonly struct ParsedLyrics
     {
         public ParsedLyrics(string Title, string Artist, List<LyricLine> Lines)
