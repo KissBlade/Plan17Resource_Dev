@@ -22,9 +22,36 @@ public class FlowerBurial : DefinedSingleAbilityRoleTemplate<FlowerBurial.Abilit
         static Image PlaceIcon = NebulaAPI.AddonAsset.GetResource("flowerBurialPlaceFlower.png")!.AsImage(115f)!;
         static Image CheckIcon = NebulaAPI.AddonAsset.GetResource("flowerBurialCheckFlowers.png")!.AsImage(115f)!;
         public static Image MeetingInfoIcon = NebulaAPI.AddonAsset.GetResource("flowerBurialMeetingInfo.png")!.AsImage(135f)!;
-        Dictionary<DeadBody,string> CheckedDeadbodies = new();
+        Dictionary<byte,string> CheckedDeadbodies = new();
         List<Flower> flowers = new();
         int[] IPlayerAbility.AbilityArguments => [IsUsurped.AsInt()];
+        static readonly RemoteProcess<ValueTuple<GamePlayer, byte,string>> RpcUpdateFlowerBurial = new RemoteProcess<ValueTuple<GamePlayer, byte,string>>("UpdateFlowerBurial", (m, _) =>
+        {
+            if (m.Item1.TryGetAbility<FlowerBurial.Ability>(out var ability))
+            {
+                ability.CheckedDeadbodies.Add(m.Item2, m.Item3);
+            }
+        }, true);
+        GUIWidget IPlayerAbility.ProgressWidget
+        {
+            get
+            {
+                GUIWidget[] array = new GUIWidget[2];
+                array[0] = ProgressGUI.OneLineText([Language.Translate("role.flowerburial.gui.results")]);
+                if (CheckedDeadbodies.Count > 0)
+                {
+                    array[1] = ProgressGUI.Holder(
+                        CheckedDeadbodies.Select(result =>
+                                ProgressGUI.OneLineText((GamePlayer.GetPlayer(result.Key)?.ColoredName ?? "???")+": "+ (GamePlayer.GetPlayer(result.Key)?.Role?.Role?.DisplayColoredName??"???"))
+                        ));
+                }
+                else
+                {
+                    array[1] = ProgressGUI.OneLineText([Language.Translate("role.flowerburial.gui.none")]);
+                }
+                return ProgressGUI.Holder(array);
+            }
+        }
         public Ability(GamePlayer player, bool isUsurped) : base(player, isUsurped)
         {
             if (AmOwner)
@@ -89,9 +116,9 @@ public class FlowerBurial : DefinedSingleAbilityRoleTemplate<FlowerBurial.Abilit
             {
                 foreach (var d in Helpers.AllDeadBodies())
                 {
-                    if (!CheckedDeadbodies.ContainsKey(d) && MathHelpers.Distance(burial.Position, d.TruePosition) <= FlowerRatio)
+                    if (!CheckedDeadbodies.ContainsKey(d.ParentId) && MathHelpers.Distance(burial.Position, d.TruePosition) <= FlowerRatio)
                     {
-                        CheckedDeadbodies.Add(d, AmongUsUtil.GetRoomName(d.TruePosition));
+                        RpcUpdateFlowerBurial.Invoke((MyPlayer, d.ParentId, AmongUsUtil.GetRoomName(d.TruePosition)));
                         if (!burial.Shared)
                         {
                             burial.Shared = true;
@@ -106,7 +133,7 @@ public class FlowerBurial : DefinedSingleAbilityRoleTemplate<FlowerBurial.Abilit
         {
             foreach (var d in CheckedDeadbodies)
             {
-                var targetPlayer = GamePlayer.GetPlayer(d.Key.ParentId);
+                var targetPlayer = GamePlayer.GetPlayer(d.Key);
                 if (targetPlayer == null || targetPlayer.IsAlive) continue;
                 var sb = new StringBuilder(Language.Translate("role.flowerburial.message.deadPlayer")).Append(":").Append(targetPlayer.ColoredName).Append(Environment.NewLine).Append(Language.Translate("role.flowerburial.message.deadroom")).Append(":").Append(d.Value);
                 if (NeutralCannotSeeRole&&targetPlayer.Role.Role.Category==RoleCategory.NeutralRole)

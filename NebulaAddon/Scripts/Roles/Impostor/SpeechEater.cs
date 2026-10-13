@@ -8,6 +8,7 @@ namespace Plana.Roles.Impostor;
 public class SpeechEater : DefinedSingleAbilityRoleTemplate<SpeechEater.Ability>, DefinedRole, HasCitation, IAssignableDocument
 {
     Citation? HasCitation.Citation { get { return PCitations.PlanaANDKC; } }
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/SpeechEater.png")!.AsImage();
     AbilityAssignmentStatus DefinedRole.AssignmentStatus => AbilityAssignmentStatus.KillersSide;
     MultipleAssignmentType DefinedRole.MultipleAssignment => MultipleAssignmentType.Allowed;
     bool AssignableFilterHolder.CanLoadDefault(DefinedAssignable assignable)

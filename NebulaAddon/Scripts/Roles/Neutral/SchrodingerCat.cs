@@ -14,6 +14,7 @@ public class SchrodingerCat()
     public static readonly BoolConfiguration CanSeeKiller = NebulaAPI.Configurations.Configuration("options.role.schrodingerCat.canseekiller", false);
     public static readonly BoolConfiguration CanNotKillKiller = NebulaAPI.Configurations.Configuration("options.role.schrodingerCat.cannotkillkiller", false);
     Citation? HasCitation.Citation => Citations.TheOtherRolesGMH;
+    Image? DefinedAssignable.IconImage => NebulaAPI.AddonAsset.GetResource("RoleSmallIcon/SchrodingerCat.png")!.AsImage();
     RuntimeRole RuntimeAssignableGenerator<RuntimeRole>.CreateInstance(Player player, int[] arguments) => new Instance(player);
 
     public static SchrodingerCat MyRole = new();

@@ -1,4 +1,5 @@
-﻿using Vector2 = UnityEngine.Vector2;
+﻿using static UnityEngine.GraphicsBuffer;
+using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 namespace Plana.Roles.Crewmate;
 [NebulaRPCHolder]
@@ -95,36 +96,66 @@ public class Lapicide : DefinedSingleAbilityRoleTemplate<Lapicide.Ability>, HasC
         Dictionary<byte, SpriteRenderer> highlights;
         private List<byte> deadplayers = new List<byte>();
         private List<byte> confirmedplayers = new List<byte>();
+        private List<byte>knownplayers= new List<byte>();
         [Local]
         void ReflectRoleName(PlayerSetFakeRoleNameEvent ev)
         {
-            if (deadplayers == null)
-            {
-                deadplayers = new List<byte>();
-            }
             if (deadplayers.Contains(ev.Player.PlayerId))
             {
                 ev.Append(ev.Player.Role.DisplayColoredName);
             }
         }
+        static readonly RemoteProcess<ValueTuple<GamePlayer, byte>> RpcUpdateStatus = new RemoteProcess<ValueTuple<GamePlayer, byte>>("UpdateLapicide", (m, _) =>
+        {
+            if (m.Item1.TryGetAbility<Lapicide.Ability>(out var ability))
+            {
+                ability.knownplayers.Add(m.Item2);
+            }
+        }, true);
         [Local, OnlyMyPlayer]
         void OnGuess(PlayerKillPlayerEvent ev)
         {
             if (ev.Dead.PlayerState == PlayerState.Guessed && !deadplayers.Contains(ev.Dead.PlayerId))
             {
                 deadplayers.Add(ev.Dead.PlayerId);
+                RpcUpdateStatus.Invoke((MyPlayer, ev.Dead.PlayerId));
             }
         }
         [Local]
         void OnExile(PlayerExiledEvent ev)
         {
-            if(deadplayers == null)
-            {
-                deadplayers = new List<byte>();
-            }
             if (ev.Player.PlayerState == PlayerState.Exiled && !deadplayers.Contains(ev.Player.PlayerId))
             {
-                deadplayers.Add(ev.Player.PlayerId);
+                deadplayers.Add(ev.Player.PlayerId); 
+                RpcUpdateStatus.Invoke((MyPlayer, ev.Player.PlayerId));
+            }
+        }
+        GUIWidget IPlayerAbility.ProgressWidget
+        {
+            get
+            {
+                GUIWidget[] array = new GUIWidget[2];
+                array[0] = ProgressGUI.OneLineText([Language.Translate("role.lapicide.gui.results")]);
+                if (knownplayers.Count > 0)
+                {
+                    array[1] = ProgressGUI.Holder(from p in Player.AllOrderedPlayers
+                                                  where knownplayers.Contains(p.PlayerId)
+                                                  select ProgressGUI.OneLineText([p.ColoredName + ": " + p.Role.DisplayColoredName]));
+                }
+                else
+                {
+                    array[1] = ProgressGUI.OneLineText([Language.Translate("role.lapicide.gui.none")]);
+                }
+                return ProgressGUI.Holder(array);
+            }
+        }
+        [Local]
+        void OnUpdate(GameUpdateEvent ev)
+        {
+            if (MyPlayer.IsDead)
+            {
+                deadplayers.Clear();
+                return;
             }
         }
         [Local]
@@ -242,13 +273,10 @@ public class Lapicide : DefinedSingleAbilityRoleTemplate<Lapicide.Ability>, HasC
                     initialSkillCount--;
                     meetingCount--;
                     UpdateCWArguments.Invoke((MyPlayer, initialSkillCount));
-                    if (deadplayers == null)
-                    {
-                        deadplayers = new List<byte>();
-                    }
                     if (!deadplayers.Contains(selectedDeadPlayer.PlayerId))
                     {
                         deadplayers.Add(selectedDeadPlayer.PlayerId);
+                        RpcUpdateStatus.Invoke((MyPlayer, selectedDeadPlayer.PlayerId));
                         var ev = new PlayerSetFakeRoleNameEvent(selectedDeadPlayer, true);
                         ReflectRoleName(ev);
                     }
