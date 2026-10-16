@@ -62,7 +62,7 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
 
             if (ConnoisseurGoal.IsMyGoal(MyPlayer, ev.Player) && ev.Player.IsDead && ev.Player.PlayerState != PlayerStates.Exiled)
             {
-                var allplayers = GamePlayer.AllPlayers.Where(p => !p.AmOwner && MyPlayer.CanKill(p) && MyPlayer.IsSameSideOf(p) && !p.IsDead && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
+                var allplayers = GamePlayer.AllPlayers.Where(p => !p.AmOwner && MyPlayer.CanKill(p) && !MyPlayer.IsSameSideOf(p) && !p.IsDead && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
                 var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.IsNeutral) || (CanSelectMadmateBeGoal && p.IsMadmate)).ToList();
                 goalCanSelectplayers.Random().AddModifier(ConnoisseurGoal.MyRole, [MyPlayer.PlayerId]);
             }
@@ -98,7 +98,7 @@ public class Connoisseur : DefinedRoleTemplate, HasCitation, DefinedRole, IAssig
         {
             if (AmOwner)
             {
-                var allplayers = GamePlayer.AllPlayers.Where(p => !p.AmOwner && MyPlayer.CanKill(p) && MyPlayer.IsSameSideOf(p) && !p.IsDead && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
+                var allplayers = GamePlayer.AllPlayers.Where(p => !p.AmOwner && MyPlayer.CanKill(p) && !MyPlayer.IsSameSideOf(p) && !p.IsDead && !p.TryGetModifier<ConnoisseurGoal.Instance>(out var g) && !p.TryGetModifier<ConnoisseurImpurity.Instance>(out var i));
                 var goalCanSelectplayers = allplayers.Where(p => (CanSelectImpBeGoal && p.IsImpostor) || (CanSelectCrewBeGoal && p.IsCrewmate) || (CanSelectNeuBeGoal && p.IsNeutral)).ToList();
 
                 while(true)
