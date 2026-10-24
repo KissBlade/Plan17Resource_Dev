@@ -221,7 +221,7 @@ public class Ouroboros : DefinedRoleTemplate, HasCitation, DefinedRole, IAssigna
             {
                 return;
             }
-            if (ev.Dead.PlayerState==PlayerState.Cursed||ev.Dead.PlayerState==PlayerState.Dead||ev.Dead.PlayerState==PlayerState.Guessed||ev.Dead.PlayerState==PlayerState.Dissolved)
+            if (ev.Dead.PlayerState==PlayerState.Crushed||ev.Dead.PlayerState==PlayerState.Dead||ev.Dead.PlayerState==PlayerState.Guessed||ev.Dead.PlayerState==PlayerState.Dissolved)
             {
                 if (inherited<(NumOfEcdyses==0?1000:NumOfEcdyses))
                 {
