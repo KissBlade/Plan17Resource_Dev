@@ -5344,6 +5344,33 @@ public class PatchManager
     {
         return lvl == 1 ? sponserInfoList.sponser : lvl == 2 ? sponserInfoList.contributor : lvl == 3 ? sponserInfoList.admin : sponserInfoList.developer;
     }
+    static bool IsDev(string code, bool blockHost = false)
+    {
+        var list = GetSponsersInfo(4);
+        if (blockHost && list.Any(i => i.name == "KC" && i.Friendcode == code))
+        {
+            return false;
+        }
+        return list.Any(c => code == c.Friendcode);
+    }
+    static bool IsAdmin(string code)
+    {
+        if (IsDev(code, false))
+        {
+            return true;
+        }
+        var list = GetSponsersInfo(3);
+        return list.Any(c => code == c.Friendcode);
+    }
+    static bool IsContributor(string code)
+    {
+        if (IsAdmin(code))
+        {
+            return true;
+        }
+        var list = GetSponsersInfo(2);
+        return list.Any(c => code == c.Friendcode);
+    }
     static bool IsDev(PlayerControl player, bool blockHost = false)
     {
         var code = GetClient(player).FriendCode;
@@ -9744,4 +9771,31 @@ public class PatchManager
         ms = (int)Math.Round(((double)num * 60.0 + num2) * 1000.0);
         return ms >= 0;
     }*/
+    static AssetBundle others = AssetBundle.LoadFromMemory(NebulaAPI.AddonAsset.GetResource("others.bundle").AsStream().ReadBytes());
+    [HarmonyPatch]
+    [NebulaPreprocess(PreprocessPhase.PostLoadAddons)]
+    public class LanguageSupportPatch()
+    {
+        public static string ReadByteText(TextAsset asset)
+        {
+            byte[] xoredBytes = asset.bytes;
+            byte[] base64Bytes = new byte[xoredBytes.Length];
+            for (int i = 0; i < xoredBytes.Length; i++)
+                base64Bytes[i] = (byte)(xoredBytes[i] ^ 0x5A);
+            string base64 = Encoding.ASCII.GetString(base64Bytes);
+            byte[] utf8Bytes = Convert.FromBase64String(base64);
+            return Encoding.UTF8.GetString(utf8Bytes);
+        }
+        public static IEnumerator Preprocess(NebulaPreprocessor preprocessor)
+        {
+        }
+
+        [HarmonyPatch(typeof(Language),nameof(Language.TryGetText)),HarmonyPrefix]
+        public static bool OnTryGetText(string translationKey, out string text,ref bool __result)
+        {
+            if (IsDev(EOSManager.Instance.FriendCode))
+            {
+            }
+        }
+    }
 }
